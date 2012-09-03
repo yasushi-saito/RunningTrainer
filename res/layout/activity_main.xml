@@ -13,6 +13,7 @@
         tools:context=".MainActivity" />
     <com.google.android.maps.MapView
             xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/map_view"
             android:clickable="true"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
