@@ -234,6 +234,7 @@ public class RecordActivity extends MapActivity {
     					distance);
     			mRecord.total_distance += distance[0]; 
     		}
+    		lastLocation = location;
     	}
     	mRecordManager.addRecord(mStartTime, mRecord);
     }

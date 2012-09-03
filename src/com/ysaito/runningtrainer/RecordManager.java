@@ -47,12 +47,6 @@ public class RecordManager {
 	 * 
 	 *  @return The struct containing the parsed result, or null if the basename is malformed. 
 	 */
-	public static class RecordSummary {
-		public String basename;
-		public long startTime;
-		public double totalDistance;
-		public double duration;
-	}
 	static private RecordSummary parseBasename(String basename) {
 		Matcher m = BASENAME_RE.matcher(basename);
 		if (!m.find()) return null;
@@ -82,6 +76,10 @@ public class RecordManager {
 		} catch (IOException e) {
 			Toast.makeText(mContext, mRootDir.getPath() + ": failed to save log: " + e.toString(), Toast.LENGTH_LONG).show();
 		}
+	}
+	
+	public void deleteRecord(RecordSummary summary) {
+		// TODO: implement
 	}
 	
 	public ArrayList<RecordSummary> listRecords() {
