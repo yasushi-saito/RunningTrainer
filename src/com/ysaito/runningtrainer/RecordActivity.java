@@ -19,6 +19,8 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
+import android.view.View;
+import android.widget.Button;
 
 public class RecordActivity extends MapActivity {
     static final String TAG = "Main";
@@ -45,7 +47,6 @@ public class RecordActivity extends MapActivity {
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(5);
 
-
             if (mPoints.size() > 1) {
             	Path path = new Path();
             	for (int i = 0; i < mPoints.size(); i++) {
@@ -70,22 +71,23 @@ public class RecordActivity extends MapActivity {
         }
     };
 
-
-    MyOverlay mMapOverlay;
-    MapView mMapView;
-    Record mRecord;
-    ArrayList<Record.WGS84> mPath;
-
+    private MyOverlay mMapOverlay;
+    private MapView mMapView;
+    private Record mRecord;
+    private ArrayList<Record.WGS84> mPath;
+    private RecordManager mRecordManager;
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_record);
-        mPath = new ArrayList<Record.WGS84>;
+        mPath = new ArrayList<Record.WGS84>();
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.map_view);
         mMapView.getOverlays().add(mMapOverlay);
         mRecord = new Record();
-
+        mRecordManager = new RecordManager(this);
+        
         mRecord.type = "Running";  // TODO: allow changing
         mRecord.start_time = RunKeeperUtil.utcMillisToString(System.currentTimeMillis());
         mRecord.notes = "Recorded by RunningTrainer";
@@ -98,49 +100,98 @@ public class RecordActivity extends MapActivity {
             // Ignore location updates at intervals smaller than this limit.
       	    static final int MIN_RECORD_INTERVAL_MS = 1000;
 
-        	long mLastReportTime = 0;
-        	GeoPoint mLastReportedLocation = null;
+      	    long mLastReportTime = 0;
+      	    Location mLastReportedLocation = null;
 
-                @Override
-                    public void onLocationChanged(Location location) {
-                    // Called when a new location is found by the network location provider.
-                    // makeUseOfNewLocation(location);
-                    final long time = location.getTime();
-                    Log.d(TAG, "REP: " + time + "/" + mLastReportTime);
-                    if (time < mLastReportTime + MIN_RECORD_INTERVAL_MS) return;
+        	public void onLocationChanged(Location location) {
+        		// Called when a new location is found by the network location provider.
+        		// makeUseOfNewLocation(location);
+        		final long time = location.getTime();
+        		Log.d(TAG, "REP: " + time + "/" + mLastReportTime);
+        		if (time < mLastReportTime + MIN_RECORD_INTERVAL_MS) return;
+        		onGpsLocationUpdate(time, location);
 
-                    GeoPoint p = new GeoPoint((int)(location.getLatitude() * 1e6), (int)(location.getLongitude() * 1e6));
-                    mMapOverlay.addPoint(p);
-                    mMapView.invalidate();
+        		mLastReportTime = time;
+        		mLastReportedLocation = location;
+        	}
+        	public void onStatusChanged(String provider, int status, Bundle extras) {
+        		Log.d(TAG, "Status: " + provider + ": " + status);
+        	}
 
-                    mLastReportTime = time;
-                    mLastReportedLocation = p;
-                }
+        	public void onProviderEnabled(String provider) {
+        		Log.d(TAG, "Provider Enabled: " + provider);
+        	}
 
-                @Override
-                    public void onStatusChanged(String provider, int status, Bundle extras) {
-                    Log.d(TAG, "Status: " + provider + ": " + status);
-                }
-
-                @Override
-                    public void onProviderEnabled(String provider) {
-                    Log.d(TAG, "Provider Enabled: " + provider);
-                }
-
-                @Override
-                    public void onProviderDisabled(String provider) {
-                    Log.d(TAG, "Provider Disabled: " + provider);
-                }
-            };
+        	public void onProviderDisabled(String provider) {
+        		Log.d(TAG, "Provider Disabled: " + provider);
+        	}
+        };
 
         // Register the listener with the Location Manager to receive location updates
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
-        Log.d(TAG, "RunningTrainer started");
+        
+        Button stopButton = (Button)findViewById(R.id.start_stop_button);
+        stopButton.setOnClickListener(new Button.OnClickListener() {
+        	public void onClick(View v) { 
+        		onStopButtonPress();
+        	}
+        });
+        
     }
 
+    private long mStartTime = 0;
+    private void onGpsLocationUpdate(long now, Location newLocation) {
+    	GeoPoint p = new GeoPoint((int)(newLocation.getLatitude() * 1e6), (int)(newLocation.getLongitude() * 1e6));
+    	mMapOverlay.addPoint(p);
+    	mMapView.invalidate();
+    	
+    	Record.WGS84 wgs = new Record.WGS84();
+    	wgs.latitude = newLocation.getLatitude();
+    	wgs.longitude = newLocation.getLongitude();
+    	wgs.altitude = newLocation.getAltitude();
+    	if (mPath.size() == 0) {
+    		wgs.timestamp = 0;
+    		wgs.type = "start";
+    		mStartTime = now;
+    	} else {
+    		wgs.timestamp = (now - mStartTime) / 1000.0;
+    		wgs.type = "gps";
+    	}
+    	mPath.add(wgs);
+    }
+
+    private void onStopButtonPress() {
+    	if (mPath.size() < 1) return;
+    	
+    	Record.WGS84 last = mPath.get(mPath.size() - 1);
+    	Record.WGS84 wgs = new Record.WGS84();
+    	wgs.latitude = last.latitude;
+    	wgs.longitude = last.longitude;
+    	wgs.altitude = last.altitude;
+    	wgs.type = "end";
+    	wgs.timestamp = (System.currentTimeMillis() - mStartTime) / 1000.0;
+    	mPath.add(wgs);
+    	mRecord.path = new Record.WGS84[mPath.size()];
+    	for (int i = 0; i < mPath.size(); ++i) mRecord.path[i] = mPath.get(i);
+    	
+    	mRecord.duration = wgs.timestamp;
+    	Record.WGS84 lastLocation = null;
+    	
+    	float[] distance = new float[1];
+    	for (Record.WGS84 location : mRecord.path) {
+    		if (lastLocation != null) {
+    			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+    					location.latitude, location.longitude,
+    					distance);
+    			mRecord.total_distance += distance[0]; 
+    		}
+    	}
+    	mRecordManager.addRecord(mStartTime, mRecord);
+    }
+    
     @Override
-        public boolean isRouteDisplayed() { return false; }
+    public boolean isRouteDisplayed() { return false; }
 
     @Override
         public boolean onCreateOptionsMenu(Menu menu) {

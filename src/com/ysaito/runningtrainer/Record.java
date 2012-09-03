@@ -8,15 +8,15 @@ package com.ysaito.runningtrainer;
  *
  */
 public class Record {
-    private String type; // "Running", "Cycling", etc.
-    private String start_time;      // "Sat, 1 Jan 2011 00:00:00"
-    private double total_distance;  // total distance, in meters
-    private double duration;        // duration, in seconds
-    private String notes;
-    private WGS84[] path;
-    private Boolean post_to_facebook;
-    private Boolean post_to_twitter;
-    private Boolean detect_pauses;
+    public String type; // "Running", "Cycling", etc.
+    public String start_time;      // "Sat, 1 Jan 2011 00:00:00"
+    public double total_distance;  // total distance, in meters
+    public double duration;        // duration, in seconds
+    public String notes;
+    public WGS84[] path;
+    public Boolean post_to_facebook;
+    public Boolean post_to_twitter;
+    public Boolean detect_pauses;
 
     static public class WGS84 {
         public double timestamp;  // The number of seconds since the start of the activity
