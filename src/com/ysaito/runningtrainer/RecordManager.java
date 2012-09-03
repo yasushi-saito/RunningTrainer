@@ -24,7 +24,7 @@ public class RecordManager {
 	
 	public RecordManager(Context context) {
 		File externalDir = context.getExternalFilesDir(null);
-		mContext = null;
+		mContext = context;
 		if (externalDir == null) {
         	Toast.makeText(context, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG).show();
         	mRootDir = null;
@@ -74,9 +74,11 @@ public class RecordManager {
 		if (mRootDir == null) return;
 		Gson gson = new GsonBuilder().create();
 		try {
-			FileWriter out = new FileWriter(new File(mRootDir, generateBasename(startTime, record)));
+			File destFile = new File(mRootDir, generateBasename(startTime, record));
+			FileWriter out = new FileWriter(destFile);
 			gson.toJson(record, out);
 			out.close();
+			Toast.makeText(mContext, "Wrote record to " + destFile.getPath(), Toast.LENGTH_LONG).show();
 		} catch (IOException e) {
 			Toast.makeText(mContext, mRootDir.getPath() + ": failed to save log: " + e.toString(), Toast.LENGTH_LONG).show();
 		}

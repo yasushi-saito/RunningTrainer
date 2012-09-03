@@ -7,6 +7,8 @@ import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -73,25 +75,30 @@ public class RecordActivity extends MapActivity {
 
     private MyOverlay mMapOverlay;
     private MapView mMapView;
+    private Button mPauseResumeButton;
+    private Button mStartStopButton;
+    
     private Record mRecord;
     private ArrayList<Record.WGS84> mPath;
     private RecordManager mRecordManager;
+    private long mStartTime;
+    
+    private static final int STOPPED = 0;
+    private static final int PAUSED = 1;
+    private static final int RUNNING = 2;
+    private int mRecordingState = STOPPED;
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+    	
+		Gson gson = new GsonBuilder().create();
+    	
         setContentView(R.layout.activity_record);
-        mPath = new ArrayList<Record.WGS84>();
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.map_view);
         mMapView.getOverlays().add(mMapOverlay);
-        mRecord = new Record();
-        mRecordManager = new RecordManager(this);
         
-        mRecord.type = "Running";  // TODO: allow changing
-        mRecord.start_time = RunKeeperUtil.utcMillisToString(System.currentTimeMillis());
-        mRecord.notes = "Recorded by RunningTrainer";
-
         // Acquire a reference to the system Location Manager
         LocationManager locationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
 
@@ -131,17 +138,58 @@ public class RecordActivity extends MapActivity {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
         
-        Button stopButton = (Button)findViewById(R.id.start_stop_button);
-        stopButton.setOnClickListener(new Button.OnClickListener() {
-        	public void onClick(View v) { 
-        		onStopButtonPress();
+        mPauseResumeButton = (Button)findViewById(R.id.pause_resume_button);
+        mPauseResumeButton.setEnabled(false); // pause/resume is disabled unless the recorder is running
+        
+        mPauseResumeButton.setOnClickListener(new Button.OnClickListener() {
+        	public void onClick(View v) {
+        		if (mRecordingState == RUNNING) {
+        			onPauseButtonPress();
+        			mPauseResumeButton.setText("Resume"); // TODO: externalize
+        		} else if (mRecordingState == PAUSED) {
+        			// Either running or paused
+        			onResumeButtonPress();
+        			mPauseResumeButton.setText("Pause");  // TODO: externalize
+        		} else {
+        			// Stopped. This shouldn't happen, since the button is disabled in this state.
+        		}
         	}
         });
         
+        mStartStopButton = (Button)findViewById(R.id.start_stop_button);
+        mStartStopButton.setOnClickListener(new Button.OnClickListener() {
+        	public void onClick(View v) {
+        		if (mRecordingState == STOPPED) {
+        			onStartButtonPress();
+        			mPauseResumeButton.setEnabled(true);
+        			mPauseResumeButton.setText("Pause");
+        			mStartStopButton.setText("Stop"); // TODO: externalize
+        		} else {
+        			// Either running or paused
+        			onStopButtonPress();
+        			mPauseResumeButton.setEnabled(false);
+        			mPauseResumeButton.setText("Pause");
+        			mStartStopButton.setText("Start");  // TODO: externalize
+        		}
+        	}
+        });
+
     }
 
-    private long mStartTime = 0;
+    void onStartButtonPress() {
+        mPath = new ArrayList<Record.WGS84>();
+        mRecord = new Record();
+        mRecordManager = new RecordManager(this);
+        mRecord.type = "Running";  // TODO: allow changing
+        mRecord.start_time = RunKeeperUtil.utcMillisToString(System.currentTimeMillis());
+        mRecord.notes = "Recorded by RunningTrainer";
+        mRecordingState = RUNNING;
+        mStartTime =  System.currentTimeMillis();
+    }
+    
     private void onGpsLocationUpdate(long now, Location newLocation) {
+    	if (mRecordingState != RUNNING) return;
+    	
     	GeoPoint p = new GeoPoint((int)(newLocation.getLatitude() * 1e6), (int)(newLocation.getLongitude() * 1e6));
     	mMapOverlay.addPoint(p);
     	mMapView.invalidate();
@@ -153,7 +201,6 @@ public class RecordActivity extends MapActivity {
     	if (mPath.size() == 0) {
     		wgs.timestamp = 0;
     		wgs.type = "start";
-    		mStartTime = now;
     	} else {
     		wgs.timestamp = (now - mStartTime) / 1000.0;
     		wgs.type = "gps";
@@ -162,6 +209,7 @@ public class RecordActivity extends MapActivity {
     }
 
     private void onStopButtonPress() {
+    	mRecordingState = STOPPED;
     	if (mPath.size() < 1) return;
     	
     	Record.WGS84 last = mPath.get(mPath.size() - 1);
@@ -170,7 +218,7 @@ public class RecordActivity extends MapActivity {
     	wgs.longitude = last.longitude;
     	wgs.altitude = last.altitude;
     	wgs.type = "end";
-    	wgs.timestamp = (System.currentTimeMillis() - mStartTime) / 1000.0;
+    	wgs.timestamp = (System.currentTimeMillis()- mStartTime) / 1000.0;
     	mPath.add(wgs);
     	mRecord.path = new Record.WGS84[mPath.size()];
     	for (int i = 0; i < mPath.size(); ++i) mRecord.path[i] = mPath.get(i);
@@ -188,6 +236,14 @@ public class RecordActivity extends MapActivity {
     		}
     	}
     	mRecordManager.addRecord(mStartTime, mRecord);
+    }
+    
+    private void onPauseButtonPress() {
+    	mRecordingState = PAUSED;
+    }
+
+    private void onResumeButtonPress() {
+    	mRecordingState = RUNNING;
     }
     
     @Override
