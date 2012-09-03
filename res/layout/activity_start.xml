@@ -10,13 +10,13 @@
         android:layout_centerVertical="true"
         android:padding="@dimen/padding_medium"
         android:text="@string/hello_world"
-        tools:context=".MainActivity" />
-    <com.google.android.maps.MapView
-            xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/map_view"
-            android:clickable="true"
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent"
-            android:apiKey="0bz2DrYPiw87fMixiWlMONq1nDV9ZDJP7XgzESQ"
-                 />
+        tools:context=".StartActivity" />
+    <Button
+      android:id="@+id/start_button"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="10dip"
+      android:layout_marginRight="10dip"
+      android:text="@string/start" />
+ 
 </RelativeLayout>

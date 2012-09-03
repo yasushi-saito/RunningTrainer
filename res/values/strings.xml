@@ -3,6 +3,13 @@
     <string name="app_name">RunningTrainer</string>
     <string name="hello_world">Hello world!</string>
     <string name="menu_settings">Settings</string>
-    <string name="title_activity_main">MainActivity</string>
-
+    <string name="title_activity_start">RunningTrainer</string>
+    <string name="title_activity_record">Recording</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="pause">Pause</string>
+    <string name="resume">Resume</string>
+    <string name="pace">Pace</string>
+    <string name="distance">Distance</string>    
+    <string name="elapsed">Elapsed</string>        
 </resources>

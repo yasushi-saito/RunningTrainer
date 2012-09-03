@@ -20,7 +20,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 
-public class MainActivity extends MapActivity {
+public class RecordActivity extends MapActivity {
 	static final String TAG = "Main";
 	
 	static public class MyOverlay extends Overlay {
@@ -77,7 +77,7 @@ public class MainActivity extends MapActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_record);
 
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.map_view);

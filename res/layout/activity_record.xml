@@ -1,0 +1,71 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:id="@+id/pace"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:padding="@dimen/padding_medium"
+        android:text="@string/pace"
+        android:layout_alignParentLeft="true"
+        />
+
+    <TextView
+        android:id="@+id/distance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:padding="@dimen/padding_medium"
+        android:text="@string/distance"
+        
+        android:layout_toRightOf="@id/pace"
+        />
+
+    <TextView
+        android:id="@+id/elapsed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true"
+        android:padding="@dimen/padding_medium"
+        android:text="@string/elapsed"
+        android:layout_toRightOf="@id/distance"
+        />
+    
+    <Button
+      android:id="@+id/stop_button"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="10dip"
+      android:layout_marginRight="10dip"
+      android:text="@string/stop"
+      android:layout_below="@id/pace"
+      android:layout_alignParentLeft="true"
+      
+       />
+    <Button
+      android:id="@+id/pause_resume_button"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="10dip"
+      android:layout_marginRight="10dip"
+      android:text="@string/pause"
+      android:layout_below="@id/pace"
+      android:layout_alignParentRight="true"
+       />
+    
+    <com.google.android.maps.MapView
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/map_view"
+            android:layout_below="@id/stop_button"
+            android:clickable="true"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:apiKey="0bz2DrYPiw87fMixiWlMONq1nDV9ZDJP7XgzESQ"
+                 />
+</RelativeLayout>
