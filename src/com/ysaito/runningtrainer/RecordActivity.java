@@ -176,7 +176,7 @@ public class RecordActivity extends MapActivity {
         mRecord = new Record();
         mRecordManager = new RecordManager(this);
         mRecord.type = "Running";  // TODO: allow changing
-        mRecord.start_time = RunKeeperUtil.utcMillisToString(System.currentTimeMillis());
+        mRecord.start_time = HealthGraphUtil.utcMillisToString(System.currentTimeMillis());
         mRecord.notes = "Recorded by RunningTrainer";
         mRecordingState = RUNNING;
         mStartTime =  System.currentTimeMillis();
