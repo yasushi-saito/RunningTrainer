@@ -3,8 +3,6 @@ package com.ysaito.runningtrainer;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import android.util.Log;
-
 public class RecordSummary {
 	// The file basename, under /sdcard/Data/Android/com.ysaito.runningtrainer/files/
 	public String basename;

@@ -3,32 +3,22 @@ package com.ysaito.runningtrainer;
 import java.util.ArrayList;
 
 import com.google.android.maps.GeoPoint;
-import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import android.app.Fragment;
 import android.app.LocalActivityManager;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
-import android.widget.Button;
 
 @SuppressWarnings("deprecation")
 public class RecordingFragment2 extends Fragment {
@@ -99,8 +89,6 @@ public class RecordingFragment2 extends Fragment {
     		LayoutInflater inflater, 
     		ViewGroup container,
             Bundle savedInstanceState) {
-		Gson gson = new GsonBuilder().create();
-		
         Intent i = new Intent(getActivity(), RecordActivity.class); 
         Window w = mLocalActivityManager.startActivity("tag", i); 
         View currentView = w.getDecorView(); 

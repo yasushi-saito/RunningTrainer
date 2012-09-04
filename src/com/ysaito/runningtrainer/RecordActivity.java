@@ -7,8 +7,6 @@ import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import android.content.Context;
 import android.graphics.Canvas;
@@ -91,9 +89,6 @@ public class RecordActivity extends MapActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
-
-		Gson gson = new GsonBuilder().create();
-
         setContentView(R.layout.recording);
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.map_view);
