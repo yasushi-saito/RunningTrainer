@@ -10,6 +10,7 @@ import com.google.android.maps.Projection;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import android.app.Fragment;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -20,11 +21,13 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 
-public class RecordActivity extends MapActivity {
+public class RecordingFragment extends Fragment {
     static final String TAG = "Main";
 
     static public class MyOverlay extends Overlay {
@@ -91,16 +94,21 @@ public class RecordActivity extends MapActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
-
+    }
+    
+    @Override
+    public View onCreateView(
+    		LayoutInflater inflater, 
+    		ViewGroup container,
+            Bundle savedInstanceState) {
 		Gson gson = new GsonBuilder().create();
-
-        setContentView(R.layout.recording);
+		View rootView = inflater.inflate(R.layout.record_list, container, false);
         mMapOverlay = new MyOverlay();
-        mMapView = (MapView)findViewById(R.id.map_view);
+        mMapView = (MapView)rootView.findViewById(R.id.map_view);
         mMapView.getOverlays().add(mMapOverlay);
 
         // Acquire a reference to the system Location Manager
-        LocationManager locationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
+        LocationManager locationManager = (LocationManager)getActivity().getSystemService(Context.LOCATION_SERVICE);
 
         // Define a listener that responds to location updates
         LocationListener locationListener = new LocationListener() {
@@ -138,7 +146,7 @@ public class RecordActivity extends MapActivity {
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
 
-        mPauseResumeButton = (Button)findViewById(R.id.pause_resume_button);
+        mPauseResumeButton = (Button)rootView.findViewById(R.id.pause_resume_button);
         mPauseResumeButton.setEnabled(false); // pause/resume is disabled unless the recorder is running
 
         mPauseResumeButton.setOnClickListener(new Button.OnClickListener() {
@@ -156,7 +164,7 @@ public class RecordActivity extends MapActivity {
         	}
         });
 
-        mStartStopButton = (Button)findViewById(R.id.start_stop_button);
+        mStartStopButton = (Button)rootView.findViewById(R.id.start_stop_button);
         mStartStopButton.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
         		if (mRecordingState == STOPPED) {
@@ -173,13 +181,13 @@ public class RecordActivity extends MapActivity {
         		}
         	}
         });
-
+        return rootView;
     }
 
     void onStartButtonPress() {
         mPath = new ArrayList<Record.WGS84>();
         mRecord = new Record();
-        mRecordManager = new RecordManager(this);
+        mRecordManager = new RecordManager(this.getActivity());
         mRecord.type = "Running";  // TODO: allow changing
         mRecord.start_time = RunKeeperUtil.utcMillisToString(System.currentTimeMillis());
         mRecord.notes = "Recorded by RunningTrainer";
@@ -246,15 +254,4 @@ public class RecordActivity extends MapActivity {
     private void onResumeButtonPress() {
     	mRecordingState = RUNNING;
     }
-
-    @Override
-    public boolean isRouteDisplayed() { return false; }
-
-    @Override
-        public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.activity_main, menu);
-        return true;
-    }
-
-
 }

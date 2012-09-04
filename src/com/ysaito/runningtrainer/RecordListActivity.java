@@ -27,7 +27,7 @@ public class RecordListActivity extends ListActivity {
   private RecordManager mRecordManager;
   private Activity mActivity;
   private MyAdapter mAdapter;
-  
+
   private class ListThread extends AsyncTask<Integer, Integer, ArrayList<RecordSummary>> {
 	  /**
 	   * @param mode not used
@@ -36,39 +36,39 @@ public class RecordListActivity extends ListActivity {
 	  protected ArrayList<RecordSummary> doInBackground(Integer... mode) {
 		  return mRecordManager.listRecords();
 	  }
-	  
+
 	    @Override
 	    protected void onProgressUpdate(Integer... unused) {
 	    }
-	    
+
 	    @Override
 	    protected void onPostExecute(ArrayList<RecordSummary> records) {
 	      setProgressBarIndeterminateVisibility(false);
 	      mAdapter.setRecords(records);
 	    }
 	  }
-  
+
   private class MyAdapter extends BaseAdapter {
 	  private final LayoutInflater mInflater;
 	  private ArrayList<RecordSummary> mRecords = new ArrayList<RecordSummary>();
-	    
-	  public MyAdapter(Context context) { 
-		  mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE); 
+
+	  public MyAdapter(Context context) {
+		  mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 	  }
-	  
-	  public int getCount() { 
-		  return mRecords.size(); 
+
+	  public int getCount() {
+		  return mRecords.size();
 	  }
-	  
-	  public Object getItem(int position) { 
+
+	  public Object getItem(int position) {
 		  if (position >= mRecords.size()) return null;
-		  return mRecords.get(position);		  
+		  return mRecords.get(position);
 	  }
-	  
-	  public long getItemId(int position) { 
-		  return position; 
+
+	  public long getItemId(int position) {
+		  return position;
 	  }
-	  
+
 	  public View getView(int position, View convertView, ViewGroup parent) {
 		  TextView text;
 		  if (convertView == null) {
@@ -78,7 +78,7 @@ public class RecordListActivity extends ListActivity {
 	    	  text = (TextView)convertView;
 	      }
 		  text.setHorizontallyScrolling(false);
-		  
+
 		  Object obj = getItem(position);
 		  if (obj != null) {
 			  RecordSummary summary = (RecordSummary)obj;
@@ -93,7 +93,7 @@ public class RecordListActivity extends ListActivity {
 	      notifyDataSetChanged();
 	  }
   };
-  
+
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -101,20 +101,20 @@ public class RecordListActivity extends ListActivity {
     mActivity = this;
     mAdapter = new MyAdapter(this);
     requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-    setContentView(R.layout.activity_record_list);
-    
+    setContentView(R.layout.record_list);
+
     setTitle("Record list");  // TODO: externalize
-    
+
     // Use an existing ListAdapter that will map an array
     // of strings to TextViews
     setListAdapter(mAdapter);
-    
+
     ListView listView = (ListView)findViewById(android.R.id.list);
     listView.setStackFromBottom(true);
     registerForContextMenu(listView);
     startListing();
   }
-  
+
   private void startListing() {
 	  ListThread thread = new ListThread();
 	  setProgressBarIndeterminateVisibility(true);
