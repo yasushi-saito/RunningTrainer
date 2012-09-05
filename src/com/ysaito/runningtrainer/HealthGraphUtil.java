@@ -18,43 +18,52 @@ class HealthGraphUtil {
         // TODO: fix
         return "Sat 1 Jan 2012 00:00:00";
     }
+
+    static private Authenticator mSingletonAuthenticator;
+    static public Authenticator getAuthenticator() {
+    	return mSingletonAuthenticator;
+    }
+
+    static public Authenticator newAuthenticator(String clientId, String clientSecret, String redirectUri) {
+    	mSingletonAuthenticator = new Authenticator(clientId, clientSecret, redirectUri);
+    	return mSingletonAuthenticator;
+    }
     
     // client_id=0808ef781c68449298005c8624d3700b
     // client_secret=dda5888cd8d64760a044dc61ae4f44db
     public static class Authenticator {
     	private static final String TAG = "Authenticator";
-    	public final Context mContext;
     	public final String mClientId;
     	public final String mClientSecret;
     	public final String mRedirectUri;
     	public String mCode;  // one-time per-client code
     	public String mToken; // per-session token
     	
-    	public Authenticator(Context context, String clientId, String clientSecret, String redirectUri) {
-    		mContext = context;
+    	public Authenticator(String clientId, String clientSecret, String redirectUri) {
     		mClientId = clientId;
     		mClientSecret = clientSecret;
     		mRedirectUri = redirectUri;
     	}
     	
-    	public void startAuthorization() {
+    	public void startAuthorization(Context context) {
     		try {
     			OAuthClientRequest request = OAuthClientRequest
     					.authorizationLocation("https://runkeeper.com/apps/authorize")
     					.setClientId(mClientId).setRedirectURI(mRedirectUri)
     					.buildQueryMessage();
     			Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(request.getLocationUri() + "&response_type=code"));
-    			mContext.startActivity(intent);
+    			context.startActivity(intent);
     		} catch (OAuthSystemException e) {
     			Log.e(TAG, "HealthGraph OAuth failed: " + e.toString());
     		}
     	}
     	
     	public void onRedirect(Uri uri) {
-    		  if (uri != null && uri.toString().startsWith(mRedirectUri)) {
-    			  mCode = uri.getQueryParameter("code");
-    			  startTokenAcquisition();
-    		  }
+    		Log.d(TAG, "OnRedirect: " + uri.toString());
+    		if (uri.toString().startsWith(mRedirectUri)) {
+    			mCode = uri.getQueryParameter("code");
+    			startTokenAcquisition();
+    		}
     	}
     	
     	private class HttpClientThread extends AsyncTask<Integer, Integer, String> {
@@ -67,8 +76,10 @@ class HealthGraphUtil {
     						.setRedirectURI(mRedirectUri)
     						.setCode(mCode)
     						.buildBodyMessage();
+    				Log.d(TAG, "Start token acquisition: " + request.getLocationUri());
     				OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
     				OAuthJSONAccessTokenResponse response = oAuthClient.accessToken(request);
+    				Log.d(TAG, "Recv: " + response.toString());
     				return response.getAccessToken();
     			} catch (OAuthSystemException e) {
     				Log.e(TAG, "HealthGraph OAuth failed: " + e.toString());
@@ -91,5 +102,4 @@ class HealthGraphUtil {
     		thread.execute((Integer[])null);
     	}
     }
-// https://runkeeper.com/apps/authorize?client_id=0808ef781c68449298005c8624d3700b&response_type=code&redirect_uri=foobar://www.ysaito.com
 }

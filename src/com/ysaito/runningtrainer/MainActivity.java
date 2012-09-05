@@ -6,18 +6,23 @@ import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
 import android.app.Fragment;
+import android.net.Uri;
 import android.os.Bundle;
 import android.app.FragmentTransaction;
+import android.content.Intent;
 import android.util.Log;
 import android.view.Menu;
 import android.widget.Toast;
 
-public class MainActivity extends MapActivity {
+public class MainActivity extends Activity {
 	static final String TAG = "Start";
 
-    @Override
+/*    @Override
     public boolean isRouteDisplayed() { return false; }
-
+*/
+	
+    private HealthGraphUtil.Authenticator mAuth = null;
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -42,8 +47,13 @@ public class MainActivity extends MapActivity {
         	Toast toast = Toast.makeText(this, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG);
         	toast.show();
         }
+        mAuth = HealthGraphUtil.newAuthenticator(
+        		"0808ef781c68449298005c8624d3700b", 
+        		"dda5888cd8d64760a044dc61ae4f44db",
+        		"ysaito://oauthresponse");
+        mAuth.startAuthorization(this);
     }
-
+    
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.activity_main, menu);
