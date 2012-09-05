@@ -13,12 +13,8 @@ public class OAuthReceiverActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
     	Intent intent = getIntent();
-    	HealthGraphUtil.Authenticator auth = HealthGraphUtil.getAuthenticator();
-    	
     	Log.d(TAG, "onNewIntent: " + intent.toString());
-    	if (auth != null) {
-    		Uri uri = intent.getData();
-    		if (uri != null) auth.onRedirect(uri);
-    	}
+    	Uri uri = intent.getData();
+    	if (uri != null) HealthGraphClient.onRedirect(uri);
     }
 }

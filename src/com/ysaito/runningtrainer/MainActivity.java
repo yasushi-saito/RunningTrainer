@@ -1,5 +1,9 @@
 package com.ysaito.runningtrainer;
 
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.util.Scanner;
+
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -10,6 +14,9 @@ import android.util.Log;
 import android.view.Menu;
 import android.widget.Toast;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+
 public class MainActivity extends Activity {
 	static final String TAG = "Start";
 
@@ -17,8 +24,6 @@ public class MainActivity extends Activity {
     public boolean isRouteDisplayed() { return false; }
 */
 	
-    private HealthGraphUtil.Authenticator mAuth = null;
-    
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -43,12 +48,39 @@ public class MainActivity extends Activity {
         	Toast toast = Toast.makeText(this, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG);
         	toast.show();
         }
-        mAuth = HealthGraphUtil.newAuthenticator(
+        
+        HealthGraphClient hgClient = HealthGraphClient.getSingleton(
         		this,
         		"0808ef781c68449298005c8624d3700b", 
         		"dda5888cd8d64760a044dc61ae4f44db",
         		"ysaito://oauthresponse");
-        mAuth.startAuthorization();
+        hgClient.executeGet("user", new HealthGraphClient.HttpResponseListener() {
+        	public void onFinish(Exception e, HttpResponse response) {
+        		if (e != null) {
+        			Log.e(TAG, "GET finished with exception: " + e.toString());
+        		} else {
+        			Log.d(TAG, "GET ok: " + response.getStatusLine().getStatusCode());
+        	        HttpEntity entity = response.getEntity();
+        	        if (entity != null) {
+        	        	// A Simple JSON Response Read
+        	        	InputStream instream = null;
+        	        	String result = "";
+        	        	try {
+        	        		instream = entity.getContent();
+        	        		result = new Scanner(instream).useDelimiter("\\A").next();
+        	        	} catch (Exception e2) {
+        	        		Log.d(TAG, "E: " + e2.toString());
+        	        	} finally {
+        	        		try {
+        	        			if (instream != null) instream.close();
+        	        		} catch (Exception e3) {
+        	        		}
+        	        	}
+        	        	Log.d(TAG, "RESP: " + result);
+        		}
+        	}
+        	}
+        });
     }
     
     @Override
