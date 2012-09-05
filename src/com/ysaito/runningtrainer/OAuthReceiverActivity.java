@@ -1,18 +1,10 @@
 package com.ysaito.runningtrainer;
 
-import com.google.android.maps.MapActivity;
-
-import android.app.ActionBar;
-import android.app.ActionBar.Tab;
 import android.app.Activity;
-import android.app.Fragment;
 import android.net.Uri;
 import android.os.Bundle;
-import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.util.Log;
-import android.view.Menu;
-import android.widget.Toast;
 
 public class OAuthReceiverActivity extends Activity {
 	static final String TAG = "OAuth";
