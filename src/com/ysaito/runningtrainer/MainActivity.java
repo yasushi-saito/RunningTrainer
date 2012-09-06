@@ -54,31 +54,23 @@ public class MainActivity extends Activity {
         		"0808ef781c68449298005c8624d3700b", 
         		"dda5888cd8d64760a044dc61ae4f44db",
         		"ysaito://oauthresponse");
-        hgClient.executeGet("user", new HealthGraphClient.HttpResponseListener() {
-        	public void onFinish(Exception e, HttpResponse response) {
+        /*
+        hgClient.getUser(new HealthGraphClient.JsonResponseListener() {
+        	public void onFinish(Exception e, Object o) {
         		if (e != null) {
         			Log.e(TAG, "GET finished with exception: " + e.toString());
         		} else {
-        			Log.d(TAG, "GET ok: " + response.getStatusLine().getStatusCode());
-        	        HttpEntity entity = response.getEntity();
-        	        if (entity != null) {
-        	        	// A Simple JSON Response Read
-        	        	InputStream instream = null;
-        	        	String result = "";
-        	        	try {
-        	        		instream = entity.getContent();
-        	        		result = new Scanner(instream).useDelimiter("\\A").next();
-        	        	} catch (Exception e2) {
-        	        		Log.d(TAG, "E: " + e2.toString());
-        	        	} finally {
-        	        		try {
-        	        			if (instream != null) instream.close();
-        	        		} catch (Exception e3) {
-        	        		}
-        	        	}
-        	        	Log.d(TAG, "RESP: " + result);
+        			Log.d(TAG, "GET ok: " + ((HealthGraphClient.JsonUser)o).toString());
         		}
         	}
+        });*/
+        hgClient.getFitnessActivities(new HealthGraphClient.JsonResponseListener() {
+        	public void onFinish(Exception e, Object o) {
+        		if (e != null) {
+        			Log.e(TAG, "Get fitnessactivities finished with exception: " + e.toString());
+        		} else {
+        			Log.d(TAG, "Get fitnessactivities ok");
+        		}
         	}
         });
     }

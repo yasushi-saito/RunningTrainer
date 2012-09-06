@@ -38,7 +38,7 @@ public class RecordManager {
 		}
 	}
 	
-	static private String generateBasename(long startTime, Record record) {
+	static private String generateBasename(long startTime, HealthGraphClient.JsonActivity record) {
 		return "log:s=" + startTime + ":d=" + record.total_distance + ":e=" + record.duration + ".json";
 	}
 	
@@ -64,7 +64,7 @@ public class RecordManager {
 		}
 	}
 	
-	public void addRecord(long startTime, Record record) {
+	public void addRecord(long startTime, HealthGraphClient.JsonActivity record) {
 		if (mRootDir == null) return;
 		Gson gson = new GsonBuilder().create();
 		try {

@@ -76,8 +76,8 @@ public class RecordActivity extends MapActivity {
     private Button mPauseResumeButton;
     private Button mStartStopButton;
 
-    private Record mRecord;
-    private ArrayList<Record.WGS84> mPath;
+    private HealthGraphClient.JsonActivity mRecord;
+    private ArrayList<HealthGraphClient.JsonWGS84> mPath;
     private RecordManager mRecordManager;
     private long mStartTime;
 
@@ -172,8 +172,8 @@ public class RecordActivity extends MapActivity {
     }
 
     void onStartButtonPress() {
-        mPath = new ArrayList<Record.WGS84>();
-        mRecord = new Record();
+        mPath = new ArrayList<HealthGraphClient.JsonWGS84>();
+        mRecord = new HealthGraphClient.JsonActivity();
         mRecordManager = new RecordManager(this);
         mRecord.type = "Running";  // TODO: allow changing
         mRecord.start_time = HealthGraphClient.utcMillisToString(System.currentTimeMillis());
@@ -189,7 +189,7 @@ public class RecordActivity extends MapActivity {
     	mMapOverlay.addPoint(p);
     	mMapView.invalidate();
 
-    	Record.WGS84 wgs = new Record.WGS84();
+    	HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
     	wgs.latitude = newLocation.getLatitude();
     	wgs.longitude = newLocation.getLongitude();
     	wgs.altitude = newLocation.getAltitude();
@@ -207,22 +207,22 @@ public class RecordActivity extends MapActivity {
     	mRecordingState = STOPPED;
     	if (mPath.size() < 1) return;
 
-    	Record.WGS84 last = mPath.get(mPath.size() - 1);
-    	Record.WGS84 wgs = new Record.WGS84();
+    	HealthGraphClient.JsonWGS84 last = mPath.get(mPath.size() - 1);
+    	HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
     	wgs.latitude = last.latitude;
     	wgs.longitude = last.longitude;
     	wgs.altitude = last.altitude;
     	wgs.type = "end";
     	wgs.timestamp = (System.currentTimeMillis()- mStartTime) / 1000.0;
     	mPath.add(wgs);
-    	mRecord.path = new Record.WGS84[mPath.size()];
+    	mRecord.path = new HealthGraphClient.JsonWGS84[mPath.size()];
     	for (int i = 0; i < mPath.size(); ++i) mRecord.path[i] = mPath.get(i);
 
     	mRecord.duration = wgs.timestamp;
-    	Record.WGS84 lastLocation = null;
+    	HealthGraphClient.JsonWGS84 lastLocation = null;
 
     	float[] distance = new float[1];
-    	for (Record.WGS84 location : mRecord.path) {
+    	for (HealthGraphClient.JsonWGS84 location : mRecord.path) {
     		if (lastLocation != null) {
     			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
     					location.latitude, location.longitude,

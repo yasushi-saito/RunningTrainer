@@ -1,8 +1,15 @@
 package com.ysaito.runningtrainer;
 
+import java.io.InputStream;
+import java.util.Scanner;
+
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import android.content.Context;
 import android.content.Intent;
@@ -20,6 +27,56 @@ import net.smartam.leeloo.common.message.types.GrantType;
 
 class HealthGraphClient {
 	private static final String TAG = "HealthGraphUtil";
+	
+	/**
+	 * Record of a run log. Corresponds to "newly completed activites" json described in
+	 * http://developer.runkeeper.com/healthgraph/fitness-activities.
+	 *
+	 * This object is converted to a JSON string using GSON.
+	 *
+	 */
+	static public class JsonActivity {
+	    public String type; // "Running", "Cycling", etc.
+	    public String start_time;      // "Sat, 1 Jan 2011 00:00:00"
+	    public double total_distance;  // total distance, in meters
+	    public double duration;        // duration, in seconds
+	    public String notes;
+	    public JsonWGS84[] path;
+	    public Boolean post_to_facebook;
+	    public Boolean post_to_twitter;
+	    public Boolean detect_pauses;
+	}
+	
+	static public class JsonWGS84 {
+		public double timestamp;  // The number of seconds since the start of the activity
+		public double latitude;  // The latitude, in degrees (values increase northward and decrease southward)
+		public double longitude; // The longitude, in degrees (values increase eastward and decrease westward)
+		public double altitude;  //	The altitude of the point, in meters
+		public String type; // One of the following values: start, end, gps, pause, resume, manual
+	};
+
+	static public class JsonUser {
+		public String userID;
+		public String profile;
+		public String settings;
+		public String fitness_activities;
+		public String strength_training_activities;
+		public String background_activities;
+		public String sleep;
+		public String nutrition;
+		public String weight;
+		public String general_measurements;
+		public String diabetes;
+		public String records;
+		public String team;
+	}
+	
+	static public class JsonFitnessActivities {
+		public int size;
+		public JsonActivity[] items; // doesn't have path[] set
+		public String previous;
+	}
+	
     public static String utcMillisToString(long time) {
         // TODO: fix
         return "Sat 1 Jan 2012 00:00:00";
@@ -74,6 +131,27 @@ class HealthGraphClient {
     	}
     }
     
+    public abstract static interface JsonResponseListener { 
+    	public abstract void onFinish(Exception e, Object o);
+    }
+
+    public void executeGet(String path, String acceptType, JsonResponseListener listener, Object destObject) {
+    	GetRequestRecord r = new GetRequestRecord();
+    	r.path = path;
+    	r.acceptType = acceptType;
+    	HttpGetJsonTask task = new HttpGetJsonTask(this, listener, destObject);
+    	task.execute(r);
+    }
+    
+    public void getUser(JsonResponseListener listener) {
+    	executeGet("fitnessActivities", "application/vnd.com.runkeeper.User+json", listener, new JsonUser());
+    }
+    
+    public void getFitnessActivities(JsonResponseListener listener) {
+    	executeGet("fitnessActivities", "application/vnd.com.runkeeper.FitnessActivityFeed+json",
+    			listener, new JsonFitnessActivities());
+    }
+    
     private synchronized void cacheAccessToken(Context context, String token) {
     	mCachedAccessToken = token;
     	if (token == null) {
@@ -92,28 +170,26 @@ class HealthGraphClient {
     	notifyAll();
     }
 
-    public abstract static interface HttpResponseListener {
-    	public abstract void onFinish(Exception e, HttpResponse response);
+    private static class GetRequestRecord {
+    	public String path; 
+    	public String acceptType;
     }
     
-    public void executeGet(String path, HttpResponseListener listener) {
-    	HttpGetTask task = new HttpGetTask(this, listener);
-    	task.execute(path);
-    }
-
-    private static class HttpGetTask extends AsyncTask<String, Integer, HttpResponse> {
+    private static class HttpGetJsonTask extends AsyncTask<GetRequestRecord, Integer, HttpResponse> {
     	private final HealthGraphClient mParent;
-    	private final HttpResponseListener mListener;
+    	private final JsonResponseListener mListener;
+    	private final Object mDestObject;
     	private Exception mException = null;
     	
-    	public HttpGetTask(HealthGraphClient parent, HttpResponseListener listener) {
+    	public HttpGetJsonTask(HealthGraphClient parent, JsonResponseListener listener, Object destObject) {
     		mParent = parent;
     		mListener = listener;
+    		mDestObject = destObject;
     	}
     	
-    	@Override protected HttpResponse doInBackground(String... path) {
+    	@Override protected HttpResponse doInBackground(GetRequestRecord... r) {
     	    DefaultHttpClient httpClient = new DefaultHttpClient();
-    	    HttpGet request = new HttpGet("https://api.runkeeper.com/" + path[0]);
+    	    HttpGet request = new HttpGet("https://api.runkeeper.com/" + r[0].path);
     		synchronized(mParent) {
     			while (mParent.mAccessTokenState != TOKEN_ERROR && mParent.mAccessTokenState != TOKEN_OK) {
     				// Wait for the AuthenticatorImpl to finish and call cacheAccessToken.
@@ -126,7 +202,7 @@ class HealthGraphClient {
     			final String token = mParent.mCachedAccessToken;
     			request.addHeader("Authorization", "Bearer " + token);
     		}
-    		request.addHeader("Accept", "application/vnd.com.runkeeper.User+json");
+    		request.addHeader("Accept", r[0].acceptType);
     		HttpResponse response = null;
     		try {
     			response = httpClient.execute(request);
@@ -137,8 +213,32 @@ class HealthGraphClient {
     		return response;
     	}
     	
-    	@Override protected void onPostExecute(HttpResponse resp) {
-    		mListener.onFinish(mException, resp);
+    	@Override protected void onPostExecute(HttpResponse response) {
+    		HttpEntity entity = response.getEntity();
+    		Object parseResult = null;
+    		if (entity != null) {
+    			// A Simple JSON Response Read
+    			InputStream instream = null;
+    			String result = "";
+    			try {
+    				instream = entity.getContent();
+    				result = new Scanner(instream).useDelimiter("\\A").next();
+    			} catch (Exception e2) {
+    				Log.d(TAG, "E: " + e2.toString());
+    				mException = e2;
+    			} finally {
+    				try {
+    					if (instream != null) instream.close();
+    				} catch (Exception e3) {
+    					mException = e3;
+    				}
+    			}
+    			Gson gson = new GsonBuilder().create();
+    			Log.d(TAG, "GOT JSON: " + result);
+    			parseResult = gson.fromJson(result, mDestObject.getClass());
+    			Log.d(TAG, "RESP: " + parseResult.toString());
+    		}
+    		mListener.onFinish(mException, parseResult);
     	}
     }
     	
