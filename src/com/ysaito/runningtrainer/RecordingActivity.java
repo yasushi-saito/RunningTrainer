@@ -127,7 +127,6 @@ public class RecordingActivity extends MapActivity {
         mMapView.getOverlays().add(mMapOverlay);
         mMapView.setBuiltInZoomControls(true);
 
-        GpsTrackingService.registerGpsListener(this);
         
         mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
 
@@ -185,19 +184,26 @@ public class RecordingActivity extends MapActivity {
         		}
         	}
         });
-
+        GpsTrackingService.registerGpsListener(this);
+        if (GpsTrackingService.isGpsServiceRunning()) {
+        	mRecordingState = RUNNING;
+        	mStartStopButton.setText("Stop"); // TODO: externalize
+        } else {
+        	mRecordingState = STOPPED;
+        	mStartStopButton.setText("Start"); // TODO: externalize        	
+        }
     }
 
     void onStartButtonPress() {
         mRecordManager = new RecordManager(this);
         mRecordingState = RUNNING;
         mStartTime = System.currentTimeMillis();
-        startService(new Intent(this, GpsTrackingService.class));
+    	GpsTrackingService.startGpsServiceIfNecessary(this);
     }
 
     private void onStopButtonPress() {
     	mRecordingState = STOPPED;
-    	stopService(new Intent(this, GpsTrackingService.class));
+    	GpsTrackingService.stopGpsServiceIfNecessary(this);
     	if (mLastReportedPath == null || mLastReportedPath.size() < 1) return;
 
     	HealthGraphClient.JsonWGS84 last = mLastReportedPath.get(mLastReportedPath.size() - 1);

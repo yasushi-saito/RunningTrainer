@@ -20,12 +20,31 @@ public class GpsTrackingService extends Service {
      * the GpsTrackingService from RecordingActivity.
      */
     private static final ArrayList<RecordingActivity> mGpsListeners = new ArrayList<RecordingActivity>();
+    
     public static void registerGpsListener(RecordingActivity listener) {
     	mGpsListeners.add(listener);
     }
     public static void unregisterGpsListener(RecordingActivity listener) {
     	mGpsListeners.remove(listener);
     }
+    
+    private static boolean mGpsServiceStarted = false;
+    public static boolean isGpsServiceRunning() {
+    	return mGpsServiceStarted;
+    }
+    public static void startGpsServiceIfNecessary(Context context) {
+    	if (!mGpsServiceStarted) {
+    		mGpsServiceStarted = true;
+    		context.startService(new Intent(context, GpsTrackingService.class));
+    	}
+    }
+    public static void stopGpsServiceIfNecessary(Context context) {
+    	if (mGpsServiceStarted) {
+    		mGpsServiceStarted = false;
+    		context.stopService(new Intent(context, GpsTrackingService.class));
+    	}
+    }
+    
     private static void postGpsEvent(
     			HealthGraphClient.JsonActivity activity,
     			ArrayList<HealthGraphClient.JsonWGS84> path) {
