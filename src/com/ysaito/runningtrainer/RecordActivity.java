@@ -21,6 +21,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ZoomControls;
 
 public class RecordActivity extends MapActivity {
     static final String TAG = "Record";
@@ -93,7 +94,8 @@ public class RecordActivity extends MapActivity {
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.map_view);
         mMapView.getOverlays().add(mMapOverlay);
-
+        mMapView.setBuiltInZoomControls(true);
+        
         // Acquire a reference to the system Location Manager
         LocationManager locationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
 

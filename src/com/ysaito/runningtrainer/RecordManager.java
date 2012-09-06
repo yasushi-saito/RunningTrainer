@@ -23,7 +23,8 @@ public class RecordManager {
 	static private Pattern BASENAME_RE = Pattern.compile("log:s=([\\d]+):d=([\\d.]+):e=([\\d.]+)\\.json");
 	
 	public RecordManager(Context context) {
-		File externalDir = context.getExternalFilesDir(null);
+		// File externalDir = context.getExternalFilesDir(null);
+		File externalDir = new File("/sdcard/com.ysaito.runningtrainer");
 		mContext = context;
 		if (externalDir == null) {
         	Toast.makeText(context, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG).show();
@@ -86,6 +87,7 @@ public class RecordManager {
 		ArrayList<RecordSummary> list = new ArrayList<RecordSummary>();
 		if (mRootDir != null) {
 			for (String basename : mRootDir.list()) {
+				Log.d(TAG, "File: " + basename);
 				if (basename.startsWith("log:")) {
 					RecordSummary summary = parseBasename(basename);
 					if (summary != null) list.add(summary);

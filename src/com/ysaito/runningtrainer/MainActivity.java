@@ -14,9 +14,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.widget.Toast;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-
 public class MainActivity extends Activity {
 	static final String TAG = "Main";
 
@@ -48,13 +45,11 @@ public class MainActivity extends Activity {
         	Toast toast = Toast.makeText(this, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG);
         	toast.show();
         }
-        
-        HealthGraphClient hgClient = HealthGraphClient.getSingleton(
+   /*     HealthGraphClient hgClient = HealthGraphClient.getSingleton(
         		this,
         		"0808ef781c68449298005c8624d3700b", 
         		"dda5888cd8d64760a044dc61ae4f44db",
-        		"ysaito://oauthresponse");
-        /*
+        		"ysaito://oauthresponsexx");
         hgClient.getUser(new HealthGraphClient.JsonResponseListener() {
         	public void onFinish(Exception e, Object o) {
         		if (e != null) {
@@ -63,7 +58,7 @@ public class MainActivity extends Activity {
         			Log.d(TAG, "GET ok: " + ((HealthGraphClient.JsonUser)o).toString());
         		}
         	}
-        });*/
+        });
         hgClient.getFitnessActivities(new HealthGraphClient.JsonResponseListener() {
         	public void onFinish(Exception e, Object o) {
         		if (e != null) {
@@ -72,7 +67,7 @@ public class MainActivity extends Activity {
         			Log.d(TAG, "Get fitnessactivities ok");
         		}
         	}
-        });
+        });*/
     }
     
     @Override

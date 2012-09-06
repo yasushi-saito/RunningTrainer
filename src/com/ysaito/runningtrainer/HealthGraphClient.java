@@ -89,6 +89,7 @@ class HealthGraphClient {
      */
     static HealthGraphClient getSingleton(Context activity, String clientId, String clientSecret, String redirectUri) {
     	if (mSingleton == null) {
+    		Log.d(TAG, "Creating singleton!!");
     		mSingleton = new HealthGraphClient(activity);
     		if (mSingleton.mAccessTokenState == TOKEN_UNSET) {
     			mSingleton.startAuthentication(activity, clientId, clientSecret, redirectUri);
@@ -330,6 +331,7 @@ class HealthGraphClient {
     	}
 
     	public void startTokenAcquisition() {
+    		Log.d(TAG, "Start token acquistion: " + mCode);
     		OauthTask thread = new OauthTask(mContext);
     		thread.execute((Integer[])null);
     	}

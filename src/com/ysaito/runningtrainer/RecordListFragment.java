@@ -60,6 +60,16 @@ public class RecordListFragment extends ListFragment {
 		startListing();
 	}
 
+	@Override public void onResume() {
+		super.onResume();
+		startListing();
+	}
+
+	@Override public void onStart() {
+		super.onStart();
+		startListing();
+	}
+	
 	private void startListing() {
 		ListThread thread = new ListThread();
 		// setProgressBarIndeterminateVisibility(true);
