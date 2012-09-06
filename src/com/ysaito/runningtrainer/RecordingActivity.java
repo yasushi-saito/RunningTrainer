@@ -8,7 +8,9 @@ import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
 
+import android.app.Service;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -16,14 +18,16 @@ import android.graphics.Point;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Binder;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
-import android.widget.ZoomControls;
+import android.widget.Toast;
 
-public class RecordActivity extends MapActivity {
+public class RecordingActivity extends MapActivity {
     static final String TAG = "Record";
 
     static public class MyOverlay extends Overlay {
@@ -32,6 +36,14 @@ public class RecordActivity extends MapActivity {
             mPoints = new ArrayList<GeoPoint>();
         }
 
+        public void updatePath(ArrayList<HealthGraphClient.JsonWGS84> path) {
+        	while (mPoints.size() < path.size()) {
+        		HealthGraphClient.JsonWGS84 point = path.get(mPoints.size());
+        		GeoPoint p = new GeoPoint((int)(point.latitude * 1e6), (int)(point.longitude * 1e6));
+        		mPoints.add(p);
+        	}
+        }
+        
         public void addPoint(GeoPoint point) {
             mPoints.add(point);
         }
@@ -77,16 +89,35 @@ public class RecordActivity extends MapActivity {
     private Button mPauseResumeButton;
     private Button mStartStopButton;
 
-    private HealthGraphClient.JsonActivity mRecord;
-    private ArrayList<HealthGraphClient.JsonWGS84> mPath;
     private RecordManager mRecordManager;
-    private long mStartTime;
 
     private static final int STOPPED = 0;
     private static final int PAUSED = 1;
     private static final int RUNNING = 2;
     private int mRecordingState = STOPPED;
+    private long mStartTime;
 
+    HealthGraphClient.JsonActivity mLastReportedActivity = null;
+    ArrayList<HealthGraphClient.JsonWGS84> mLastReportedPath = null;
+    
+    @Override
+    public void onDestroy() {
+    	super.onDestroy();
+        mLocationManager.removeUpdates(mDummyLocationListener);
+    	GpsTrackingService.unregisterGpsListener(this);
+    }
+
+    public void onGpsUpdate(HealthGraphClient.JsonActivity activity,
+    		ArrayList<HealthGraphClient.JsonWGS84> path) {
+    	mLastReportedActivity = activity;
+    	mLastReportedPath = path;
+    	mMapOverlay.updatePath(path);
+    	mMapView.invalidate();
+    }
+    
+    private LocationManager mLocationManager;
+    private LocationListener mDummyLocationListener; 
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -95,49 +126,33 @@ public class RecordActivity extends MapActivity {
         mMapView = (MapView)findViewById(R.id.map_view);
         mMapView.getOverlays().add(mMapOverlay);
         mMapView.setBuiltInZoomControls(true);
+
+        GpsTrackingService.registerGpsListener(this);
         
-        // Acquire a reference to the system Location Manager
-        LocationManager locationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
+        mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
 
         // Define a listener that responds to location updates
-        LocationListener locationListener = new LocationListener() {
-            // Ignore location updates at intervals smaller than this limit.
-      	    static final int MIN_RECORD_INTERVAL_MS = 1000;
+        mDummyLocationListener = new LocationListener() {
+			public void onLocationChanged(Location location) {
+			}
 
-      	    long mLastReportTime = 0;
-      	    Location mLastReportedLocation = null;
+			public void onProviderDisabled(String provider) {
+			}
 
-        	public void onLocationChanged(Location location) {
-        		// Called when a new location is found by the network location provider.
-        		// makeUseOfNewLocation(location);
-        		final long time = location.getTime();
-        		Log.d(TAG, "loc: " + time + "/" + location.toString());
-        		if (time < mLastReportTime + MIN_RECORD_INTERVAL_MS) return;
-        		onGpsLocationUpdate(time, location);
+			public void onProviderEnabled(String provider) {
+			}
 
-        		mLastReportTime = time;
-        		mLastReportedLocation = location;
-        	}
-        	public void onStatusChanged(String provider, int status, Bundle extras) {
-        		Log.d(TAG, "Status: " + provider + ": " + status);
-        	}
-
-        	public void onProviderEnabled(String provider) {
-        		Log.d(TAG, "Provider Enabled: " + provider);
-        	}
-
-        	public void onProviderDisabled(String provider) {
-        		Log.d(TAG, "Provider Disabled: " + provider);
-        	}
+			public void onStatusChanged(String provider, int status,
+					Bundle extras) {
+			}        
         };
 
         // Register the listener with the Location Manager to receive location updates
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, locationListener);
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mDummyLocationListener);
+        mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mDummyLocationListener);
 
         mPauseResumeButton = (Button)findViewById(R.id.pause_resume_button);
         mPauseResumeButton.setEnabled(false); // pause/resume is disabled unless the recorder is running
-
         mPauseResumeButton.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
         		if (mRecordingState == RUNNING) {
@@ -174,66 +189,42 @@ public class RecordActivity extends MapActivity {
     }
 
     void onStartButtonPress() {
-        mPath = new ArrayList<HealthGraphClient.JsonWGS84>();
-        mRecord = new HealthGraphClient.JsonActivity();
         mRecordManager = new RecordManager(this);
-        mRecord.type = "Running";  // TODO: allow changing
-        mRecord.start_time = HealthGraphClient.utcMillisToString(System.currentTimeMillis());
-        mRecord.notes = "Recorded by RunningTrainer";
         mRecordingState = RUNNING;
-        mStartTime =  System.currentTimeMillis();
-    }
-
-    private void onGpsLocationUpdate(long now, Location newLocation) {
-    	if (mRecordingState != RUNNING) return;
-
-    	GeoPoint p = new GeoPoint((int)(newLocation.getLatitude() * 1e6), (int)(newLocation.getLongitude() * 1e6));
-    	mMapOverlay.addPoint(p);
-    	mMapView.invalidate();
-
-    	HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
-    	wgs.latitude = newLocation.getLatitude();
-    	wgs.longitude = newLocation.getLongitude();
-    	wgs.altitude = newLocation.getAltitude();
-    	if (mPath.size() == 0) {
-    		wgs.timestamp = 0;
-    		wgs.type = "start";
-    	} else {
-    		wgs.timestamp = (now - mStartTime) / 1000.0;
-    		wgs.type = "gps";
-    	}
-    	mPath.add(wgs);
+        mStartTime = System.currentTimeMillis();
+        startService(new Intent(this, GpsTrackingService.class));
     }
 
     private void onStopButtonPress() {
     	mRecordingState = STOPPED;
-    	if (mPath.size() < 1) return;
+    	stopService(new Intent(this, GpsTrackingService.class));
+    	if (mLastReportedPath == null || mLastReportedPath.size() < 1) return;
 
-    	HealthGraphClient.JsonWGS84 last = mPath.get(mPath.size() - 1);
+    	HealthGraphClient.JsonWGS84 last = mLastReportedPath.get(mLastReportedPath.size() - 1);
     	HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
     	wgs.latitude = last.latitude;
     	wgs.longitude = last.longitude;
     	wgs.altitude = last.altitude;
     	wgs.type = "end";
     	wgs.timestamp = (System.currentTimeMillis()- mStartTime) / 1000.0;
-    	mPath.add(wgs);
-    	mRecord.path = new HealthGraphClient.JsonWGS84[mPath.size()];
-    	for (int i = 0; i < mPath.size(); ++i) mRecord.path[i] = mPath.get(i);
+    	mLastReportedPath.add(wgs);
+    	mLastReportedActivity.path = new HealthGraphClient.JsonWGS84[mLastReportedPath.size()];
+    	for (int i = 0; i < mLastReportedPath.size(); ++i) mLastReportedActivity.path[i] = mLastReportedPath.get(i);
 
-    	mRecord.duration = wgs.timestamp;
+    	mLastReportedActivity.duration = wgs.timestamp;
     	HealthGraphClient.JsonWGS84 lastLocation = null;
 
     	float[] distance = new float[1];
-    	for (HealthGraphClient.JsonWGS84 location : mRecord.path) {
+    	for (HealthGraphClient.JsonWGS84 location : mLastReportedActivity.path) {
     		if (lastLocation != null) {
     			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
     					location.latitude, location.longitude,
     					distance);
-    			mRecord.total_distance += distance[0];
+    			mLastReportedActivity.total_distance += distance[0];
     		}
     		lastLocation = location;
     	}
-    	mRecordManager.addRecord(mStartTime, mRecord);
+    	mRecordManager.addRecord(mStartTime, mLastReportedActivity);
     }
 
     private void onPauseButtonPress() {

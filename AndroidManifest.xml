@@ -39,10 +39,11 @@
       </activity>
       
         <activity
-            android:name=".RecordActivity"
+            android:name=".RecordingActivity"
             android:label="@string/title_activity_record" 
             android:screenOrientation="portrait">
         </activity>
+        <service android:enabled="true" android:name=".GpsTrackingService" />
     </application>
 
 </manifest>

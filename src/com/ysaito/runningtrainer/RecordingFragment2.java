@@ -89,7 +89,7 @@ public class RecordingFragment2 extends Fragment {
     		LayoutInflater inflater, 
     		ViewGroup container,
             Bundle savedInstanceState) {
-        Intent i = new Intent(getActivity(), RecordActivity.class); 
+        Intent i = new Intent(getActivity(), RecordingActivity.class); 
         Window w = mLocalActivityManager.startActivity("tag", i); 
         View currentView = w.getDecorView(); 
         currentView.setVisibility(View.VISIBLE); 
