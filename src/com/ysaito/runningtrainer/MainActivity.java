@@ -18,7 +18,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 
 public class MainActivity extends Activity {
-	static final String TAG = "Start";
+	static final String TAG = "Main";
 
 /*    @Override
     public boolean isRouteDisplayed() { return false; }

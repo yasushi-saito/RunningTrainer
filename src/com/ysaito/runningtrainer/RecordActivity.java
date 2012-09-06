@@ -23,7 +23,7 @@ import android.view.View;
 import android.widget.Button;
 
 public class RecordActivity extends MapActivity {
-    static final String TAG = "Main";
+    static final String TAG = "Record";
 
     static public class MyOverlay extends Overlay {
         private ArrayList<GeoPoint> mPoints;
@@ -109,7 +109,7 @@ public class RecordActivity extends MapActivity {
         		// Called when a new location is found by the network location provider.
         		// makeUseOfNewLocation(location);
         		final long time = location.getTime();
-        		Log.d(TAG, "REP: " + time + "/" + mLastReportTime);
+        		Log.d(TAG, "loc: " + time + "/" + location.toString());
         		if (time < mLastReportTime + MIN_RECORD_INTERVAL_MS) return;
         		onGpsLocationUpdate(time, location);
 
