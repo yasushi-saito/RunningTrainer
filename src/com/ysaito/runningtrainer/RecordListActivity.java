@@ -126,10 +126,12 @@ public class RecordListActivity extends ListActivity {
   public String getListLabel(RecordSummary summary) {
     StringBuilder b = new StringBuilder();
     mTmpCalendar.setTimeInMillis(summary.startTime);
-    b.append(String.format("%04d/%02d/%02d ",
+    b.append(String.format("%04d/%02d/%02d Distance: %.2f mile(s), %.2f second(s)",
     		mTmpCalendar.get(Calendar.YEAR),
     		mTmpCalendar.get(Calendar.MONTH) - Calendar.JANUARY + 1,
-    		mTmpCalendar.get(Calendar.DAY_OF_MONTH)));
+    		mTmpCalendar.get(Calendar.DAY_OF_MONTH),
+    		summary.totalDistance / 1609.34,
+    		summary.duration));
     return b.toString();
   }
 

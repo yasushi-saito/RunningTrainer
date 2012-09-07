@@ -10,7 +10,6 @@ import com.google.android.maps.Projection;
 
 import android.app.Service;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -32,9 +31,15 @@ public class RecordingActivity extends MapActivity {
 
     static public class MyOverlay extends Overlay {
         private ArrayList<GeoPoint> mPoints;
+        private GeoPoint mCurrentLocation;
+        
         public MyOverlay() {
             mPoints = new ArrayList<GeoPoint>();
         }
+
+    	public void clearPath() {
+    		mPoints.clear();
+    	}
 
         public void updatePath(ArrayList<HealthGraphClient.JsonWGS84> path) {
         	while (mPoints.size() < path.size()) {
@@ -43,47 +48,99 @@ public class RecordingActivity extends MapActivity {
         		mPoints.add(p);
         	}
         }
-        
-        public void addPoint(GeoPoint point) {
-            mPoints.add(point);
-        }
 
+        public void setCurrentLocation(HealthGraphClient.JsonWGS84 location) {
+        	if (mPoints.size() == 0) {
+        		// Real recording already started. ignore the location update 
+        	} else {
+        		GeoPoint p = new GeoPoint((int)(location.latitude * 1e6), (int)(location.longitude * 1e6));
+        		mCurrentLocation = p;
+        	}
+        }
+        
         @Override
         public boolean draw(Canvas canvas, MapView mapView, boolean shadow, long when) {
             boolean v = super.draw(canvas, mapView, shadow, when);
-            if (shadow || mPoints.size() == 0) return v;
+            if (shadow) return v;
+            if (mPoints.size() > 0) {
+            	Projection projection = mapView.getProjection();
+            	Paint paint = new Paint();
+            	paint.setAntiAlias(true);
+            	paint.setColor(0xff000080);
+            	paint.setStyle(Paint.Style.STROKE);
+            	paint.setStrokeWidth(5);
 
-            Projection projection = mapView.getProjection();
+            	if (mPoints.size() > 1) {
+            		Path path = new Path();
+            		for (int i = 0; i < mPoints.size(); i++) {
+            			GeoPoint gPointA = mPoints.get(i);
+            			Point pointA = new Point();
+            			projection.toPixels(gPointA, pointA);
+            			if (i == 0) { //This is the start point
+            				path.moveTo(pointA.x, pointA.y);
+            			} else {
+            				path.lineTo(pointA.x, pointA.y);
+            			}
+            		}
+            		canvas.drawPath(path, paint);
+            	}
+            	drawCurrentLocation(canvas, mapView, mPoints.get(mPoints.size() - 1));
+            } else if (mCurrentLocation != null) {
+            	drawCurrentLocation(canvas, mapView, mCurrentLocation);
+            }
+            return v;
+        }
+        
+        private void drawCurrentLocation(Canvas canvas, MapView mapView, GeoPoint geoPoint) {
+        	Projection projection = mapView.getProjection();
+            Point pointA = new Point();
+            projection.toPixels(geoPoint, pointA);
+            
             Paint paint = new Paint();
             paint.setAntiAlias(true);
             paint.setColor(0xff000080);
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(5);
-
-            if (mPoints.size() > 1) {
-            	Path path = new Path();
-            	for (int i = 0; i < mPoints.size(); i++) {
-                    GeoPoint gPointA = mPoints.get(i);
-                    Point pointA = new Point();
-                    projection.toPixels(gPointA, pointA);
-                    if (i == 0) { //This is the start point
-                        path.moveTo(pointA.x, pointA.y);
-                    } else {
-                        path.lineTo(pointA.x, pointA.y);
-                    }
-            	}
-            	canvas.drawPath(path, paint);
-            }
-
-            GeoPoint gPointA = mPoints.get(mPoints.size() - 1);
-            Point pointA = new Point();
-            projection.toPixels(gPointA, pointA);
             paint.setColor(0xff0000ff);
             canvas.drawCircle(pointA.x, pointA.y, 10, paint);
-            return v;
         }
     };
 
+    private static class Stats {
+    	// The time activity started. Millisecs since 1970/1/1
+    	private final long mStartTime;
+    	
+    	// The index of the last path[] element that was handled by updatePath.
+    	// We assume that the array path[] passed to updatePath() simply adds new points at the end on 
+    	// every call
+    	private int mLastPathSegment = 0;
+    	
+    	// Cumulative distance of points in path[0..mLastPathSegment].
+    	private double mDistance = 0;
+    	
+    	private final float[] mTmp = new float[1];
+    	
+    	Stats() {
+    		mStartTime = System.currentTimeMillis();
+    	}
+    	public final long getStartTime() { return mStartTime; }
+    	public final double getDistanceMeters() { return mDistance; }
+    	public final long getDurationMillis() { return System.currentTimeMillis() - mStartTime; }
+    	public final void updatePath(ArrayList<HealthGraphClient.JsonWGS84> path) {
+    		if (path.size() > mLastPathSegment + 1) {
+    			HealthGraphClient.JsonWGS84 lastPoint = path.get(mLastPathSegment);
+    			mLastPathSegment++;
+    			for (; mLastPathSegment < path.size(); mLastPathSegment++) {
+    				HealthGraphClient.JsonWGS84 thisPoint = path.get(mLastPathSegment);
+    				Location.distanceBetween(lastPoint.latitude, lastPoint.longitude,
+    						thisPoint.latitude, thisPoint.longitude, mTmp);
+    				mDistance += mTmp[0];
+    				lastPoint = thisPoint;
+    			}
+    		}
+    	}
+    }
+    
     private MyOverlay mMapOverlay;
     private MapView mMapView;
     private Button mPauseResumeButton;
@@ -95,18 +152,11 @@ public class RecordingActivity extends MapActivity {
     private static final int PAUSED = 1;
     private static final int RUNNING = 2;
     private int mRecordingState = STOPPED;
-    private long mStartTime;
-
+    private Stats mStats = new Stats();
+    
     HealthGraphClient.JsonActivity mLastReportedActivity = null;
     ArrayList<HealthGraphClient.JsonWGS84> mLastReportedPath = null;
     
-    @Override
-    public void onDestroy() {
-    	super.onDestroy();
-        mLocationManager.removeUpdates(mDummyLocationListener);
-    	GpsTrackingService.unregisterGpsListener(this);
-    }
-
     public void onGpsUpdate(HealthGraphClient.JsonActivity activity,
     		ArrayList<HealthGraphClient.JsonWGS84> path) {
     	mLastReportedActivity = activity;
@@ -122,27 +172,30 @@ public class RecordingActivity extends MapActivity {
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.recording);
+        mRecordManager = new RecordManager(this);
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.map_view);
         mMapView.getOverlays().add(mMapOverlay);
         mMapView.setBuiltInZoomControls(true);
-
         
         mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
 
         // Define a listener that responds to location updates
         mDummyLocationListener = new LocationListener() {
-			public void onLocationChanged(Location location) {
+    		public void onLocationChanged(Location location) {
+    			if (mRecordingState == PAUSED || mRecordingState == STOPPED) {
+    				HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
+    				wgs.latitude = location.getLatitude();
+    				wgs.longitude = location.getLongitude();
+    				wgs.altitude = location.getAltitude();
+    				mMapOverlay.setCurrentLocation(wgs);
+    				mMapView.invalidate();
+    			}
 			}
 
-			public void onProviderDisabled(String provider) {
-			}
-
-			public void onProviderEnabled(String provider) {
-			}
-
-			public void onStatusChanged(String provider, int status,
-					Bundle extras) {
+			public void onProviderDisabled(String provider) { }
+			public void onProviderEnabled(String provider) { }
+			public void onStatusChanged(String provider, int status, Bundle extras) {
 			}        
         };
 
@@ -194,17 +247,28 @@ public class RecordingActivity extends MapActivity {
         }
     }
 
+    @Override
+    public void onDestroy() {
+    	super.onDestroy();
+        mLocationManager.removeUpdates(mDummyLocationListener);
+    	GpsTrackingService.unregisterGpsListener(this);
+    }
+
     void onStartButtonPress() {
-        mRecordManager = new RecordManager(this);
         mRecordingState = RUNNING;
-        mStartTime = System.currentTimeMillis();
+    	mMapOverlay.clearPath();
+    	mMapView.invalidate();
+    	mStats = new Stats();
     	GpsTrackingService.startGpsServiceIfNecessary(this);
     }
 
     private void onStopButtonPress() {
     	mRecordingState = STOPPED;
     	GpsTrackingService.stopGpsServiceIfNecessary(this);
-    	if (mLastReportedPath == null || mLastReportedPath.size() < 1) return;
+    	if (mStats == null || mLastReportedPath == null || mLastReportedPath.size() < 1) {
+    		// This shouldn't happen in practice, but just a paranoid check
+    		return;
+    	}
 
     	HealthGraphClient.JsonWGS84 last = mLastReportedPath.get(mLastReportedPath.size() - 1);
     	HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
@@ -212,7 +276,7 @@ public class RecordingActivity extends MapActivity {
     	wgs.longitude = last.longitude;
     	wgs.altitude = last.altitude;
     	wgs.type = "end";
-    	wgs.timestamp = (System.currentTimeMillis()- mStartTime) / 1000.0;
+    	wgs.timestamp = (System.currentTimeMillis()- mStats.getStartTime()) / 1000.0;
     	mLastReportedPath.add(wgs);
     	mLastReportedActivity.path = new HealthGraphClient.JsonWGS84[mLastReportedPath.size()];
     	for (int i = 0; i < mLastReportedPath.size(); ++i) mLastReportedActivity.path[i] = mLastReportedPath.get(i);
@@ -230,7 +294,7 @@ public class RecordingActivity extends MapActivity {
     		}
     		lastLocation = location;
     	}
-    	mRecordManager.addRecord(mStartTime, mLastReportedActivity);
+    	mRecordManager.addRecord(mStats.getStartTime(), mLastReportedActivity);
     }
 
     private void onPauseButtonPress() {

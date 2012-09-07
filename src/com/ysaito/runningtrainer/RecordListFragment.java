@@ -78,20 +78,11 @@ public class RecordListFragment extends ListFragment {
 
 	private final GregorianCalendar mTmpCalendar = new GregorianCalendar();
 
-	public String getListLabel(RecordSummary summary) {
-		StringBuilder b = new StringBuilder();
-		mTmpCalendar.setTimeInMillis(summary.startTime);
-		b.append(String.format("%04d/%02d/%02d ",
-				mTmpCalendar.get(Calendar.YEAR),
-				mTmpCalendar.get(Calendar.MONTH) - Calendar.JANUARY + 1,
-				mTmpCalendar.get(Calendar.DAY_OF_MONTH)));
-		return b.toString();
-	}
 	
-  @Override
-  public void onListItemClick(ListView l, View v, int position, long id) {
-    Log.d(TAG,"PICKED: " + position);
-  }
+	@Override
+	public void onListItemClick(ListView l, View v, int position, long id) {
+		Log.d(TAG,"PICKED: " + position);
+	}
 /*
   @Override
   public void onCreateContextMenu(

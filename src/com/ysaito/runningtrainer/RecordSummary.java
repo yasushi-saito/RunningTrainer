@@ -18,13 +18,14 @@ public class RecordSummary {
 	
 	@Override public String toString() {
 		GregorianCalendar tmpCalendar = new GregorianCalendar();
-	
 		StringBuilder b = new StringBuilder();
 		tmpCalendar.setTimeInMillis(startTime);
-		b.append(String.format("%04d/%02d/%02d ",
+		b.append(String.format("%04d/%02d/%02d %.2f mile(s), %.2f second(s)",
 				tmpCalendar.get(Calendar.YEAR),
 				tmpCalendar.get(Calendar.MONTH) - Calendar.JANUARY + 1,
-				tmpCalendar.get(Calendar.DAY_OF_MONTH)));
+				tmpCalendar.get(Calendar.DAY_OF_MONTH),
+				totalDistance / 1609.34,
+				duration));
 		return b.toString();
 	}
 }

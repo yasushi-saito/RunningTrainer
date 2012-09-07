@@ -16,5 +16,7 @@ public class OAuthReceiverActivity extends Activity {
     	Log.d(TAG, "onNewIntent: " + intent.toString());
     	Uri uri = intent.getData();
     	if (uri != null) HealthGraphClient.onRedirect(uri);
+    	startActivity(new Intent(this, MainActivity.class));
+    	finish();
     }
 }

@@ -153,22 +153,24 @@ class HealthGraphClient {
     			listener, new JsonFitnessActivities());
     }
     
-    private synchronized void cacheAccessToken(Context context, String token) {
-    	mCachedAccessToken = token;
-    	if (token == null) {
-    		mAccessTokenState = TOKEN_ERROR;
-    	} else {
-    		mAccessTokenState = TOKEN_OK;
-    		SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
-    		SharedPreferences.Editor editor = pref.edit();
-    		editor.putString("AccessToken", token);
-    		if (!editor.commit()) {
-    			Log.e(TAG, "Failed to write oauth token to preferences");
+    private void cacheAccessToken(Context context, String token) {
+    	synchronized(this) {
+    		mCachedAccessToken = token;
+    		if (token == null) {
+    			mAccessTokenState = TOKEN_ERROR;
     		} else {
-    			Log.d(TAG, "Save access token " + token);
+    			mAccessTokenState = TOKEN_OK;
+    			SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
+    			SharedPreferences.Editor editor = pref.edit();
+    			editor.putString("AccessToken", token);
+    			if (!editor.commit()) {
+    				Log.e(TAG, "Failed to write oauth token to preferences");
+    			} else {
+    				Log.d(TAG, "Save access token " + token);
+    			}
     		}
+    		this.notifyAll();
     	}
-    	notifyAll();
     }
 
     private static class GetRequestRecord {
@@ -176,7 +178,7 @@ class HealthGraphClient {
     	public String acceptType;
     }
     
-    private static class HttpGetJsonTask extends AsyncTask<GetRequestRecord, Integer, HttpResponse> {
+    private static class HttpGetJsonTask extends AsyncTask<GetRequestRecord, Void, HttpResponse> {
     	private final HealthGraphClient mParent;
     	private final JsonResponseListener mListener;
     	private final Object mDestObject;
@@ -191,10 +193,12 @@ class HealthGraphClient {
     	@Override protected HttpResponse doInBackground(GetRequestRecord... r) {
     	    DefaultHttpClient httpClient = new DefaultHttpClient();
     	    HttpGet request = new HttpGet("https://api.runkeeper.com/" + r[0].path);
+    	    if (true) return null;
     		synchronized(mParent) {
     			while (mParent.mAccessTokenState != TOKEN_ERROR && mParent.mAccessTokenState != TOKEN_OK) {
     				// Wait for the AuthenticatorImpl to finish and call cacheAccessToken.
     				try {
+    					Log.d(TAG, "Waiting for auth token");
     					mParent.wait();
     				} catch (InterruptedException e) {
     					;
@@ -202,6 +206,7 @@ class HealthGraphClient {
     			}
     			final String token = mParent.mCachedAccessToken;
     			request.addHeader("Authorization", "Bearer " + token);
+    			Log.d(TAG, "Acquired token: " + mParent.mAccessTokenState);
     		}
     		request.addHeader("Accept", r[0].acceptType);
     		HttpResponse response = null;
@@ -215,8 +220,8 @@ class HealthGraphClient {
     	}
     	
     	@Override protected void onPostExecute(HttpResponse response) {
-    		HttpEntity entity = response.getEntity();
     		Object parseResult = null;
+    		HttpEntity entity = (response != null ? response.getEntity() : null);
     		if (entity != null) {
     			// A Simple JSON Response Read
     			InputStream instream = null;
@@ -244,10 +249,12 @@ class HealthGraphClient {
     }
     	
     
-    private synchronized void startAuthentication(Context context, String clientId, String clientSecret, String redirectUri) {
-    	mAccessTokenState = TOKEN_AUTHENTICATING;
-    	mAuthenticator = new AuthenticatorImpl(context, clientId, clientSecret, redirectUri);
-    	mAuthenticator.start();
+    private void startAuthentication(Context context, String clientId, String clientSecret, String redirectUri) {
+    	synchronized(this) {
+    		mAccessTokenState = TOKEN_AUTHENTICATING;
+    		mAuthenticator = new AuthenticatorImpl(context, clientId, clientSecret, redirectUri);
+    		mAuthenticator.start();
+    	}
     }
 
     // client_id=0808ef781c68449298005c8624d3700b
@@ -294,12 +301,12 @@ class HealthGraphClient {
     		}
     	}
     	
-    	private class OauthTask extends AsyncTask<Integer, Integer, String> {
-    		private final Context mContext;
-    		public OauthTask(Context context) { mContext = context; }
-    		
-    		@Override protected String doInBackground(Integer... unused) {
+    	private class OauthTask extends AsyncTask<Void, Void, String> {
+    		public Context mContext;
+
+    		@Override protected String doInBackground(Void... unused) {
     			try {
+    				Log.d(TAG, "Start token acquisition thread(0): ");
     				OAuthClientRequest request = OAuthClientRequest.tokenLocation("https://runkeeper.com/apps/token")
     						.setGrantType(GrantType.AUTHORIZATION_CODE)
     						.setClientId(mClientId)
@@ -307,7 +314,7 @@ class HealthGraphClient {
     						.setRedirectURI(mRedirectUri)
     						.setCode(mCode)
     						.buildBodyMessage();
-    				Log.d(TAG, "Start token acquisition: " + request.getLocationUri());
+    				Log.d(TAG, "Start token acquisition thread: " + request.getLocationUri());
     				OAuthClient oAuthClient = new OAuthClient(new URLConnectionClient());
     				OAuthJSONAccessTokenResponse response = oAuthClient.accessToken(request);
     				Log.d(TAG, "Recv: " + response.toString());
@@ -327,13 +334,13 @@ class HealthGraphClient {
     				cacheAccessToken(mContext, token);
     			}
     		}
-    		
     	}
 
     	public void startTokenAcquisition() {
-    		Log.d(TAG, "Start token acquistion: " + mCode);
-    		OauthTask thread = new OauthTask(mContext);
-    		thread.execute((Integer[])null);
+    		Log.d(TAG, "Start token acquistion (main): " + mCode);
+    		OauthTask thread = new OauthTask();
+    		thread.mContext = mContext;
+    		thread.execute();
     	}
     }
 }

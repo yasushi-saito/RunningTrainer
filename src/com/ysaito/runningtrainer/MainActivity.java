@@ -45,21 +45,21 @@ public class MainActivity extends Activity {
         	Toast toast = Toast.makeText(this, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG);
         	toast.show();
         }
-   /*     HealthGraphClient hgClient = HealthGraphClient.getSingleton(
+        HealthGraphClient hgClient = HealthGraphClient.getSingleton(
         		this,
         		"0808ef781c68449298005c8624d3700b", 
         		"dda5888cd8d64760a044dc61ae4f44db",
-        		"ysaito://oauthresponsexx");
+        		"ysaito://oauthresponse");
         hgClient.getUser(new HealthGraphClient.JsonResponseListener() {
         	public void onFinish(Exception e, Object o) {
         		if (e != null) {
         			Log.e(TAG, "GET finished with exception: " + e.toString());
-        		} else {
+        		} else if (o != null) {
         			Log.d(TAG, "GET ok: " + ((HealthGraphClient.JsonUser)o).toString());
         		}
         	}
         });
-        hgClient.getFitnessActivities(new HealthGraphClient.JsonResponseListener() {
+   /*     hgClient.getFitnessActivities(new HealthGraphClient.JsonResponseListener() {
         	public void onFinish(Exception e, Object o) {
         		if (e != null) {
         			Log.e(TAG, "Get fitnessactivities finished with exception: " + e.toString());
