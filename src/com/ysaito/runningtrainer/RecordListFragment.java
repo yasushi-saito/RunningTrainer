@@ -105,14 +105,28 @@ public class RecordListFragment extends ListFragment {
 	
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
+		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
+		RecordSummary summary = mAdapter.getItem(info.position);
+
 		switch (item.getItemId()) {
 		case R.id.record_list_resend:
-			
-			HealthGraphClient.getSingleton(getActivity()).putNewFitnessActivity(
-    		JsonActivity activity,
-    		PutResponseListener listener) {
-			
-			Toast.makeText(getActivity(), "RESEND", Toast.LENGTH_SHORT).show();
+			HealthGraphClient.JsonActivity activity = mRecordManager.readRecord(summary.basename);
+			if (activity == null) {
+				Toast.makeText(getActivity(), "Failed to read " + summary.basename, Toast.LENGTH_LONG).show();
+			} else {
+				HealthGraphClient hgClient = HealthGraphClient.getSingleton();
+				hgClient.putNewFitnessActivity(
+						activity,
+						new HealthGraphClient.PutResponseListener() {
+							public void onFinish(Exception e) {
+								if (e != null) {
+									Toast.makeText(getActivity(), "Failed to send activity: " + e.toString(), Toast.LENGTH_LONG).show();
+								} else {
+									Toast.makeText(getActivity(), "Send activity to runkeeper", Toast.LENGTH_SHORT).show();
+								}
+							}
+						});
+			}
 			return true;
 		}
 		return super.onContextItemSelected(item);

@@ -45,11 +45,8 @@ public class MainActivity extends Activity {
         	Toast toast = Toast.makeText(this, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG);
         	toast.show();
         }
-        HealthGraphClient hgClient = HealthGraphClient.getSingleton(
-        		this,
-        		"0808ef781c68449298005c8624d3700b", 
-        		"dda5888cd8d64760a044dc61ae4f44db",
-        		"ysaito://oauthresponse");
+        HealthGraphClient hgClient = HealthGraphClient.getSingleton();
+        hgClient.startAuthentication(this);
         hgClient.getUser(new HealthGraphClient.GetResponseListener() {
         	public void onFinish(Exception e, Object o) {
         		if (e != null) {

@@ -1,9 +1,12 @@
 package com.ysaito.runningtrainer;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,6 +80,17 @@ public class RecordManager {
 		} catch (IOException e) {
 			Toast.makeText(mContext, mRootDir.getPath() + ": failed to save log: " + e.toString(), Toast.LENGTH_LONG).show();
 		}
+	}
+	
+	public HealthGraphClient.JsonActivity readRecord(String basename) {
+		File sourceFile = new File(mRootDir, basename);
+		try {
+			Gson gson = new GsonBuilder().create();
+			return gson.fromJson(new BufferedReader(new FileReader(sourceFile)), HealthGraphClient.JsonActivity.class);
+		} catch (IOException e) {
+			Toast.makeText(mContext, sourceFile.getPath() + ": " + e.toString(), Toast.LENGTH_LONG).show();
+		}
+		return null;
 	}
 	
 	public void deleteRecord(RecordSummary summary) {

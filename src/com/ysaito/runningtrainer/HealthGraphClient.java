@@ -7,6 +7,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -41,6 +42,7 @@ class HealthGraphClient {
 	 */
 	static public class JsonActivity {
 	    public String type; // "Running", "Cycling", etc.
+	    public String equipment; // usually "None"
 	    public String start_time;      // "Sat, 1 Jan 2011 00:00:00"
 	    public double total_distance;  // total distance, in meters
 	    public double duration;        // duration, in seconds
@@ -88,16 +90,18 @@ class HealthGraphClient {
 
     static private HealthGraphClient mSingleton;
     
+    static private final String CLIENT_ID = "0808ef781c68449298005c8624d3700b";
+    static private final String CLIENT_SECRET = "dda5888cd8d64760a044dc61ae4f44db";
+    static private final String REDIRECT_URI = "ysaito://oauthresponse";
+    
     /**
      *  This method is not thread safe. It can be called only by the main thread
+     *  @param application The application context. The one obtained by calling Activity::getApplicationContext().
      */
-    static HealthGraphClient getSingleton(Context activity, String clientId, String clientSecret, String redirectUri) {
+    static HealthGraphClient getSingleton() {
     	if (mSingleton == null) {
     		Log.d(TAG, "Creating singleton!!");
-    		mSingleton = new HealthGraphClient(activity);
-    		if (mSingleton.mAccessTokenState == TOKEN_UNSET) {
-    			mSingleton.startAuthentication(activity, clientId, clientSecret, redirectUri);
-    		}
+    		mSingleton = new HealthGraphClient();
     	}
     	return mSingleton;
     }
@@ -126,15 +130,8 @@ class HealthGraphClient {
     private String mCachedAccessToken;
     private AuthenticatorImpl mAuthenticator;
     
-    public HealthGraphClient(Context context) {
-    	SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
+    public HealthGraphClient() {
     	mAccessTokenState = TOKEN_UNSET;
-    	mCachedAccessToken = pref.getString("AccessToken", null);
-    	if (mCachedAccessToken != null) {
-    		Log.d(TAG, "Found cached token: " + mCachedAccessToken);
-    		mAccessTokenState = TOKEN_OK;
-    		Toast.makeText(context,  "Signed into runkeeper", Toast.LENGTH_SHORT).show();
-    	}
     }
     
     public void executeGet(String path, String acceptType, GetResponseListener listener, Object destObject) {
@@ -142,8 +139,13 @@ class HealthGraphClient {
     	task.execute();
     }
     
-    public void executePut(String path, String acceptType, Object object, PutResponseListener listener) {
-    	HttpPutTask task = new HttpPutTask(this, path, acceptType, object, listener);
+    public void executePut(String path, String contentType, Object object, PutResponseListener listener) {
+    	HttpPutTask task = new HttpPutTask(this, path, contentType, object, listener);
+    	task.execute();
+    }
+
+    public void executePost(String path, String contentType, Object object, PutResponseListener listener) {
+    	HttpPostTask task = new HttpPostTask(this, path, contentType, object, listener);
     	task.execute();
     }
     
@@ -159,7 +161,25 @@ class HealthGraphClient {
     public void putNewFitnessActivity(
     		JsonActivity activity,
     		PutResponseListener listener) {
-    	executePut("fitnessActivities", "application/vnd.com.runkeeper.NewFitnessActivity+json", 
+    	// activity.equipment = "None";
+    	activity.start_time = "Sat, 1 Jan 2011 00:00:00";
+    	/*
+    	JsonWGS84[] xx = new JsonWGS84[2];
+    	xx[0] = new JsonWGS84();
+    	xx[1] = new JsonWGS84();    	
+    	xx[0].timestamp = 0;
+    	xx[0].altitude = 0;
+    	xx[0].latitude = 37.399835865944624;
+    	xx[0].longitude = -122.0777643006295;
+    	xx[0].type = "start";
+    	xx[1].timestamp = 10;
+    	xx[1].altitude = 0;
+    	xx[1].latitude = 38.399835865944624;
+    	xx[1].longitude = -123.0777643006295;
+    	xx[1].type = "end";
+    	activity.path = xx;
+    	*/
+    	executePost("fitnessActivities", "application/vnd.com.runkeeper.NewFitnessActivity+json", 
     			activity, listener);
     }
     
@@ -352,23 +372,91 @@ class HealthGraphClient {
     		mListener.onFinish(null);
     	}
     }
+
+    private static class HttpPostTask extends AsyncTask<Void, Void, HttpResponse> {
+    	private final HealthGraphClient mParent;
+    	private final String mPath;
+    	private final String mAcceptType;
+    	private final Object mSourceObject;
+    	private final PutResponseListener mListener;
+    	private Exception mException = null;
     	
-    
-    
-    private void startAuthentication(Context context, String clientId, String clientSecret, String redirectUri) {
-    	synchronized(this) {
-    		mAccessTokenState = TOKEN_AUTHENTICATING;
-    		mAuthenticator = new AuthenticatorImpl(context, clientId, clientSecret, redirectUri);
-    		mAuthenticator.start();
+    	public HttpPostTask(
+    			HealthGraphClient parent, 
+    			String path,
+    			String acceptType,
+    			Object sourceObject,
+    			PutResponseListener listener) {
+    		mParent = parent;
+    		mPath = path;
+    		mAcceptType = acceptType;
+    		mSourceObject = sourceObject;
+    		mListener = listener;
+    	}
+    	
+    	@Override protected HttpResponse doInBackground(Void...unused) {
+    	    DefaultHttpClient httpClient = new DefaultHttpClient();
+    		HttpResponse response = null;
+    		try {
+    			String token = mParent.getAccessToken();
+    			HttpPost post = new HttpPost("https://api.runkeeper.com/" + mPath);
+    				
+    			post.setHeader("Authorization", "Bearer " + token);
+    			post.setHeader("Content-Type", mAcceptType);
+    			Gson gson = new GsonBuilder().create();
+    			final String json = gson.toJson(mSourceObject);
+    			post.setEntity(new StringEntity(json, "UTF-8"));
+    			Log.d(TAG, "POST: " + json);
+    			response = httpClient.execute(post);
+    		} catch (Exception e) {
+    			mException = e;
+    			Log.d(TAG, "Http PUT exception: " + e.toString());
+    		}
+    		return response;
+    	}
+    	
+    	@Override protected void onPostExecute(HttpResponse response) {
+    		if (mException != null) {
+    			mListener.onFinish(mException);
+    			return;
+    		}
+    		if (response != null) {
+    			StatusLine status = response.getStatusLine(); 
+    			Log.d(TAG, "PUT finished: " + status.getStatusCode() + ":" + status.getReasonPhrase());
+    			if (status.getStatusCode() / 100 != 2) {
+    				mListener.onFinish(new MyException(
+    						"HTTP Get failed: " + status.getStatusCode() + ": " + status.getReasonPhrase()));
+    				return;
+    			}
+    		}
+    		mListener.onFinish(null);
     	}
     }
 
-    // client_id=0808ef781c68449298005c8624d3700b
-    // client_secret=dda5888cd8d64760a044dc61ae4f44db
+    /**
+     * Start the runkeeper authentication protocol. If a token had already been acquired, this function is a noop.
+     * 
+     * @param context Must be an Activity context, not the global application context
+     */
+    public void startAuthentication(Context context) {
+    	synchronized(this) {
+    		SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
+    		mAccessTokenState = TOKEN_UNSET;
+    		mCachedAccessToken = pref.getString("AccessToken", null);
+    		if (mCachedAccessToken != null) {
+    			Log.d(TAG, "Found cached token: " + mCachedAccessToken);
+    			mAccessTokenState = TOKEN_OK;
+    			Toast.makeText(context,  "Signed into runkeeper", Toast.LENGTH_SHORT).show();
+    		}
+    		if (mAccessTokenState != TOKEN_OK) {
+    			mAccessTokenState = TOKEN_AUTHENTICATING;
+    			mAuthenticator = new AuthenticatorImpl(context);
+    			mAuthenticator.start();
+    		}
+    	}
+    }
+
     private class AuthenticatorImpl {
-    	private final String mClientId;
-    	private final String mClientSecret;
-    	private final String mRedirectUri;
     	private final Context mContext;  // should be activity context, not the process context
     	public String mCode;  // one-time per-client code
     	
@@ -377,18 +465,15 @@ class HealthGraphClient {
     	 * Should not be the process context (i.e., shall not be the value of
     	 * context.getApplicationContext()).
     	 */
-    	public AuthenticatorImpl(Context context, String clientId, String clientSecret, String redirectUri) {
+    	public AuthenticatorImpl(Context context) {
     		mContext = context;
-    		mClientId = clientId;
-    		mClientSecret = clientSecret;
-    		mRedirectUri = redirectUri;
     	}
     	
     	public void start() {
     		try {
     			OAuthClientRequest request = OAuthClientRequest
     					.authorizationLocation("https://runkeeper.com/apps/authorize")
-    					.setClientId(mClientId).setRedirectURI(mRedirectUri)
+    					.setClientId(CLIENT_ID).setRedirectURI(REDIRECT_URI)
     					.buildQueryMessage();
     			Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(request.getLocationUri() + "&response_type=code"));
     			mContext.startActivity(intent);
@@ -398,7 +483,7 @@ class HealthGraphClient {
     	}
     	
     	public void onRedirect(Uri uri) {
-    		if (uri.toString().startsWith(mRedirectUri)) {
+    		if (uri.toString().startsWith(REDIRECT_URI)) {
     			Log.d(TAG, "OnRedirect: " + uri.toString());
     			mCode = uri.getQueryParameter("code");
     			startTokenAcquisition();
@@ -415,9 +500,9 @@ class HealthGraphClient {
     				Log.d(TAG, "Start token acquisition thread(0): ");
     				OAuthClientRequest request = OAuthClientRequest.tokenLocation("https://runkeeper.com/apps/token")
     						.setGrantType(GrantType.AUTHORIZATION_CODE)
-    						.setClientId(mClientId)
-    						.setClientSecret(mClientSecret)
-    						.setRedirectURI(mRedirectUri)
+    						.setClientId(CLIENT_ID)
+    						.setClientSecret(CLIENT_SECRET)
+    						.setRedirectURI(REDIRECT_URI)
     						.setCode(mCode)
     						.buildBodyMessage();
     				Log.d(TAG, "Start token acquisition thread: " + request.getLocationUri());
