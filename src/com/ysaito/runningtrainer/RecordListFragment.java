@@ -9,9 +9,15 @@ import android.app.ListFragment;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 
 /**
  * Activity that lists available game logs.
@@ -47,7 +53,7 @@ public class RecordListFragment extends ListFragment {
 	}
 
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
+	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
 		//requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		//setContentView(R.layout.record_list);
@@ -58,6 +64,8 @@ public class RecordListFragment extends ListFragment {
 		mAdapter = new ArrayAdapter<RecordSummary>(mActivity, android.R.layout.simple_list_item_1);
 		setListAdapter(mAdapter);
 		startListing();
+		
+		registerForContextMenu(getListView());
 	}
 
 	@Override public void onResume() {
@@ -83,33 +91,43 @@ public class RecordListFragment extends ListFragment {
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		Log.d(TAG,"PICKED: " + position);
 	}
-/*
-  @Override
-  public void onCreateContextMenu(
-      ContextMenu menu,
-      View v,
-      ContextMenuInfo menuInfo) {
-    super.onCreateContextMenu(menu, v, menuInfo);
-    MenuInflater inflater = getMenuInflater();
-    inflater.inflate(R.menu.game_log_list_context_menu, menu);
-    GameLog log = getObjectAtPosition(((AdapterView.AdapterContextMenuInfo)menuInfo).position);
+	
+	@Override
+	public void onCreateContextMenu(
+			ContextMenu menu,
+			View v,
+			ContextMenuInfo menuInfo) {
+		super.onCreateContextMenu(menu, v, menuInfo);
+		
+		final MenuInflater inflater = getActivity().getMenuInflater();
+		inflater.inflate(R.menu.record_list_context_menu, menu);
+	}
+	
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.record_list_resend:
+			
+			HealthGraphClient.getSingleton(getActivity()).putNewFitnessActivity(
+    		JsonActivity activity,
+    		PutResponseListener listener) {
+			
+			Toast.makeText(getActivity(), "RESEND", Toast.LENGTH_SHORT).show();
+			return true;
+		}
+		return super.onContextItemSelected(item);
+	}
 
-    if (log.path() != null) {
-      menu.findItem(R.id.game_log_list_save_in_sdcard).setEnabled(false);
-    }
-  }*/
-
-  private class DeleteRecordTask extends AsyncTask<RecordSummary, String, String> {
-    @Override
-    protected String doInBackground(RecordSummary... log) {
-    	mRecordManager.deleteRecord(log[0]);
-    	return null;
-    }
-
-    @Override
-    protected void onPostExecute(String unused) {
-    	startListing();
-    }
-  }
-
+	private class DeleteRecordTask extends AsyncTask<RecordSummary, String, String> {
+		@Override
+		protected String doInBackground(RecordSummary... log) {
+			mRecordManager.deleteRecord(log[0]);
+			return null;
+		}
+		
+		@Override
+		protected void onPostExecute(String unused) {
+			startListing();
+		}
+	}
 }

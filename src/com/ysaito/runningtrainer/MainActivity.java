@@ -50,7 +50,7 @@ public class MainActivity extends Activity {
         		"0808ef781c68449298005c8624d3700b", 
         		"dda5888cd8d64760a044dc61ae4f44db",
         		"ysaito://oauthresponse");
-        hgClient.getUser(new HealthGraphClient.JsonResponseListener() {
+        hgClient.getUser(new HealthGraphClient.GetResponseListener() {
         	public void onFinish(Exception e, Object o) {
         		if (e != null) {
         			Log.e(TAG, "GET finished with exception: " + e.toString());
