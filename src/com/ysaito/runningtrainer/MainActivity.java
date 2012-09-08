@@ -31,8 +31,8 @@ public class MainActivity extends Activity {
 
         bar.addTab(bar.newTab()
                 .setText("Record")
-                .setTabListener(new TabListener<RecordingFragment2>(
-                        this, "Record", RecordingFragment2.class)));
+                .setTabListener(new TabListener<RecordingFragment>(
+                        this, "Record", RecordingFragment.class)));
         
         bar.addTab(bar.newTab()
                 .setText("Log")

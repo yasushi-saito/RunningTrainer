@@ -21,7 +21,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 
 @SuppressWarnings("deprecation")
-public class RecordingFragment2 extends Fragment {
+public class RecordingFragment extends Fragment {
     static final String TAG = "Main";
 
     static public class MyOverlay extends Overlay {
