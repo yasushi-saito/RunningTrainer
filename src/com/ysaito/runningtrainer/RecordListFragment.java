@@ -80,7 +80,6 @@ public class RecordListFragment extends ListFragment {
 		//requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		//setContentView(R.layout.record_list);
 		
-		//setTitle("Record list");  // TODO: externalize
 		mActivity = getActivity();
 		mRecordManager = new RecordManager(mActivity);
 		mAdapter = new MyAdapter(mActivity);

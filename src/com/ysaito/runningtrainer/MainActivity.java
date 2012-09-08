@@ -1,5 +1,29 @@
 package com.ysaito.runningtrainer;
 
+/**
+ * TODO: show pace, distance, and duration
+ * 
+ * TODO: smooth pace.
+ * TODO: smooth GPS readouts and reduce sampling rate
+ * 
+ * TODO: the current location doesn't show when recording isn't enabled.
+ * 
+ * TODO: center map on the current location
+ * 
+ * TODO: workouts. 
+ * TODO: periodic timer activity readouts
+ * 
+ * TODO: readout of various stats
+ * TODO: automatic syncing of records on reconnect and/or token authorization
+ * TODO: delete records
+ * TODO: delete all records
+ * TODO: show GPS accuracy as circular blob
+ * TODO: show status in notification tray
+ * TODO: show runkeeper sync status somewhere
+ * TODO: pause detection
+ * 
+ * 
+ */
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;

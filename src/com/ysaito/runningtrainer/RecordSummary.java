@@ -22,22 +22,13 @@ public class RecordSummary {
 		tmpCalendar.setTimeInMillis(startTime);
 		
 		// TODO: change the date format depending on settings.locale
-		b.append(String.format("%04d/%02d/%02d %02d:%02d",
+		b.append(String.format("%04d/%02d/%02d %02d:%02d [%s]",
 				tmpCalendar.get(Calendar.YEAR),
 				tmpCalendar.get(Calendar.MONTH) - Calendar.JANUARY + 1,
 				tmpCalendar.get(Calendar.DAY_OF_MONTH),
 				tmpCalendar.get(Calendar.HOUR),
-				tmpCalendar.get(Calendar.MINUTE)));
-		if (duration < 3600) {
-			b.append(String.format(" (%02d:%02d)",
-					(long)duration / 60,
-					(long)duration % 60));
-		} else {
-			b.append(String.format(" (%d:02d:%02d)",
-				(long)duration / 3600,
-				((long)duration % 3600) / 60,
-				(long)duration % 60));
-		}
+				tmpCalendar.get(Calendar.MINUTE),
+				Util.durationToString(duration)));
 		if (settings.unit == Settings.US) {
 			b.append(String.format(" %.2f mile(s) ", totalDistance / 1609.34));
 		} else {

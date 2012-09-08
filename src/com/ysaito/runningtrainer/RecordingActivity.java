@@ -1,6 +1,8 @@
 package com.ysaito.runningtrainer;
 
 import java.util.ArrayList;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
@@ -20,9 +22,10 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 
 public class RecordingActivity extends MapActivity {
-    static final String TAG = "Record";
+    static final String TAG = "Recording";
 
     static public class MyOverlay extends Overlay {
         private ArrayList<GeoPoint> mPoints;
@@ -138,6 +141,9 @@ public class RecordingActivity extends MapActivity {
     
     private MyOverlay mMapOverlay;
     private MapView mMapView;
+    private TextView mPaceView;     // for displaying pace
+    private TextView mDistanceView; // for displaying distance    
+    private TextView mElapsedView;  // for displaying elapsed        
     private Button mPauseResumeButton;
     private Button mStartStopButton;
 
@@ -162,6 +168,14 @@ public class RecordingActivity extends MapActivity {
     
     private LocationManager mLocationManager;
     private LocationListener mDummyLocationListener; 
+    private Timer mTimer;
+
+    public void onEverySecond() {
+    	if (mStats == null) return;  // this shouldn't happen.
+    	final long now = System.currentTimeMillis();
+    	final long elapsed = now - mStats.getStartTime();
+    	mElapsedView.setText(Util.durationToString(elapsed / 1000.0));
+    }
     
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -172,6 +186,10 @@ public class RecordingActivity extends MapActivity {
         mMapView = (MapView)findViewById(R.id.map_view);
         mMapView.getOverlays().add(mMapOverlay);
         mMapView.setBuiltInZoomControls(true);
+
+        mPaceView = (TextView)findViewById(R.id.pace_view);
+        mDistanceView = (TextView)findViewById(R.id.distance_view);
+        mElapsedView = (TextView)findViewById(R.id.elapsed_view);
         
         mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
 
@@ -204,11 +222,11 @@ public class RecordingActivity extends MapActivity {
         	public void onClick(View v) {
         		if (mRecordingState == RUNNING) {
         			onPauseButtonPress();
-        			mPauseResumeButton.setText("Resume"); // TODO: externalize
+        			mPauseResumeButton.setText(R.string.resume);
         		} else if (mRecordingState == PAUSED) {
         			// Either running or paused
         			onResumeButtonPress();
-        			mPauseResumeButton.setText("Pause");  // TODO: externalize
+        			mPauseResumeButton.setText(R.string.pause); 
         		} else {
         			// Stopped. This shouldn't happen, since the button is disabled in this state.
         		}
@@ -221,24 +239,24 @@ public class RecordingActivity extends MapActivity {
         		if (mRecordingState == STOPPED) {
         			onStartButtonPress();
         			mPauseResumeButton.setEnabled(true);
-        			mPauseResumeButton.setText("Pause");
-        			mStartStopButton.setText("Stop"); // TODO: externalize
+        			mPauseResumeButton.setText(R.string.pause);
+        			mStartStopButton.setText(R.string.stop); 
         		} else {
         			// Either running or paused
         			onStopButtonPress();
         			mPauseResumeButton.setEnabled(false);
-        			mPauseResumeButton.setText("Pause");
-        			mStartStopButton.setText("Start");  // TODO: externalize
+        			mPauseResumeButton.setText(R.string.pause);
+        			mStartStopButton.setText(R.string.start); 
         		}
         	}
         });
         GpsTrackingService.registerGpsListener(this);
         if (GpsTrackingService.isGpsServiceRunning()) {
         	mRecordingState = RUNNING;
-        	mStartStopButton.setText("Stop"); // TODO: externalize
+        	mStartStopButton.setText(R.string.stop); 
         } else {
         	mRecordingState = STOPPED;
-        	mStartStopButton.setText("Start"); // TODO: externalize        	
+        	mStartStopButton.setText(R.string.start);
         }
     }
 
@@ -249,12 +267,32 @@ public class RecordingActivity extends MapActivity {
     	GpsTrackingService.unregisterGpsListener(this);
     }
 
+    private void startTimer() {
+    	if (mTimer != null) mTimer.cancel();
+        mTimer = new Timer();
+        mTimer.schedule(new TimerTask() {
+        	@Override public void run() {
+        		runOnUiThread(new Runnable() {
+        			public void run() { onEverySecond(); }
+        		});
+        	}
+        }, 0, 1000);
+    }
+    
+    private void stopTimer() {
+    	if (mTimer != null) {
+    		mTimer.cancel();
+    		mTimer = null;
+    	}
+    }
+    
     void onStartButtonPress() {
         mRecordingState = RUNNING;
     	mMapOverlay.clearPath();
     	mMapView.invalidate();
     	mStats = new Stats();
     	GpsTrackingService.startGpsServiceIfNecessary(this);
+    	startTimer();    	
     }
 
     private void onStopButtonPress() {
@@ -290,14 +328,17 @@ public class RecordingActivity extends MapActivity {
     		lastLocation = location;
     	}
     	mRecordManager.addRecord(mStats.getStartTime(), mLastReportedActivity);
+    	stopTimer();
     }
 
     private void onPauseButtonPress() {
     	mRecordingState = PAUSED;
+    	stopTimer();    	
     }
 
     private void onResumeButtonPress() {
     	mRecordingState = RUNNING;
+    	startTimer();
     }
 
     @Override
