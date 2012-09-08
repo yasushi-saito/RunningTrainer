@@ -1,9 +1,5 @@
 package com.ysaito.runningtrainer;
 
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.util.Scanner;
-
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -17,10 +13,6 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
 	static final String TAG = "Main";
 
-/*    @Override
-    public boolean isRouteDisplayed() { return false; }
-*/
-	
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -33,11 +25,14 @@ public class MainActivity extends Activity {
                 .setText("Record")
                 .setTabListener(new TabListener<RecordingFragment>(
                         this, "Record", RecordingFragment.class)));
-        
         bar.addTab(bar.newTab()
                 .setText("Log")
                 .setTabListener(new TabListener<RecordListFragment>(
                         this, "Log", RecordListFragment.class)));
+        bar.addTab(bar.newTab()
+                .setText("Settings")
+                .setTabListener(new TabListener<SettingsFragment>(
+                        this, "Settings", SettingsFragment.class)));
         
         Log.d(TAG, "RunningTrainer started");
 

@@ -1,6 +1,10 @@
 package com.ysaito.runningtrainer;
 
 import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.Locale;
 import java.util.Scanner;
 
 import org.apache.http.HttpEntity;
@@ -30,8 +34,29 @@ import net.smartam.leeloo.common.exception.OAuthProblemException;
 import net.smartam.leeloo.common.exception.OAuthSystemException;
 import net.smartam.leeloo.common.message.types.GrantType;
 
-class HealthGraphClient {
+public class HealthGraphClient {
 	private static final String TAG = "HealthGraphUtil";
+	
+	/** 
+	 * Convert time into a JsonActivity.startTime string that runkeeper expects.
+	 *  
+	 *  @param millis Milliseconds since 1/1/1970
+	 *  @return A string like 
+	 * "Tue, 1 Mar 2011 07:00:00"
+	 *	regardless of the user's locale.
+	 */
+	static public String generateStartTimeString(long millis) {
+		GregorianCalendar cal = new GregorianCalendar();
+		cal.setTimeInMillis(millis);
+		return String.format("%s, %d %s %04d %02d:%02d:%02d",
+				cal.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US),
+				cal.get(Calendar.DAY_OF_MONTH),
+				cal.getDisplayName(Calendar.MONTH, Calendar.SHORT, Locale.US),
+				cal.get(Calendar.YEAR),
+				cal.get(Calendar.HOUR_OF_DAY),
+				cal.get(Calendar.MINUTE),
+				cal.get(Calendar.SECOND));
+	}
 	
 	/**
 	 * Record of a run log. Corresponds to "newly completed activites" json described in
@@ -83,11 +108,6 @@ class HealthGraphClient {
 		public String previous;
 	}
 	
-    public static String utcMillisToString(long time) {
-        // TODO: fix
-        return "Sat 1 Jan 2012 00:00:00";
-    }
-
     static private HealthGraphClient mSingleton;
     
     static private final String CLIENT_ID = "0808ef781c68449298005c8624d3700b";

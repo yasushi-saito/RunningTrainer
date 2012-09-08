@@ -78,7 +78,7 @@ public class GpsTrackingService extends Service {
 		mPath = new ArrayList<HealthGraphClient.JsonWGS84>();
 		mRecord = new HealthGraphClient.JsonActivity();
 		mRecord.type = "Running";  // TODO: allow changing
-		mRecord.start_time = HealthGraphClient.utcMillisToString(System.currentTimeMillis());
+		mRecord.start_time = HealthGraphClient.generateStartTimeString(System.currentTimeMillis());
 		mRecord.notes = "Recorded by RunningTrainer";
 		mStartTime =  System.currentTimeMillis();
 		

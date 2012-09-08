@@ -1,22 +1,26 @@
 package com.ysaito.runningtrainer;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.GregorianCalendar;
 
 import android.app.Activity;
 import android.app.ListFragment;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 /**
@@ -27,7 +31,7 @@ public class RecordListFragment extends ListFragment {
 	private static final String TAG = "RecordList";
 	private RecordManager mRecordManager;
 	private Activity mActivity;
-	private ArrayAdapter<RecordSummary> mAdapter;
+	private MyAdapter mAdapter;
 
 	private class ListThread extends AsyncTask<Integer, Integer, ArrayList<RecordSummary>> {
 	  /**
@@ -45,13 +49,31 @@ public class RecordListFragment extends ListFragment {
 	  @Override
 	  protected void onPostExecute(ArrayList<RecordSummary> records) {
 		  // setProgressBarIndeterminateVisibility(false);
-		  mAdapter.clear();
-		  mAdapter.addAll(records);
-		  mAdapter.notifyDataSetChanged();
-		  Log.d(TAG, "ADDED: " + mAdapter.getCount());
+		  mAdapter.reset(records);
 	  }
 	}
 
+	private static class MyAdapter extends ArrayAdapter<RecordSummary> {
+		public MyAdapter(Context activity) {
+			super(activity, android.R.layout.simple_list_item_1);
+		}
+
+		private Settings mSettings;
+		public void reset(ArrayList<RecordSummary> newRecords) {
+			mSettings = Settings.getSettings(getContext());
+			clear();
+			addAll(newRecords);
+			notifyDataSetChanged();
+		}
+		
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			TextView view = (TextView) super.getView(position, convertView, parent);
+			view.setText(this.getItem(position).toString(mSettings));
+			return view;
+		}
+	};
+	
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
@@ -61,7 +83,7 @@ public class RecordListFragment extends ListFragment {
 		//setTitle("Record list");  // TODO: externalize
 		mActivity = getActivity();
 		mRecordManager = new RecordManager(mActivity);
-		mAdapter = new ArrayAdapter<RecordSummary>(mActivity, android.R.layout.simple_list_item_1);
+		mAdapter = new MyAdapter(mActivity);
 		setListAdapter(mAdapter);
 		startListing();
 		
@@ -84,9 +106,6 @@ public class RecordListFragment extends ListFragment {
 		thread.execute((Integer[])null);
 	}
 
-	private final GregorianCalendar mTmpCalendar = new GregorianCalendar();
-
-	
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		Log.d(TAG,"PICKED: " + position);
