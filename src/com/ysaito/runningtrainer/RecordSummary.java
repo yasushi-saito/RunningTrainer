@@ -29,11 +29,7 @@ public class RecordSummary {
 				tmpCalendar.get(Calendar.HOUR),
 				tmpCalendar.get(Calendar.MINUTE),
 				Util.durationToString(duration)));
-		if (settings.unit == Settings.US) {
-			b.append(String.format(" %.2f mile(s) ", totalDistance / 1609.34));
-		} else {
-			b.append(String.format(" %.2f km ", totalDistance / 1000.0));
-		}
+		b.append(Util.distanceToString(totalDistance, settings));
 		return b.toString();
 	}
 }

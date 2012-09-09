@@ -1,9 +1,6 @@
 package com.ysaito.runningtrainer;
 
 /**
- * TODO: show pace, distance, and duration
- * 
- * TODO: smooth pace.
  * TODO: smooth GPS readouts and reduce sampling rate
  * 
  * TODO: the current location doesn't show when recording isn't enabled.
@@ -11,9 +8,9 @@ package com.ysaito.runningtrainer;
  * TODO: center map on the current location
  * 
  * TODO: workouts. 
- * TODO: periodic timer activity readouts
+ * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * 
- * TODO: readout of various stats
+ * TODO: voice readout of various stats
  * TODO: automatic syncing of records on reconnect and/or token authorization
  * TODO: delete records
  * TODO: delete all records

@@ -13,4 +13,26 @@ public class Util {
 				(long)seconds % 60);
 		}
 	}
+	
+	static public String distanceToString(double meters, Settings settings) {
+		if (settings.unit == Settings.US) {
+			if (meters <= 1609.34) {
+				return String.format("%.2f mile", meters / 1609.34);
+			} else {
+				return String.format("%.2f miles", meters / 1609.34);
+			}
+		} else {
+			return String.format("%.2f km", meters / 1000.0);
+		}
+	}
+	
+	static public String paceToString(double secondsPerMeter, Settings settings) {
+		if (settings.unit == Settings.US) {
+			double secondsPerMile = secondsPerMeter * 1609.34; 
+			return durationToString(secondsPerMile) + " min/mile";
+		} else {
+			double secondsPerKm = secondsPerMeter * 1000;
+			return durationToString(secondsPerKm) + " min/km";
+		}
+	}
 }

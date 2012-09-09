@@ -1,6 +1,8 @@
 package com.ysaito.runningtrainer;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -37,6 +39,7 @@ public class RecordingActivity extends MapActivity {
 
     	public void clearPath() {
     		mPoints.clear();
+    		mCurrentLocation = null;
     	}
 
         public void updatePath(ArrayList<HealthGraphClient.JsonWGS84> path) {
@@ -115,15 +118,76 @@ public class RecordingActivity extends MapActivity {
     	
     	// Cumulative distance of points in path[0..mLastPathSegment].
     	private double mDistance = 0;
+
+    	/** 
+    	 * Remember up to last 10 seconds worth of GPS measurements.
+    	 */
+    	private class Event {
+    		public Event(double d, long t) { distance = d; absTime = t; }
+    		
+    		// The distance delta from the previous Event in mRecentEvents
+    		public final double distance;
+    		
+    		// # of milliseconds since 1970/1/1
+    		public final long absTime;
+    	}
+    	ArrayDeque<Event> mRecentEvents;
     	
     	private final float[] mTmp = new float[1];
     	
     	Stats() {
     		mStartTime = System.currentTimeMillis();
+    		mRecentEvents = new ArrayDeque<Event>();
     	}
     	public final long getStartTime() { return mStartTime; }
-    	public final double getDistanceMeters() { return mDistance; }
+    	
+    	/**
+    	 * @return the cumulative distance traveled, in meters
+    	 */
+    	public final double getDistance() { return mDistance; }
+    	
+    	/**
+    	 * @return The number of milliseconds elapsed.
+    	 */
     	public final long getDurationMillis() { return System.currentTimeMillis() - mStartTime; }
+
+    	/**
+    	 * @return The pace of last 10 seconds, as seconds / meter
+    	 */
+    	public final double getCurrentPace() {
+    		if (mRecentEvents.size() == 0) return 0.0;
+    		
+    		/** Compute the distance the user moved in the last ~10 seconds. */
+    		Iterator<Event> iter = mRecentEvents.iterator();
+    		
+    		double minTimestamp = -1.0;
+    		double totalDistance = 0.0;
+    		final long now = System.currentTimeMillis();
+    		Event lastEvent = null;
+    		while (iter.hasNext()) {
+    			lastEvent = iter.next();
+    			if (lastEvent.absTime < now - 10 * 1000) continue;
+    			if (minTimestamp < 0.0) minTimestamp = lastEvent.absTime;
+    			totalDistance += lastEvent.distance;
+    		}
+    		
+    		// If more than 1.5 seconds has elapsed since the last event report, adjust the pace
+    		// downward, assuming that the GPS fix has lost.
+    		//
+    		// The 1.5s wait is there because the pace display updates every 1 second, so the call to 
+    		// this function is naturally delayed by .5 seconds. We want to display an accurate pace
+    		// for the recent ~1s window.
+    		long maxTimestamp = lastEvent.absTime;
+    		if (now - lastEvent.absTime >= 1500) {
+    			maxTimestamp = now; 
+    		}
+    		if (totalDistance <= 0.0) {
+    			return 0.0;
+    		} else {
+    			return (maxTimestamp - minTimestamp) / 1000.0 / totalDistance;
+    		}
+    	}
+    	
     	public final void updatePath(ArrayList<HealthGraphClient.JsonWGS84> path) {
     		if (path.size() > mLastPathSegment + 1) {
     			HealthGraphClient.JsonWGS84 lastPoint = path.get(mLastPathSegment);
@@ -133,7 +197,18 @@ public class RecordingActivity extends MapActivity {
     				Location.distanceBetween(lastPoint.latitude, lastPoint.longitude,
     						thisPoint.latitude, thisPoint.longitude, mTmp);
     				mDistance += mTmp[0];
+    				
+    				final long time = (long)(mStartTime + thisPoint.timestamp * 1000);
+    				mRecentEvents.addLast(new Event(mTmp[0], time));
     				lastPoint = thisPoint;
+    			}
+    			// Drop events that are more than 15 seconds old. But keep at least one record so that	
+    			// if the user stops moving, we can still display the current pace.
+    			final long lastRetained = System.currentTimeMillis() - 15 * 1000;
+    			while (mRecentEvents.size() > 1) {
+    				Event e = mRecentEvents.peekFirst();
+    				if (e.absTime >= lastRetained) break;
+    				mRecentEvents.removeFirst();
     			}
     		}
     	}
@@ -146,7 +221,7 @@ public class RecordingActivity extends MapActivity {
     private TextView mElapsedView;  // for displaying elapsed        
     private Button mPauseResumeButton;
     private Button mStartStopButton;
-
+    private Settings mSettings;  // User pref settings at the start of the activity
     private RecordManager mRecordManager;
 
     private static final int STOPPED = 0;
@@ -172,9 +247,41 @@ public class RecordingActivity extends MapActivity {
 
     public void onEverySecond() {
     	if (mStats == null) return;  // this shouldn't happen.
-    	final long now = System.currentTimeMillis();
-    	final long elapsed = now - mStats.getStartTime();
-    	mElapsedView.setText(Util.durationToString(elapsed / 1000.0));
+    	mElapsedView.setText(Util.durationToString(mStats.getDurationMillis() / 1000.0));
+    	mDistanceView.setText(Util.distanceToString(mStats.getDistance(), mSettings));
+    	mPaceView.setText(Util.paceToString(mStats.getCurrentPace(), mSettings));
+    }
+
+    @Override public void onPause() {
+    	super.onPause();
+        mLocationManager.removeUpdates(mDummyLocationListener);
+        stopTimer();
+    }
+    
+    @Override public void onResume() {
+    	super.onResume();
+    	mSettings = Settings.getSettings(this);
+        // Define a listener that responds to location updates
+        mDummyLocationListener = new LocationListener() {
+    		public void onLocationChanged(Location location) {
+    			if (mRecordingState == PAUSED || mRecordingState == STOPPED) {
+    				HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
+    				wgs.latitude = location.getLatitude();
+    				wgs.longitude = location.getLongitude();
+    				wgs.altitude = location.getAltitude();
+    				mMapOverlay.setCurrentLocation(wgs);
+    				mMapView.invalidate();
+    			}
+			}
+			public void onProviderDisabled(String provider) { }
+			public void onProviderEnabled(String provider) { }
+			public void onStatusChanged(String provider, int status, Bundle extras) {
+			}        
+        };
+        // Register the listener with the Location Manager to receive location updates
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mDummyLocationListener);
+        mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mDummyLocationListener);
+        updateTimerIfNecessary();
     }
     
     @Override
@@ -192,29 +299,6 @@ public class RecordingActivity extends MapActivity {
         mElapsedView = (TextView)findViewById(R.id.elapsed_view);
         
         mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
-
-        // Define a listener that responds to location updates
-        mDummyLocationListener = new LocationListener() {
-    		public void onLocationChanged(Location location) {
-    			if (mRecordingState == PAUSED || mRecordingState == STOPPED) {
-    				HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
-    				wgs.latitude = location.getLatitude();
-    				wgs.longitude = location.getLongitude();
-    				wgs.altitude = location.getAltitude();
-    				mMapOverlay.setCurrentLocation(wgs);
-    				mMapView.invalidate();
-    			}
-			}
-
-			public void onProviderDisabled(String provider) { }
-			public void onProviderEnabled(String provider) { }
-			public void onStatusChanged(String provider, int status, Bundle extras) {
-			}        
-        };
-
-        // Register the listener with the Location Manager to receive location updates
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mDummyLocationListener);
-        mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mDummyLocationListener);
 
         mPauseResumeButton = (Button)findViewById(R.id.pause_resume_button);
         mPauseResumeButton.setEnabled(false); // pause/resume is disabled unless the recorder is running
@@ -263,20 +347,21 @@ public class RecordingActivity extends MapActivity {
     @Override
     public void onDestroy() {
     	super.onDestroy();
-        mLocationManager.removeUpdates(mDummyLocationListener);
     	GpsTrackingService.unregisterGpsListener(this);
     }
 
-    private void startTimer() {
-    	if (mTimer != null) mTimer.cancel();
-        mTimer = new Timer();
-        mTimer.schedule(new TimerTask() {
-        	@Override public void run() {
-        		runOnUiThread(new Runnable() {
-        			public void run() { onEverySecond(); }
-        		});
-        	}
-        }, 0, 1000);
+    private void updateTimerIfNecessary() {
+    	stopTimer();
+    	if (mRecordingState == RUNNING) {
+    		mTimer = new Timer();
+    		mTimer.schedule(new TimerTask() {
+    			@Override public void run() {
+    				runOnUiThread(new Runnable() {
+    					public void run() { onEverySecond(); }
+    				});
+    			}
+    		}, 0, 1000);
+    	}
     }
     
     private void stopTimer() {
@@ -292,7 +377,7 @@ public class RecordingActivity extends MapActivity {
     	mMapView.invalidate();
     	mStats = new Stats();
     	GpsTrackingService.startGpsServiceIfNecessary(this);
-    	startTimer();    	
+    	updateTimerIfNecessary();    	
     }
 
     private void onStopButtonPress() {
@@ -333,12 +418,12 @@ public class RecordingActivity extends MapActivity {
 
     private void onPauseButtonPress() {
     	mRecordingState = PAUSED;
-    	stopTimer();    	
+    	updateTimerIfNecessary();
     }
 
     private void onResumeButtonPress() {
     	mRecordingState = RUNNING;
-    	startTimer();
+    	updateTimerIfNecessary();
     }
 
     @Override
