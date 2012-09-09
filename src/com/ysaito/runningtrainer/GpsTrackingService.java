@@ -88,7 +88,6 @@ public class GpsTrackingService extends Service {
 			static final int MIN_RECORD_INTERVAL_MS = 1000;
 
 			long mLastReportTime = 0;
-			Location mLastReportedLocation = null;
 			
 			public void onLocationChanged(Location location) {
 				// Called when a new location is found by the network location provider.
@@ -99,7 +98,6 @@ public class GpsTrackingService extends Service {
 				onGpsLocationUpdate(time, location);
 				
 				mLastReportTime = time;
-				mLastReportedLocation = location;
 			}
 			public void onStatusChanged(String provider, int status, Bundle extras) {
 				Log.d(TAG, "Status: " + provider + ": " + status);

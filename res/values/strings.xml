@@ -13,5 +13,6 @@
     <string name="distance">Distance</string>    
     <string name="elapsed">Elapsed</string>    
     <string name="resend">Resend</string>    
-    <string name="unit_of_measurement">Unit of measurement</string>        
+    <string name="unit_of_measurement">Unit of measurement</string>    
+    <string name="delete">Delete</string>        
 </resources>

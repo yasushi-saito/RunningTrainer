@@ -12,14 +12,15 @@ package com.ysaito.runningtrainer;
  * 
  * TODO: voice readout of various stats
  * TODO: automatic syncing of records on reconnect and/or token authorization
- * TODO: delete records
  * TODO: delete all records
  * TODO: show GPS accuracy as circular blob
  * TODO: show status in notification tray
  * TODO: show runkeeper sync status somewhere
- * TODO: pause detection
- * 
- * 
+ * TODO: detect when the user pauses during running
+ * TODO: sync all. remember synced records
+ * TODO: show past activity in a map
+ * TODO: show some indicator when runkeeper communication is happening
+ * TODO: notification to show distance, duration, etc.
  */
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;

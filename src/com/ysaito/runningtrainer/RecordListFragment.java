@@ -1,15 +1,12 @@
 package com.ysaito.runningtrainer;
 
 import java.util.ArrayList;
-import java.util.GregorianCalendar;
 
 import android.app.Activity;
 import android.app.ListFragment;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -124,7 +121,7 @@ public class RecordListFragment extends ListFragment {
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-		RecordSummary summary = mAdapter.getItem(info.position);
+		final RecordSummary summary = mAdapter.getItem(info.position);
 
 		switch (item.getItemId()) {
 		case R.id.record_list_resend:
@@ -135,30 +132,35 @@ public class RecordListFragment extends ListFragment {
 				HealthGraphClient hgClient = HealthGraphClient.getSingleton();
 				hgClient.putNewFitnessActivity(
 						activity,
-						new HealthGraphClient.PutResponseListener() {
-							public void onFinish(Exception e) {
+						new HealthGraphClient.PutNewFitnessActivityListener() {
+							public void onFinish(Exception e, String runkeeperPath) {
 								if (e != null) {
 									Toast.makeText(getActivity(), "Failed to send activity: " + e.toString(), Toast.LENGTH_LONG).show();
 								} else {
-									Toast.makeText(getActivity(), "Send activity to runkeeper", Toast.LENGTH_SHORT).show();
+									Toast.makeText(getActivity(), "Sent activity to runkeeper: " + runkeeperPath, Toast.LENGTH_SHORT).show();
+									mRecordManager.markAsSaved(summary.startTime, runkeeperPath);
+									startListing(); 
 								}
 							}
 						});
 			}
 			return true;
+		case R.id.record_list_delete:
+			new DeleteRecordTask().execute(new RecordSummary[]{summary});
+			return true;
 		}
 		return super.onContextItemSelected(item);
 	}
 
-	private class DeleteRecordTask extends AsyncTask<RecordSummary, String, String> {
-		@Override
-		protected String doInBackground(RecordSummary... log) {
-			mRecordManager.deleteRecord(log[0]);
+	private class DeleteRecordTask extends AsyncTask<RecordSummary[], String, String> {
+		@Override protected String doInBackground(RecordSummary[]... records) {
+			for (RecordSummary record : records[0]) {
+				mRecordManager.deleteRecord(record);
+			}
 			return null;
 		}
 		
-		@Override
-		protected void onPostExecute(String unused) {
+		@Override protected void onPostExecute(String unused) {
 			startListing();
 		}
 	}

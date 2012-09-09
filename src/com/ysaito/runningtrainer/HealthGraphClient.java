@@ -77,6 +77,9 @@ public class HealthGraphClient {
 	    public Boolean detect_pauses;
 	}
 	
+	/**
+	 * GPS reading reported to runkeeper
+	 */
 	static public class JsonWGS84 {
 		public double timestamp;  // The number of seconds since the start of the activity
 		public double latitude;  // The latitude, in degrees (values increase northward and decrease southward)
@@ -85,6 +88,10 @@ public class HealthGraphClient {
 		public String type; // One of the following values: start, end, gps, pause, resume, manual
 	};
 
+	/**
+	 * User profile on runkeeper
+	 *
+	 */
 	static public class JsonUser {
 		public String userID;
 		public String profile;
@@ -109,13 +116,12 @@ public class HealthGraphClient {
 	
     static private HealthGraphClient mSingleton;
     
-    static private final String CLIENT_ID = "0808ef781c68449298005c8624d3700b";
-    static private final String CLIENT_SECRET = "dda5888cd8d64760a044dc61ae4f44db";
-    static private final String REDIRECT_URI = "ysaito://oauthresponse";
+    static private final String OAUTH2_CLIENT_ID = "0808ef781c68449298005c8624d3700b";
+    static private final String OAUTH2_CLIENT_SECRET = "dda5888cd8d64760a044dc61ae4f44db";
+    static private final String OAUTH2_REDIRECT_URI = "ysaito://oauthresponse";
     
     /**
      *  This method is not thread safe. It can be called only by the main thread
-     *  @param application The application context. The one obtained by calling Activity::getApplicationContext().
      */
     static HealthGraphClient getSingleton() {
     	if (mSingleton == null) {
@@ -126,7 +132,9 @@ public class HealthGraphClient {
     }
 
     /**
-     *  This method is not thread safe. It can be called only by the main thread
+     * This method should be called from the main Activity when the web browser is redirected to OAUTH2_REDIRECT_URI.
+     * 
+     * This method must be called by the main thread.
      */
     public static void onRedirect(Uri uri) {
     	if (mSingleton == null) {
@@ -139,72 +147,70 @@ public class HealthGraphClient {
     		}
     	}
     }
-    
+
     private static final int TOKEN_UNSET = 0;
     private static final int TOKEN_AUTHENTICATING = 1;
     private static final int TOKEN_ERROR = 2;
     private static final int TOKEN_OK = 3;
-    
     private int mAccessTokenState;  // one of TOKEN_XXX
-    private String mCachedAccessToken;
+    
+    /**
+     * Runkeeper oauth2 access token. null if not yet acquired. Once acquired, it is
+     * cached as part of a hidden application preference.
+     */
+    private String mToken;
+    
     private AuthenticatorImpl mAuthenticator;
     
     public HealthGraphClient() {
     	mAccessTokenState = TOKEN_UNSET;
     }
-    
-    public void executeGet(String path, String acceptType, GetResponseListener listener, Object destObject) {
-    	HttpGetTask task = new HttpGetTask(this, path, acceptType, destObject, listener);
-    	task.execute();
-    }
-    
-    public void executePut(String path, String contentType, Object object, PutResponseListener listener) {
-    	HttpPutTask task = new HttpPutTask(this, path, contentType, object, listener);
-    	task.execute();
-    }
 
-    public void executePost(String path, String contentType, Object object, PutResponseListener listener) {
-    	HttpPostTask task = new HttpPostTask(this, path, contentType, object, listener);
-    	task.execute();
-    }
-    
+    /**
+     * Get the user profile from runkeeper asynchronously. The result will be passed through the listener in the main thread.  
+     * @param listener Its onFinish callback delivers a JsonUser object on success
+     */
     public void getUser(GetResponseListener listener) {
     	executeGet("fitnessActivities", "application/vnd.com.runkeeper.User+json", listener, new JsonUser());
     }
     
+    /**
+     * Get the fitness activities by a user from runkeeper asynchronously. 
+     * The result will be passed through the listener in the main thread.  
+     * @param listener Its onFinish callback delivers a JsonFitnessActivities object on success
+     */
     public void getFitnessActivities(GetResponseListener listener) {
     	executeGet("fitnessActivities", "application/vnd.com.runkeeper.FitnessActivityFeed+json",
     			listener, new JsonFitnessActivities());
     }
+
+    public interface PutNewFitnessActivityListener {
+    	public void onFinish(Exception e, String runkeeperPath);
+    };
     
+    /**
+     * Save a new fitness activity in runkeeper.
+     */
     public void putNewFitnessActivity(
     		JsonActivity activity,
-    		PutResponseListener listener) {
-    	// activity.equipment = "None";
-    	activity.start_time = "Sat, 1 Jan 2011 00:00:00";
-    	/*
-    	JsonWGS84[] xx = new JsonWGS84[2];
-    	xx[0] = new JsonWGS84();
-    	xx[1] = new JsonWGS84();    	
-    	xx[0].timestamp = 0;
-    	xx[0].altitude = 0;
-    	xx[0].latitude = 37.399835865944624;
-    	xx[0].longitude = -122.0777643006295;
-    	xx[0].type = "start";
-    	xx[1].timestamp = 10;
-    	xx[1].altitude = 0;
-    	xx[1].latitude = 38.399835865944624;
-    	xx[1].longitude = -123.0777643006295;
-    	xx[1].type = "end";
-    	activity.path = xx;
-    	*/
+    		final PutNewFitnessActivityListener listener) {
     	executePost("fitnessActivities", "application/vnd.com.runkeeper.NewFitnessActivity+json", 
-    			activity, listener);
+    			activity, 
+    			new PutResponseListener() {
+    				public void onFinish(Exception e, HttpResponse response) {
+    					org.apache.http.Header[] headers = response.getHeaders("Location");
+    					
+    					String runkeeperPath = null;
+    					if (headers != null && headers.length > 0) runkeeperPath = headers[0].getValue();
+    					Log.d(TAG, "Runkeeper path: " + runkeeperPath);
+    					listener.onFinish(e, runkeeperPath);
+    		}
+    	});
     }
     
     private void cacheAccessToken(Context context, String token) {
     	synchronized(this) {
-    		mCachedAccessToken = token;
+    		mToken = token;
     		if (token == null) {
     			mAccessTokenState = TOKEN_ERROR;
     			Toast.makeText(context,  "Failed to sign into runkeeper", Toast.LENGTH_LONG).show();
@@ -224,28 +230,36 @@ public class HealthGraphClient {
     	}
     }
 
+    private void executeGet(String path, String acceptType, GetResponseListener listener, Object destObject) {
+    	HttpGetTask task = new HttpGetTask(this, path, acceptType, destObject, listener);
+    	task.execute();
+    }
+    
+    private void executePut(String path, String contentType, Object object, PutResponseListener listener) {
+    	HttpPutTask task = new HttpPutTask(this, path, contentType, object, listener);
+    	task.execute();
+    }
+
+    private void executePost(String path, String contentType, Object object, PutResponseListener listener) {
+    	HttpPostTask task = new HttpPostTask(this, path, contentType, object, listener);
+    	task.execute();
+    }
+    
     public abstract static interface GetResponseListener { 
     	public abstract void onFinish(Exception e, Object o);
     }
-    public abstract static interface PutResponseListener {
-    	public abstract void onFinish(Exception e);
+    
+    private abstract static interface PutResponseListener {
+    	public abstract void onFinish(Exception e, HttpResponse response);
     }
 
-    public static class MyException extends Exception {
-    	// Autogenerated
-		private static final long serialVersionUID = -268033828160301959L;
-		private final String mMessage;
-		public MyException(String s) { mMessage = "HealthGraph API failed: " + s; }
-		@Override public String toString() { return mMessage; }
-    }
-
-    private String getAccessToken() throws MyException {
+    private String getAccessToken() throws Exception {
     	synchronized(this) {
     		if (mAccessTokenState != TOKEN_OK) {
     			// TODO: provide more precise message
-    			throw new MyException("HealthGraph token retrieval failed");
+    			throw new Exception("HealthGraph token retrieval failed");
     		}
-    		return mCachedAccessToken;
+    		return mToken;
     	}
     }
     
@@ -295,7 +309,7 @@ public class HealthGraphClient {
     			StatusLine status = response.getStatusLine(); 
     			Log.d(TAG, "Get finished: " + status.getStatusCode() + ":" + status.getReasonPhrase());
     			if (status.getStatusCode() / 100 != 2) {
-    				mListener.onFinish(new MyException(
+    				mListener.onFinish(new Exception(
     						"HTTP Get failed: " + status.getStatusCode() + ": " + status.getReasonPhrase()),
     						null);
     				return;
@@ -303,7 +317,7 @@ public class HealthGraphClient {
     		}
     		HttpEntity entity = (response != null ? response.getEntity() : null);
     		if (entity == null) {
-    			mListener.onFinish(new MyException(
+    			mListener.onFinish(new Exception(
     					"HTTP Get returned an empty body"),
     					null);
     			return;
@@ -376,19 +390,20 @@ public class HealthGraphClient {
     	
     	@Override protected void onPostExecute(HttpResponse response) {
     		if (mException != null) {
-    			mListener.onFinish(mException);
+    			mListener.onFinish(mException, response);
     			return;
     		}
     		if (response != null) {
     			StatusLine status = response.getStatusLine(); 
     			Log.d(TAG, "PUT finished: " + status.getStatusCode() + ":" + status.getReasonPhrase());
     			if (status.getStatusCode() / 100 != 2) {
-    				mListener.onFinish(new MyException(
-    						"HTTP Get failed: " + status.getStatusCode() + ": " + status.getReasonPhrase()));
+    				mListener.onFinish(new Exception(
+    						"HTTP Get failed: " + status.getStatusCode() + ": " + status.getReasonPhrase()),
+    						response);
     				return;
     			}
     		}
-    		mListener.onFinish(null);
+    		mListener.onFinish(null, response);
     	}
     }
 
@@ -436,19 +451,20 @@ public class HealthGraphClient {
     	
     	@Override protected void onPostExecute(HttpResponse response) {
     		if (mException != null) {
-    			mListener.onFinish(mException);
+    			mListener.onFinish(mException, response);
     			return;
     		}
     		if (response != null) {
     			StatusLine status = response.getStatusLine(); 
     			Log.d(TAG, "PUT finished: " + status.getStatusCode() + ":" + status.getReasonPhrase());
     			if (status.getStatusCode() / 100 != 2) {
-    				mListener.onFinish(new MyException(
-    						"HTTP Get failed: " + status.getStatusCode() + ": " + status.getReasonPhrase()));
+    				mListener.onFinish(new Exception(
+    						"HTTP Get failed: " + status.getStatusCode() + ": " + status.getReasonPhrase()),
+    						response);
     				return;
     			}
     		}
-    		mListener.onFinish(null);
+    		mListener.onFinish(null, response);
     	}
     }
 
@@ -461,9 +477,9 @@ public class HealthGraphClient {
     	synchronized(this) {
     		SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
     		mAccessTokenState = TOKEN_UNSET;
-    		mCachedAccessToken = pref.getString("AccessToken", null);
-    		if (mCachedAccessToken != null) {
-    			Log.d(TAG, "Found cached token: " + mCachedAccessToken);
+    		mToken = pref.getString("AccessToken", null);
+    		if (mToken != null) {
+    			Log.d(TAG, "Found cached token: " + mToken);
     			mAccessTokenState = TOKEN_OK;
     			Toast.makeText(context,  "Signed into runkeeper", Toast.LENGTH_SHORT).show();
     		}
@@ -492,7 +508,7 @@ public class HealthGraphClient {
     		try {
     			OAuthClientRequest request = OAuthClientRequest
     					.authorizationLocation("https://runkeeper.com/apps/authorize")
-    					.setClientId(CLIENT_ID).setRedirectURI(REDIRECT_URI)
+    					.setClientId(OAUTH2_CLIENT_ID).setRedirectURI(OAUTH2_REDIRECT_URI)
     					.buildQueryMessage();
     			Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(request.getLocationUri() + "&response_type=code"));
     			mContext.startActivity(intent);
@@ -502,7 +518,7 @@ public class HealthGraphClient {
     	}
     	
     	public void onRedirect(Uri uri) {
-    		if (uri.toString().startsWith(REDIRECT_URI)) {
+    		if (uri.toString().startsWith(OAUTH2_REDIRECT_URI)) {
     			Log.d(TAG, "OnRedirect: " + uri.toString());
     			mCode = uri.getQueryParameter("code");
     			startTokenAcquisition();
@@ -519,9 +535,9 @@ public class HealthGraphClient {
     				Log.d(TAG, "Start token acquisition thread(0): ");
     				OAuthClientRequest request = OAuthClientRequest.tokenLocation("https://runkeeper.com/apps/token")
     						.setGrantType(GrantType.AUTHORIZATION_CODE)
-    						.setClientId(CLIENT_ID)
-    						.setClientSecret(CLIENT_SECRET)
-    						.setRedirectURI(REDIRECT_URI)
+    						.setClientId(OAUTH2_CLIENT_ID)
+    						.setClientSecret(OAUTH2_CLIENT_SECRET)
+    						.setRedirectURI(OAUTH2_REDIRECT_URI)
     						.setCode(mCode)
     						.buildBodyMessage();
     				Log.d(TAG, "Start token acquisition thread: " + request.getLocationUri());

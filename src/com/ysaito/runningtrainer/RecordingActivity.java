@@ -238,6 +238,7 @@ public class RecordingActivity extends MapActivity {
     	mLastReportedActivity = activity;
     	mLastReportedPath = path;
     	mMapOverlay.updatePath(path);
+    	mStats.updatePath(path);
     	mMapView.invalidate();
     }
     

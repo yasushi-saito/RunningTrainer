@@ -2,7 +2,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
   <item android:id="@+id/record_list_resend" 
 	android:title="@string/resend" />
- 
+  <item android:id="@+id/record_list_delete" 
+	android:title="@string/delete" />
 </menu>
     
     
