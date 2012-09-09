@@ -8,4 +8,47 @@
     android:entries="@array/unit"
     android:entryValues="@array/unit"/>
     />
+  <ListPreference
+    android:title="Display 1"
+    android:key="display0"
+    android:defaultValue="total_distance"
+    android:entries="@array/display_type"
+    android:entryValues="@array/display_type_values"/>
+    />
+  <ListPreference
+    android:title="Display 2"
+    android:key="display1"
+    android:defaultValue="total_elapsed"
+    android:entries="@array/display_type"
+    android:entryValues="@array/display_type_values"/>
+    />
+  <ListPreference
+    android:title="Display 3"
+    android:key="display2"
+    android:defaultValue="current_pace"
+    android:entries="@array/display_type"
+    android:entryValues="@array/display_type_values"/>
+    />
+  <ListPreference
+    android:title="Display 4"
+    android:key="display3"
+    android:defaultValue="lap_distance"
+    android:entries="@array/display_type"
+    android:entryValues="@array/display_type_values"/>
+    />
+  <ListPreference
+    android:title="Display 5"
+    android:key="display4"
+    android:defaultValue="lap_elapsed"
+    android:entries="@array/display_type"
+    android:entryValues="@array/display_type_values"/>
+    />
+  <ListPreference
+    android:title="Display 6"
+    android:key="display5"
+    android:defaultValue="lap_pace"
+    android:entries="@array/display_type"
+    android:entryValues="@array/display_type_values"/>
+    />
+    
 </PreferenceScreen>

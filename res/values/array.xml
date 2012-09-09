@@ -4,4 +4,33 @@
     <item>US</item>
     <item>Metric</item>
   </string-array>
+
+  <string-array name="display_type">
+    <item>Total distance</item>
+    <item>Total elapsed time</item>
+    <item>Average pace since the start of the activity</item>
+    <item>Current pace</item>
+    <item>Lap distance</item>
+    <item>Lap elapsed time</item>
+    <item>Lap pace</item>
+    <item>Auto lap distance</item>
+    <item>Auto lap elapsed time</item>
+    <item>Auto lap pace</item>
+    <item>None</item>
+  </string-array>
+
+  <string-array name="display_type_values">
+    <item>total_distance</item>
+    <item>total_elapsed</item>
+    <item>total_pace</item>
+    <item>current_pace</item>
+    <item>lap_distance</item>
+    <item>lap_elapsed</item>
+    <item>lap_pace</item>
+    <item>auto_lap_distance</item>
+    <item>auto_lap_elapsed</item>
+    <item>auto_lap_pace</item>
+    <item>none</item>
+  </string-array>
+  
 </resources>

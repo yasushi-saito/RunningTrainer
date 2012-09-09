@@ -3,32 +3,88 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
+    
     <TextView
-        android:id="@+id/pace_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="@dimen/padding_medium"
-        android:text="@string/pace"
+        style="@style/ActivityDisplay"
+        android:id="@+id/view0"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         />
-
     <TextView
-        android:id="@+id/distance_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="@dimen/padding_medium"
-        android:text="@string/distance"
-        android:layout_toRightOf="@id/pace_view"
+        style="@style/ActivityLegend"
+        android:id="@+id/view0_title"
+        android:layout_below="@id/view0"
+        android:layout_alignRight="@id/view0"
         />
 
+    <!-- view1 is to the right of view0 -->
     <TextView
-        android:id="@+id/elapsed_view"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:padding="@dimen/padding_medium"
-        android:text="@string/elapsed"
-        android:layout_toRightOf="@id/distance_view"
+        style="@style/ActivityDisplay"
+        android:id="@+id/view1"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        />
+    <TextView
+        style="@style/ActivityLegend"
+        android:id="@+id/view1_title"
+        android:layout_below="@id/view1"
+        android:layout_alignRight="@id/view1"
+        />
+    
+    <!-- view2 is to the right of view1 -->
+    <TextView
+        style="@style/ActivityDisplay"
+        android:id="@+id/view2"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        />
+    <TextView
+        style="@style/ActivityLegend"
+        android:id="@+id/view2_title"
+        android:layout_below="@id/view2"
+        android:layout_alignRight="@id/view2"
+        />
+
+    <!-- view3 is below view0 -->
+    <TextView
+        style="@style/ActivityDisplay"
+        android:id="@+id/view3"
+        android:layout_below="@id/view0_title"
+        android:layout_alignLeft="@id/view0"
+        />
+    <TextView
+        style="@style/ActivityLegend"
+        android:id="@+id/view3_title"
+        android:layout_below="@id/view3"
+        android:layout_alignRight="@id/view3"
+        />
+
+    <!-- view4 is below view1 -->
+    <TextView
+        style="@style/ActivityDisplay"
+        android:id="@+id/view4"
+        android:layout_alignTop="@id/view3"
+        android:layout_alignLeft="@id/view1"
+        />
+    <TextView
+        style="@style/ActivityLegend"
+        android:id="@+id/view4_title"
+        android:layout_alignTop="@id/view3_title"
+        android:layout_alignRight="@id/view4"
+        />
+
+    <!-- view5 is below view2 -->
+    <TextView
+        style="@style/ActivityDisplay"
+        android:id="@+id/view5"
+        android:layout_alignTop="@id/view3"
+        android:layout_alignLeft="@id/view2"
+        />
+    <TextView
+        style="@style/ActivityLegend"
+        android:id="@+id/view5_title"
+        android:layout_alignTop="@id/view3_title"
+        android:layout_alignRight="@id/view2"
         />
     
     <Button
@@ -38,10 +94,22 @@
       android:layout_marginLeft="10dip"
       android:layout_marginRight="10dip"
       android:text="@string/start"
-      android:layout_below="@id/pace_view"
+      android:textSize="30sp"
+      android:layout_below="@id/view3_title"
       android:layout_alignParentLeft="true"
        />
     
+    <Button
+      android:id="@+id/lap_button"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginLeft="10dip"
+      android:layout_marginRight="10dip"
+      android:text="@string/lap"
+      android:textSize="30sp"
+      android:layout_alignBottom="@id/start_stop_button"
+      android:layout_centerHorizontal="true"
+       />
     <Button
       android:id="@+id/pause_resume_button"
       android:layout_width="wrap_content"
@@ -49,9 +117,11 @@
       android:layout_marginLeft="10dip"
       android:layout_marginRight="10dip"
       android:text="@string/pause"
-      android:layout_below="@id/pace_view"
+      android:textSize="30sp"
+      android:layout_alignBottom="@id/start_stop_button"
       android:layout_alignParentRight="true"
        />
+    
     
     <com.google.android.maps.MapView
             xmlns:android="http://schemas.android.com/apk/res/android"

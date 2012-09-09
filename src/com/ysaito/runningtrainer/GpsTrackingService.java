@@ -92,7 +92,7 @@ public class GpsTrackingService extends Service {
 			public void onLocationChanged(Location location) {
 				// Called when a new location is found by the network location provider.
 				// makeUseOfNewLocation(location);
-				final long time = location.getTime();
+				final long time = System.currentTimeMillis();
 				Log.d(TAG, "loc: " + time + "/" + location.toString());
 				if (time < mLastReportTime + MIN_RECORD_INTERVAL_MS) return;
 				onGpsLocationUpdate(time, location);
@@ -126,7 +126,6 @@ public class GpsTrackingService extends Service {
 	public void onStart(Intent intent, int startid) {
 		Toast.makeText(this, toString() + ": Started", Toast.LENGTH_LONG).show();
 		mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
-		mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
 	}
 
 	private void onGpsLocationUpdate(long now, Location newLocation) {

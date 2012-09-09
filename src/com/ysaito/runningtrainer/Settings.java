@@ -25,6 +25,11 @@ public class Settings {
 		final String unit = prefs.getString("unit", "US");
 		if (unit.equals("US")) settings.unit = US;
 		
+		settings.viewTypes = new String[6];
+		for (int i = 0; i < settings.viewTypes.length; ++i) {
+			settings.viewTypes[i] = prefs.getString("display" + i, "none");
+		}
+		
 		// TODO: fill the locale
 		return settings;
 	}
@@ -35,4 +40,5 @@ public class Settings {
 	
 	public int unit = METRIC;
 	public Locale locale = Locale.US;
+	public String viewTypes[];
 }
