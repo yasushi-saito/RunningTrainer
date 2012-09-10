@@ -18,7 +18,10 @@ package com.ysaito.runningtrainer;
  * TODO: show past activity in a map
  * TODO: show some indicator when runkeeper communication is happening
  * TODO: notification to show distance, duration, etc.
+ * TODO: undo of delete record
  */
+import java.util.ArrayList;
+
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -32,6 +35,18 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
 	static final String TAG = "Main";
 
+	public <T extends Fragment> void addTabIfNecessary(String text, Class<T> classObject) {
+		final ActionBar bar = getActionBar(); 
+		final int n = bar.getTabCount();
+		for (int i = 0; i < n; ++i) {
+			if (bar.getTabAt(i).getText().equals(text)) return;
+		}
+		ActionBar.Tab tab = getActionBar().newTab()
+                .setText(text)
+                .setTabListener(new TabListener<T>(this, text, classObject));
+		bar.addTab(tab);
+	}
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -39,27 +54,17 @@ public class MainActivity extends Activity {
         final ActionBar bar = getActionBar();
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         bar.setDisplayOptions(0, ActionBar.DISPLAY_SHOW_TITLE);
-
-        bar.addTab(bar.newTab()
-                .setText("Record")
-                .setTabListener(new TabListener<RecordingFragment>(
-                        this, "Record", RecordingFragment.class)));
-        bar.addTab(bar.newTab()
-                .setText("Log")
-                .setTabListener(new TabListener<RecordListFragment>(
-                        this, "Log", RecordListFragment.class)));
-        bar.addTab(bar.newTab()
-                .setText("Settings")
-                .setTabListener(new TabListener<SettingsFragment>(
-                        this, "Settings", SettingsFragment.class)));
         
+        addTabIfNecessary("Record", RecordingFragment.class);
+        addTabIfNecessary("Log", RecordListFragment.class);        
+        addTabIfNecessary("Settings", SettingsFragment.class);        
         Log.d(TAG, "RunningTrainer started");
 
         if (getExternalFilesDir(null) == null) {
         	Toast toast = Toast.makeText(this, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG);
         	toast.show();
         }
-        HealthGraphClient hgClient = HealthGraphClient.getSingleton();
+        final HealthGraphClient hgClient = HealthGraphClient.getSingleton();
         hgClient.startAuthentication(this);
         hgClient.getUser(new HealthGraphClient.GetResponseListener() {
         	public void onFinish(Exception e, Object o) {

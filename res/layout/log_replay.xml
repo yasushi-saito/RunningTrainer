@@ -1,0 +1,82 @@
+<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/log_replay_flipper"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+
+  <!--  The view for showing the list of activities -->
+  <RelativeLayout
+      xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools"
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent"
+      android:orientation="vertical" >
+
+      <ListView
+          android:id="@android:id/list"
+          android:layout_width="match_parent"
+          android:layout_height="0dip"
+          android:fastScrollEnabled="true"
+          android:transcriptMode="normal" />
+  </RelativeLayout>
+
+  <TextView
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent"
+      android:text="FOOBAR" />
+
+  <!-- The view for showing details of one activity -->
+  <RelativeLayout
+      xmlns:tools="http://schemas.android.com/tools"
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent" >
+
+    <TextView
+        style="@style/ActivityDisplay"
+        android:id="@+id/distance"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        />
+    <TextView
+        style="@style/ActivityLegend"
+        android:id="@+id/distance_title"
+        android:layout_below="@id/distance"
+        android:layout_alignRight="@id/distance"
+        />
+
+    <TextView
+        style="@style/ActivityDisplay"
+        android:id="@+id/duration"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        />
+    <TextView
+        style="@style/ActivityLegend"
+        android:id="@+id/duration_title"
+        android:layout_below="@id/duration"
+        android:layout_alignRight="@id/duration"
+        />
+    
+    <TextView
+        style="@style/ActivityDisplay"
+        android:id="@+id/pace"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        />
+    <TextView
+        style="@style/ActivityLegend"
+        android:id="@+id/pace_title"
+        android:layout_below="@id/pace"
+        android:layout_alignRight="@id/pace"
+        />
+
+    <com.google.android.maps.MapView
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/map_view"
+            android:layout_below="@id/distance_title"
+            android:clickable="true"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:apiKey="0bz2DrYPiw87fMixiWlMONq1nDV9ZDJP7XgzESQ"
+                 />
+  </RelativeLayout>
+</ViewFlipper>
