@@ -56,7 +56,7 @@ public class MainActivity extends Activity {
         bar.setDisplayOptions(0, ActionBar.DISPLAY_SHOW_TITLE);
         
         addTabIfNecessary("Record", RecordingFragment.class);
-        addTabIfNecessary("Log", RecordListFragment.class);        
+        addTabIfNecessary("List", RecordListFragment.class);        
         addTabIfNecessary("Settings", SettingsFragment.class);        
         Log.d(TAG, "RunningTrainer started");
 

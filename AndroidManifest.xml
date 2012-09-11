@@ -43,6 +43,11 @@
             android:label="@string/title_activity_record" 
             android:screenOrientation="portrait">
         </activity>
+        <activity
+            android:name=".RecordReplayActivity"
+            android:label="@string/title_activity_replay" 
+            android:screenOrientation="portrait">
+        </activity>
         <service android:enabled="true" android:name=".GpsTrackingService" />
     </application>
 

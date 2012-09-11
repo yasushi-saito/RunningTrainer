@@ -1,34 +1,7 @@
-<ViewFlipper xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/log_replay_flipper"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
-
-  <!--  The view for showing the list of activities -->
-  <RelativeLayout
-      xmlns:android="http://schemas.android.com/apk/res/android"
-      xmlns:tools="http://schemas.android.com/tools"
-      android:layout_width="fill_parent"
-      android:layout_height="fill_parent"
-      android:orientation="vertical" >
-
-      <ListView
-          android:id="@android:id/list"
-          android:layout_width="match_parent"
-          android:layout_height="0dip"
-          android:fastScrollEnabled="true"
-          android:transcriptMode="normal" />
-  </RelativeLayout>
-
-  <TextView
-      android:layout_width="fill_parent"
-      android:layout_height="fill_parent"
-      android:text="FOOBAR" />
-
-  <!-- The view for showing details of one activity -->
-  <RelativeLayout
-      xmlns:tools="http://schemas.android.com/tools"
-      android:layout_width="fill_parent"
-      android:layout_height="fill_parent" >
 
     <TextView
         style="@style/ActivityDisplay"
@@ -78,5 +51,4 @@
             android:layout_height="fill_parent"
             android:apiKey="0bz2DrYPiw87fMixiWlMONq1nDV9ZDJP7XgzESQ"
                  />
-  </RelativeLayout>
-</ViewFlipper>
+</RelativeLayout>

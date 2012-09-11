@@ -2,6 +2,8 @@ package com.ysaito.runningtrainer;
 
 import java.util.ArrayList;
 
+import com.ysaito.runningtrainer.HealthGraphClient.JsonActivity;
+
 import android.app.Activity;
 import android.app.ListFragment;
 import android.content.Context;
@@ -27,7 +29,7 @@ import android.widget.Toast;
 public class RecordListFragment extends ListFragment {
 	private static final String TAG = "RecordList";
 	private RecordManager mRecordManager;
-	private Activity mActivity;
+	private MainActivity mActivity;
 	private MyAdapter mAdapter;
 
 	private class ListThread extends AsyncTask<Integer, Integer, ArrayList<RecordSummary>> {
@@ -77,7 +79,7 @@ public class RecordListFragment extends ListFragment {
 		//requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		//setContentView(R.layout.record_list);
 		
-		mActivity = getActivity();
+		mActivity = (MainActivity)getActivity();
 		mRecordManager = new RecordManager(mActivity);
 		mAdapter = new MyAdapter(mActivity);
 		setListAdapter(mAdapter);
@@ -102,9 +104,27 @@ public class RecordListFragment extends ListFragment {
 		thread.execute((Integer[])null);
 	}
 
+	private class ReadRecordTask extends AsyncTask<String, Void, HealthGraphClient.JsonActivity> {
+		@Override protected HealthGraphClient.JsonActivity doInBackground(String... basename) {
+			return mRecordManager.readRecord(basename[0]);
+		}
+		
+		@Override protected void onPostExecute(HealthGraphClient.JsonActivity record) {
+			if (record == null) {
+				Toast.makeText(mActivity,  "Failed to read record", Toast.LENGTH_LONG).show();
+				return;
+			}
+			Toast.makeText(mActivity,  "Start show!", Toast.LENGTH_LONG).show();
+			mActivity.addTabIfNecessary("Log", RecordReplayFragment.class);        
+		}
+	}
+	
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
-		Log.d(TAG,"PICKED: " + position);
+		final RecordSummary summary = mAdapter.getItem(position);
+		if (summary != null) {
+			new ReadRecordTask().execute(new String[]{summary.basename});
+		}
 	}
 	
 	@Override
@@ -117,7 +137,7 @@ public class RecordListFragment extends ListFragment {
 		final MenuInflater inflater = getActivity().getMenuInflater();
 		inflater.inflate(R.menu.record_list_context_menu, menu);
 	}
-	
+
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
