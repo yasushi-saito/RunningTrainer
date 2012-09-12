@@ -7,6 +7,7 @@ import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.app.LocalActivityManager;
 import android.content.Intent;
@@ -15,6 +16,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +29,8 @@ public abstract class MapWrapperFragment extends Fragment {
     static final String TAG = "RecordingFragment";
     private static final String KEY_STATE_BUNDLE = "localActivityManagerState";
 	private LocalActivityManager mLocalActivityManager;
-    
+	private Activity mChildActivity = null;
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -50,8 +53,17 @@ public abstract class MapWrapperFragment extends Fragment {
         currentView.setVisibility(View.VISIBLE); 
         currentView.setFocusableInTouchMode(true); 
         ((ViewGroup) currentView).setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+        
+        mChildActivity = mLocalActivityManager.getActivity("tag");
         return currentView;
     }
+
+    /**
+     * @return Get the Activity object (of type getActivityClass()) that's wrapped inside this fragment. May return null if
+     * onCreateView hasn't been called.
+     */
+    public final Activity getChildActivity() { return mChildActivity; }
+    
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);

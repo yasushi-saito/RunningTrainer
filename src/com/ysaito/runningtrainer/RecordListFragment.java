@@ -115,7 +115,8 @@ public class RecordListFragment extends ListFragment {
 				return;
 			}
 			Toast.makeText(mActivity,  "Start show!", Toast.LENGTH_LONG).show();
-			mActivity.addTabIfNecessary("Log", RecordReplayFragment.class);        
+			RecordReplayFragment fragment = (RecordReplayFragment)mActivity.addTabIfNecessary("Log", "com.ysaito.runningtrainer.RecordReplayFragment");
+			fragment.setRecord(record);
 		}
 	}
 	

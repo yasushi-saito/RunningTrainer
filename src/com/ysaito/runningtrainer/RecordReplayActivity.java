@@ -33,31 +33,19 @@ public class RecordReplayActivity extends MapActivity {
 
     static public class MyOverlay extends Overlay {
         private ArrayList<GeoPoint> mPoints;
-        private double mCurrentAccuracy; // the latest report on GPS accuracy (meters)
-        private GeoPoint mCurrentLocation;
         
         public MyOverlay() {
             mPoints = new ArrayList<GeoPoint>();
         }
 
-    	public void clearPath() {
-    		mPoints.clear();
-    		mCurrentLocation = null;
-    	}
-
-        public void updatePath(ArrayList<HealthGraphClient.JsonWGS84> path) {
-        	while (mPoints.size() < path.size()) {
-        		HealthGraphClient.JsonWGS84 point = path.get(mPoints.size());
+        public void setPath(HealthGraphClient.JsonWGS84[] path) {
+        	mPoints.clear();
+        	for (HealthGraphClient.JsonWGS84 point : path) {
         		GeoPoint p = new GeoPoint((int)(point.latitude * 1e6), (int)(point.longitude * 1e6));
         		mPoints.add(p);
         	}
         }
 
-        public void setCurrentLocation(HealthGraphClient.JsonWGS84 location, double accuracy) {
-        	mCurrentLocation = new GeoPoint((int)(location.latitude * 1e6), (int)(location.longitude * 1e6));
-        	mCurrentAccuracy = accuracy;
-        }
-        
         @Override
         public boolean draw(Canvas canvas, MapView mapView, boolean shadow, long when) {
             boolean v = super.draw(canvas, mapView, shadow, when);
@@ -85,18 +73,6 @@ public class RecordReplayActivity extends MapActivity {
             		}
             		canvas.drawPath(path, paint);
             	}
-            }
-            if (mCurrentLocation != null) {
-            	Point pointA = new Point();
-            	projection.toPixels(mCurrentLocation, pointA);
-            	
-            	paint.setColor(0xff000080);
-            	paint.setStyle(Paint.Style.STROKE);
-            	paint.setStrokeWidth(8);
-            	paint.setColor(0xff0000ff);
-            	
-            	float radius = Math.max(10.0f, projection.metersToEquatorPixels((float)mCurrentAccuracy));
-            	canvas.drawCircle(pointA.x, pointA.y, radius, paint);
             }
             return v;
         }
@@ -126,4 +102,9 @@ public class RecordReplayActivity extends MapActivity {
 
     @Override
     public boolean isRouteDisplayed() { return false; }
+    
+    public void setRecord(HealthGraphClient.JsonActivity record) {
+    	mMapOverlay.setPath(record.path);
+    	mMapView.invalidate();
+    }
 }
