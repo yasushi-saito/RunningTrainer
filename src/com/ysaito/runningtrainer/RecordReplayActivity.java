@@ -81,30 +81,53 @@ public class RecordReplayActivity extends MapActivity {
 
     private MyOverlay mMapOverlay;
     private MapView mMapView;
-    private TextView mDistanceView;
-    private TextView mDurationView;    
-    private TextView mPaceView;        
-
-    private Settings mSettings;  // User pref settings at the start of the activity
-    private RecordManager mRecordManager;
-
+    private HealthGraphClient.JsonActivity mRecord;
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.log_replay);
-        mRecordManager = new RecordManager(this);
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.map_view);
         mMapView.getOverlays().add(mMapOverlay);
         mMapView.setBuiltInZoomControls(true);
-
+        
     }
 
+    @Override public void onResume() {
+    	super.onResume();
+    	Settings settings = Settings.getSettings(this);
+    	((TextView)findViewById(R.id.distance_title)).setText(
+    			"Distance (" + Util.distanceUnitString(settings) + ")");
+    	((TextView)findViewById(R.id.duration_title)).setText("Elapsed");
+    	((TextView)findViewById(R.id.pace_title)).setText(
+    			"Pace " + Util.paceUnitString(settings));
+    	
+    	if (mRecord != null) updateStatsViews();
+    }
+
+    private void updateStatsViews() {
+    	TextView distanceView = (TextView)findViewById(R.id.distance);
+    	TextView durationView = (TextView)findViewById(R.id.duration);
+    	TextView paceView = (TextView)findViewById(R.id.pace);    	
+
+    	Settings settings = Settings.getSettings(this);
+    	distanceView.setText(Util.distanceToString(mRecord.total_distance, settings));
+    	durationView.setText(Util.durationToString(mRecord.duration));
+    	if (mRecord.total_distance <= 0.0) {
+    		paceView.setText("0:00");
+    	} else {
+    		paceView.setText(Util.paceToString(mRecord.duration / mRecord.total_distance, settings));
+    	}
+    }
+    
     @Override
     public boolean isRouteDisplayed() { return false; }
     
     public void setRecord(HealthGraphClient.JsonActivity record) {
+    	mRecord = record;
     	mMapOverlay.setPath(record.path);
     	mMapView.invalidate();
+    	updateStatsViews();
     }
 }

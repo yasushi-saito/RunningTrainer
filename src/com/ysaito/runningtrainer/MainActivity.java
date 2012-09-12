@@ -19,7 +19,6 @@ package com.ysaito.runningtrainer;
  * TODO: show some indicator when runkeeper communication is happening
  * TODO: notification to show distance, duration, etc.
  * TODO: undo of delete record
- * TODO: stopping the record doesn't stop the "seconds" view
  */
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
@@ -46,12 +45,11 @@ public class MainActivity extends Activity {
 			ft.add(android.R.id.content, fragment, text);
 			ft.detach(fragment);
 			ft.commit();
+			ActionBar.Tab tab = getActionBar().newTab()
+					.setText(text)
+					.setTabListener(new MyTabListener(this, fragment));
+			bar.addTab(tab);
 		}
-		
-		ActionBar.Tab tab = getActionBar().newTab()
-                .setText(text)
-                .setTabListener(new MyTabListener(this, fragment));
-		bar.addTab(tab);
 		return fragment;
 	}
 	

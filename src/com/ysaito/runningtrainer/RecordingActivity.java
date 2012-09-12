@@ -399,7 +399,6 @@ public class RecordingActivity extends MapActivity {
         for (int i = 0; i < mStatsViews.length; ++i) {
         	mStatsViews[i].update(null,  null, null, mSettings);
         }
-        
         updateTimerIfNecessary();
     }
     
@@ -415,7 +414,6 @@ public class RecordingActivity extends MapActivity {
 
         mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
 
-        
         mPauseResumeButton = (Button)findViewById(R.id.pause_resume_button);
         mPauseResumeButton.setEnabled(false); // pause/resume is disabled unless the recorder is running
         mPauseResumeButton.setOnClickListener(new Button.OnClickListener() {
@@ -437,7 +435,6 @@ public class RecordingActivity extends MapActivity {
         mLapButton.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
         		mUserLapStats = new Stats();
-        		onEverySecond();
         	}
         });
         
@@ -478,6 +475,7 @@ public class RecordingActivity extends MapActivity {
 
     private void updateTimerIfNecessary() {
     	stopTimer();
+    	
     	if (mRecordingState == RUNNING) {
     		mTimer = new Timer();
     		mTimer.schedule(new TimerTask() {
@@ -493,6 +491,7 @@ public class RecordingActivity extends MapActivity {
     private void stopTimer() {
     	if (mTimer != null) {
     		mTimer.cancel();
+    		mTimer.purge();
     		mTimer = null;
     	}
     }
@@ -510,40 +509,36 @@ public class RecordingActivity extends MapActivity {
 
     private void onStopButtonPress() {
     	mRecordingState = STOPPED;
+    	updateTimerIfNecessary();
     	GpsTrackingService.stopGpsServiceIfNecessary(this);
-    	if (mTotalStats == null || mLastReportedPath == null || mLastReportedPath.size() < 1) {
-    		// This shouldn't happen in practice, but just a paranoid check
-    		return;
-    	}
-
-    	HealthGraphClient.JsonWGS84 last = mLastReportedPath.get(mLastReportedPath.size() - 1);
-    	HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
-    	wgs.latitude = last.latitude;
-    	wgs.longitude = last.longitude;
-    	wgs.altitude = last.altitude;
-    	wgs.type = "end";
-    	wgs.timestamp = (System.currentTimeMillis()- mTotalStats.getStartTime()) / 1000.0;
-    	mLastReportedPath.add(wgs);
-    	mLastReportedActivity.path = new HealthGraphClient.JsonWGS84[mLastReportedPath.size()];
-    	for (int i = 0; i < mLastReportedPath.size(); ++i) mLastReportedActivity.path[i] = mLastReportedPath.get(i);
-
-    	mLastReportedActivity.duration = wgs.timestamp;
-    	HealthGraphClient.JsonWGS84 lastLocation = null;
-
-    	float[] distance = new float[1];
-    	for (HealthGraphClient.JsonWGS84 location : mLastReportedActivity.path) {
-    		if (lastLocation != null) {
-    			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
-    					location.latitude, location.longitude,
-    					distance);
-    			mLastReportedActivity.total_distance += distance[0];
+    	if (mTotalStats != null && mLastReportedPath != null && mLastReportedPath.size() >= 1) {
+    		HealthGraphClient.JsonWGS84 last = mLastReportedPath.get(mLastReportedPath.size() - 1);
+    		HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
+    		wgs.latitude = last.latitude;
+    		wgs.longitude = last.longitude;
+    		wgs.altitude = last.altitude;
+    		wgs.type = "end";
+    		wgs.timestamp = (System.currentTimeMillis()- mTotalStats.getStartTime()) / 1000.0;
+    		mLastReportedPath.add(wgs);
+    		mLastReportedActivity.path = new HealthGraphClient.JsonWGS84[mLastReportedPath.size()];
+    		for (int i = 0; i < mLastReportedPath.size(); ++i) mLastReportedActivity.path[i] = mLastReportedPath.get(i);
+    		
+    		mLastReportedActivity.duration = wgs.timestamp;
+    		HealthGraphClient.JsonWGS84 lastLocation = null;
+    		
+    		float[] distance = new float[1];
+    		for (HealthGraphClient.JsonWGS84 location : mLastReportedActivity.path) {
+    			if (lastLocation != null) {
+    				Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+    						location.latitude, location.longitude,
+    						distance);
+    				mLastReportedActivity.total_distance += distance[0];
+    			}
+    			lastLocation = location;
     		}
-    		lastLocation = location;
+    		mRecordManager.addRecord(mTotalStats.getStartTime(), mLastReportedActivity);
     	}
-    	mRecordManager.addRecord(mTotalStats.getStartTime(), mLastReportedActivity);
-    	stopTimer();
-    }
-
+    }	
     private void onPauseButtonPress() {
     	mRecordingState = PAUSED;
     	updateTimerIfNecessary();
