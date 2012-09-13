@@ -36,7 +36,18 @@ import android.widget.Toast;
 public class MainActivity extends Activity {
 	static final String TAG = "Main";
 
-	public Fragment addTabIfNecessary(String text, String className) {
+	public void selectTab(String text) {
+		final ActionBar bar = getActionBar();
+		for (int i = 0; i < bar.getTabCount(); ++i) {
+			ActionBar.Tab tab = bar.getTabAt(i);
+			if (text.equals(tab.getText())) {
+				tab.select();
+				return;
+			}
+		}
+	}
+	
+	public Fragment addTabIfNecessary(String text, String className, String toRightOf) {
 		final ActionBar bar = getActionBar();
 
 		final FragmentManager manager = getFragmentManager();
@@ -47,10 +58,21 @@ public class MainActivity extends Activity {
 			ft.add(android.R.id.content, fragment, text);
 			ft.detach(fragment);
 			ft.commit();
+			
 			ActionBar.Tab tab = getActionBar().newTab()
 					.setText(text)
 					.setTabListener(new MyTabListener(this, fragment));
-			bar.addTab(tab);
+			if (toRightOf == null) {
+				bar.addTab(tab, 0);
+			} else {
+				for (int i = 0; i < bar.getTabCount(); ++i) {
+					ActionBar.Tab existing = bar.getTabAt(i);
+					if (toRightOf.equals(existing.getText())) {
+						bar.addTab(tab, i + 1);
+						break;
+					}
+				}
+			}
 		}
 		return fragment;
 	}
@@ -65,9 +87,9 @@ public class MainActivity extends Activity {
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         bar.setDisplayOptions(0, ActionBar.DISPLAY_SHOW_TITLE);
 
-        addTabIfNecessary("Record", "com.ysaito.runningtrainer.RecordingFragment");
-        addTabIfNecessary("List", "com.ysaito.runningtrainer.RecordListFragment");
-        addTabIfNecessary("Settings", "com.ysaito.runningtrainer.SettingsFragment");
+        addTabIfNecessary("Record", "com.ysaito.runningtrainer.RecordingFragment", null);
+        addTabIfNecessary("List", "com.ysaito.runningtrainer.RecordListFragment", "Record");
+        addTabIfNecessary("Settings", "com.ysaito.runningtrainer.SettingsFragment", "List");
         Log.d(TAG, "RunningTrainer started");
 
         if (getExternalFilesDir(null) == null) {

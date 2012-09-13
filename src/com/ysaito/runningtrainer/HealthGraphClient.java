@@ -198,13 +198,15 @@ public class HealthGraphClient {
     			activity, 
     			new PutResponseListener() {
     				public void onFinish(Exception e, HttpResponse response) {
-    					org.apache.http.Header[] headers = response.getHeaders("Location");
-    					
-    					String runkeeperPath = null;
-    					if (headers != null && headers.length > 0) runkeeperPath = headers[0].getValue();
-    					Log.d(TAG, "Runkeeper path: " + runkeeperPath);
-    					listener.onFinish(e, runkeeperPath);
-    		}
+    					if (response != null) {
+    						org.apache.http.Header[] headers = response.getHeaders("Location");
+    						String runkeeperPath = null;
+    						if (headers != null && headers.length > 0) runkeeperPath = headers[0].getValue();
+    						listener.onFinish(e, runkeeperPath);
+    					} else {
+    						listener.onFinish(e, null);
+    					}
+    				}
     	});
     }
     

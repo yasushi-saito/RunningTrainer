@@ -88,10 +88,9 @@ public class RecordReplayActivity extends MapActivity {
     	super.onResume();
     	Settings settings = Settings.getSettings(this);
     	((TextView)findViewById(R.id.distance_title)).setText(
-    			"Distance (" + Util.distanceUnitString(settings) + ")");
-    	((TextView)findViewById(R.id.duration_title)).setText("Elapsed");
-    	((TextView)findViewById(R.id.pace_title)).setText(
-    			"Pace " + Util.paceUnitString(settings));
+    			Util.distanceUnitString(settings));
+    	((TextView)findViewById(R.id.duration_title)).setText("Time");
+    	((TextView)findViewById(R.id.pace_title)).setText("Pace");
     	
     	if (mRecord != null) {
     		updateStatsViews();

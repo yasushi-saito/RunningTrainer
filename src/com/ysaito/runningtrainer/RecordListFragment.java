@@ -114,9 +114,12 @@ public class RecordListFragment extends ListFragment {
 				Toast.makeText(mActivity,  "Failed to read record", Toast.LENGTH_LONG).show();
 				return;
 			}
-			Toast.makeText(mActivity,  "Start show!", Toast.LENGTH_LONG).show();
-			RecordReplayFragment fragment = (RecordReplayFragment)mActivity.addTabIfNecessary("Log", "com.ysaito.runningtrainer.RecordReplayFragment");
+			RecordReplayFragment fragment = (RecordReplayFragment)mActivity.addTabIfNecessary(
+					"Log", 
+					"com.ysaito.runningtrainer.RecordReplayFragment",
+					"List");
 			fragment.setRecord(record);
+			mActivity.selectTab("Log");
 		}
 	}
 	
