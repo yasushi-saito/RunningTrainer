@@ -1,5 +1,11 @@
 package com.ysaito.runningtrainer;
 
+import java.util.ArrayList;
+
+import com.google.android.maps.GeoPoint;
+import com.google.android.maps.MapController;
+import com.google.android.maps.MapView;
+
 public class Util {
 	static public String durationToString(double seconds) {
 		if (seconds < 3600) {
@@ -46,5 +52,25 @@ public class Util {
 			double secondsPerKm = secondsPerMeter * 1000;
 			return durationToString(secondsPerKm);
 		}
+	}
+	
+	static public void RescaleMapView(MapView mapView, ArrayList<GeoPoint> points) {
+		if (points.size() == 0) return;
+		
+		int minLat = Integer.MAX_VALUE;
+		int maxLat = Integer.MIN_VALUE;
+		int minLong = Integer.MAX_VALUE;
+		int maxLong = Integer.MIN_VALUE;
+		for (GeoPoint point : points) {
+			final int lat = point.getLatitudeE6();
+			final int longitude = point.getLongitudeE6();
+			minLat = Math.min(minLat, lat);
+			maxLat = Math.max(maxLat, lat);
+			minLong = Math.min(minLong, longitude);
+			maxLong = Math.max(maxLong, longitude);
+		}
+		final MapController controller = mapView.getController();
+		controller.zoomToSpan(maxLat - minLat, maxLong - minLong);
+		controller.animateTo(new GeoPoint((minLat + maxLat) / 2, (minLong + maxLong) / 2));
 	}
 }

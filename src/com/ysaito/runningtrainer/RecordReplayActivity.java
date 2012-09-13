@@ -1,31 +1,19 @@
 package com.ysaito.runningtrainer;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
+import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
 
-import android.app.Activity;
-import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
-import android.view.Menu;
-import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
 public class RecordReplayActivity extends MapActivity {
@@ -38,6 +26,8 @@ public class RecordReplayActivity extends MapActivity {
             mPoints = new ArrayList<GeoPoint>();
         }
 
+        public ArrayList<GeoPoint> getPoints() { return mPoints; }
+        
         public void setPath(HealthGraphClient.JsonWGS84[] path) {
         	mPoints.clear();
         	for (HealthGraphClient.JsonWGS84 point : path) {
@@ -103,7 +93,9 @@ public class RecordReplayActivity extends MapActivity {
     	((TextView)findViewById(R.id.pace_title)).setText(
     			"Pace " + Util.paceUnitString(settings));
     	
-    	if (mRecord != null) updateStatsViews();
+    	if (mRecord != null) {
+    		updateStatsViews();
+    	}
     }
 
     private void updateStatsViews() {
@@ -119,6 +111,12 @@ public class RecordReplayActivity extends MapActivity {
     	} else {
     		paceView.setText(Util.paceToString(mRecord.duration / mRecord.total_distance, settings));
     	}
+    	
+    	 if (mRecord.path.length > 0) {
+    		 MapController controller = mMapView.getController();
+    		 GeoPoint point = new GeoPoint((int)(mRecord.path[0].latitude * 1e6), (int)(mRecord.path[0].longitude * 1e6));
+    		 controller.animateTo(point);
+    	 }
     }
     
     @Override
@@ -127,6 +125,7 @@ public class RecordReplayActivity extends MapActivity {
     public void setRecord(HealthGraphClient.JsonActivity record) {
     	mRecord = record;
     	mMapOverlay.setPath(record.path);
+    	Util.RescaleMapView(mMapView, mMapOverlay.getPoints());
     	mMapView.invalidate();
     	updateStatsViews();
     }

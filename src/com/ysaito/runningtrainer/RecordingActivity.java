@@ -153,9 +153,8 @@ public class RecordingActivity extends MapActivity {
     	 */
     	public final double getPace() {
     		if (mRecentEvents.size() == 0) return 0.0;
-    		final long minTimestamp = mRecentEvents.getFirst().absTime;
     		final long maxTimestamp = mRecentEvents.getLast().absTime;
-    		final long delta = maxTimestamp - minTimestamp;
+    		final long delta = maxTimestamp - mStartTime;
     		if (delta <= 0 || mDistance <= 0.0) return 0.0;
     		return delta / 1000.0 / mDistance;
     	}
@@ -258,52 +257,52 @@ public class RecordingActivity extends MapActivity {
     		if (mDisplayType.equals("none")) {
     			;
     		} else if (mDisplayType.equals("total_distance")) {
-    			title = "Total distance (" + Util.distanceUnitString(settings) + ")";
+    			title = "Total " + Util.distanceUnitString(settings);
     			if (totalStats != null) {
     				value = Util.distanceToString(totalStats.getDistance(), settings);
     			}
     		} else if (mDisplayType.equals("total_elapsed")) {
-    			title = "Total elapsed";
+    			title = "Total time";
     			if (totalStats != null) {
     				value = Util.durationToString(totalStats.getDurationMillis() / 1000.0);
     			}
     		} else if (mDisplayType.equals("total_pace")) {
-    			title = "Average pace (" + Util.paceUnitString(settings)+ ")";
+    			title = "Avg pace";
     			if (totalStats != null) {
     				value = Util.paceToString(totalStats.getPace(), settings);
     			}
     		} else if (mDisplayType.equals("current_pace")) {
-    			title = "Current pace (" + Util.paceUnitString(settings)+ ")";
+    			title = "Cur pace";
     			if (totalStats != null) {
     				value = Util.paceToString(totalStats.getCurrentPace(), settings);
     			}
     		} else if (mDisplayType.equals("lap_distance")) {
-    			title = "Lap distance (" + Util.distanceUnitString(settings) + ")";
+    			title = "Lap " + Util.distanceUnitString(settings);
     			if (newerLapStats != null) {
     				value = Util.distanceToString(newerLapStats.getDistance(), settings);
     			}
     		} else if (mDisplayType.equals("lap_elapsed")) {
-    			title = "Lap elapsed";
+    			title = "Lap time";
     			if (newerLapStats != null) {
     				value = Util.durationToString(newerLapStats.getDurationMillis() / 1000.0);
     			}
     		} else if (mDisplayType.equals("lap_pace")) {
-    			title = "Lap pace (" + Util.paceUnitString(settings)+ ")";
+    			title = "Lap pace";
     			if (newerLapStats != null) {
     				value = Util.paceToString(newerLapStats.getPace(), settings);
     			}
     		} else if (mDisplayType.equals("auto_lap_distance")) {
-    			title = "Autolap distance (" + Util.distanceUnitString(settings) + ")";
+    			title = "Autolap " + Util.distanceUnitString(settings);
     			if (autoLapStats != null) {
     				value = Util.distanceToString(autoLapStats.getDistance(), settings);
     			}
     		} else if (mDisplayType.equals("auto_lap_elapsed")) {
-    			title = "Autolap elapsed";
+    			title = "Autolap time";
     			if (autoLapStats != null) {
     				value = Util.durationToString(autoLapStats.getDurationMillis() / 1000.0);
     			}
     		} else if (mDisplayType.equals("auto_lap_pace")) {
-    			title = "Autolap pace (" + Util.paceUnitString(settings)+ ")";
+    			title = "Autolap pace";
     			if (autoLapStats != null) {
     				value = Util.paceToString(autoLapStats.getPace(), settings);
     			}

@@ -10,7 +10,7 @@ package com.ysaito.runningtrainer;
  * 
  * TODO: voice readout of various stats
  * TODO: automatic syncing of records on reconnect and/or token authorization
- * TODO: delete all records
+ * TODO: delete all recordsand
  * TODO: show status in notification tray
  * TODO: show runkeeper sync status somewhere
  * TODO: detect when the user pauses during running
@@ -27,6 +27,8 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
 import android.app.FragmentTransaction;
+import android.content.Intent;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.Menu;
 import android.widget.Toast;
@@ -53,6 +55,8 @@ public class MainActivity extends Activity {
 		return fragment;
 	}
 	
+	private static final int TTS_CHECK_CODE = 123;
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -70,6 +74,12 @@ public class MainActivity extends Activity {
         	Toast toast = Toast.makeText(this, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG);
         	toast.show();
         }
+        
+        // Check the existence of speech synthesis feature
+        Intent checkIntent = new Intent();
+        checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
+        startActivityForResult(checkIntent, TTS_CHECK_CODE);
+        
         final HealthGraphClient hgClient = HealthGraphClient.getSingleton();
         hgClient.startAuthentication(this);
         hgClient.getUser(new HealthGraphClient.GetResponseListener() {
@@ -81,6 +91,7 @@ public class MainActivity extends Activity {
         		}
         	}
         });
+        
    /*     hgClient.getFitnessActivities(new HealthGraphClient.JsonResponseListener() {
         	public void onFinish(Exception e, Object o) {
         		if (e != null) {
@@ -90,6 +101,25 @@ public class MainActivity extends Activity {
         		}
         	}
         });*/
+    }
+    
+    private TextToSpeech mTts;
+    @Override protected void onActivityResult(
+            int requestCode, int resultCode, Intent data) {
+/*    	
+        if (requestCode == TTS_CHECK_CODE) {
+            if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
+                // success, create the TTS instance
+                mTts = new TextToSpeech(this, this);
+            } else {
+                // missing data, install it
+                Intent installIntent = new Intent();
+                installIntent.setAction(
+                    TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+                startActivity(installIntent);
+            }
+        }
+        */
     }
     
     @Override

@@ -32,17 +32,14 @@ public class RecordListFragment extends ListFragment {
 	private MainActivity mActivity;
 	private MyAdapter mAdapter;
 
-	private class ListThread extends AsyncTask<Integer, Integer, ArrayList<RecordSummary>> {
+	private class ListThread extends AsyncTask<Void, Void, ArrayList<RecordSummary>> {
 	  /**
 	   * @param mode not used
 	   */
 	  @Override
-	  protected ArrayList<RecordSummary> doInBackground(Integer... mode) {
+	  protected ArrayList<RecordSummary> doInBackground(Void... unused) {
+		  Log.d(TAG, "Start listing");
 		  return mRecordManager.listRecords();
-	  }
-
-	  @Override
-	  protected void onProgressUpdate(Integer... unused) {
 	  }
 
 	  @Override
@@ -79,6 +76,7 @@ public class RecordListFragment extends ListFragment {
 		//requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		//setContentView(R.layout.record_list);
 		
+		Log.d(TAG, "ListFrag: created");
 		mActivity = (MainActivity)getActivity();
 		mRecordManager = new RecordManager(mActivity);
 		mAdapter = new MyAdapter(mActivity);
@@ -90,18 +88,20 @@ public class RecordListFragment extends ListFragment {
 
 	@Override public void onResume() {
 		super.onResume();
+		Log.d(TAG, "ListFrag: resume");
 		startListing();
 	}
 
 	@Override public void onStart() {
 		super.onStart();
+		Log.d(TAG, "ListFrag: start");
 		startListing();
 	}
 	
 	private void startListing() {
 		ListThread thread = new ListThread();
 		// setProgressBarIndeterminateVisibility(true);
-		thread.execute((Integer[])null);
+		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
 	}
 
 	private class ReadRecordTask extends AsyncTask<String, Void, HealthGraphClient.JsonActivity> {
@@ -124,7 +124,7 @@ public class RecordListFragment extends ListFragment {
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		final RecordSummary summary = mAdapter.getItem(position);
 		if (summary != null) {
-			new ReadRecordTask().execute(new String[]{summary.basename});
+			new ReadRecordTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new String[]{summary.basename});
 		}
 	}
 	
@@ -167,7 +167,7 @@ public class RecordListFragment extends ListFragment {
 			}
 			return true;
 		case R.id.record_list_delete:
-			new DeleteRecordTask().execute(new RecordSummary[]{summary});
+			new DeleteRecordTask().executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, new RecordSummary[]{summary});
 			return true;
 		}
 		return super.onContextItemSelected(item);

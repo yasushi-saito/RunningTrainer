@@ -196,7 +196,9 @@ public class RecordManager {
 	
 	public ArrayList<RecordSummary> listRecords() {
 		ArrayList<RecordSummary> list = new ArrayList<RecordSummary>();
+		Log.d(TAG, "LIST:");
 		if (mRootDir != null) {
+			Log.d(TAG, "LIST2:");
 			for (String basename : mRootDir.list()) {
 				Log.d(TAG, "File: " + basename);
 				if (basename.startsWith("log:")) {
