@@ -7,6 +7,8 @@ import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
 
 public class Util {
+	static final double METERS_PER_MILE = 1609.34;
+
 	static public String durationToString(double seconds) {
 		if (seconds < 3600) {
 			return String.format("%02d:%02d",
@@ -30,7 +32,7 @@ public class Util {
 
 	static public String distanceToString(double meters, Settings settings) {
 		if (settings.unit == Settings.US) {
-			return String.format("%.2f", meters / 1609.34);
+			return String.format("%.2f", meters / METERS_PER_MILE);
 		} else {
 			return String.format("%.2f", meters / 1000.0);
 		}
@@ -43,10 +45,10 @@ public class Util {
 			return "s/km";
 		}
 	}
-
+	
 	static public String paceToString(double secondsPerMeter, Settings settings) {
 		if (settings.unit == Settings.US) {
-			double secondsPerMile = secondsPerMeter * 1609.34; 
+			double secondsPerMile = secondsPerMeter * METERS_PER_MILE;
 			return durationToString(secondsPerMile);
 		} else {
 			double secondsPerKm = secondsPerMeter * 1000;

@@ -32,5 +32,45 @@
     <item>auto_lap_pace</item>
     <item>none</item>
   </string-array>
+
+  <string-array name="time_intervals">
+    <item>None</item>
+    <item>1 minute</item>    
+    <item>2 minutes</item>        
+    <item>3 minutes</item>        
+    <item>4 minutes</item>        
+    <item>5 minutes</item>            
+  </string-array>
+
+  <string-array name="time_interval_values">
+    <item>0</item>
+    <item>60</item>    
+    <item>120</item>        
+    <item>180</item>        
+    <item>240</item>        
+    <item>300</item>            
+  </string-array>
+  
+  <string-array name="distance_intervals">
+    <item>None</item>
+    <item>400m</item>
+    <item>0.25 mile</item>
+    <item>800m</item>
+    <item>0.5 mile</item>
+    <item>1 km</item>
+    <item>1 mile</item>
+    <item>2km</item>
+  </string-array>
+
+  <string-array name="distance_interval_values">
+    <item>0</item>  
+    <item>400</item>
+    <item>402.25</item>
+    <item>800</item>
+    <item>804.5</item>
+    <item>1000</item>
+    <item>1609</item>
+    <item>2000</item>
+  </string-array>
   
 </resources>

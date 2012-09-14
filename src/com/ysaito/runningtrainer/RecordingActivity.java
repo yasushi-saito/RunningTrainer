@@ -116,6 +116,9 @@ public class RecordingActivity extends MapActivity {
     	// Cumulative distance of points in path[0..mLastPathSegment].
     	private double mDistance = 0;
 
+    	// Tmp used to compute distance between two GeoPoints.
+    	private final float[] mTmp = new float[1];
+    	
     	/** 
     	 * Remember up to last 10 seconds worth of GPS measurements.
     	 */
@@ -128,14 +131,16 @@ public class RecordingActivity extends MapActivity {
     		// # of milliseconds since 1970/1/1
     		public final long absTime;
     	}
-    	ArrayDeque<Event> mRecentEvents;
-    	
-    	private final float[] mTmp = new float[1];
+    	private final ArrayDeque<Event> mRecentEvents;
     	
     	Stats() {
     		mStartTime = System.currentTimeMillis();
     		mRecentEvents = new ArrayDeque<Event>();
     	}
+    	
+    	/**
+     	 * @return The time this Stats object was created. Milliseconds since 1970/1/1.
+    	 */
     	public final long getStartTime() { return mStartTime; }
     	
     	/**
@@ -343,10 +348,21 @@ public class RecordingActivity extends MapActivity {
     	mLastReportedActivity = activity;
     	mLastReportedPath = path;
     	mMapOverlay.updatePath(path);
-    	if (mTotalStats != null) mTotalStats.updatePath(path);
+    	
+    	if (mTotalStats != null) {
+    		final double curDistance = mTotalStats.getDistance();
+    		mTotalStats.updatePath(path);
+    		final double newDistance = mTotalStats.getDistance();
+    		if ((int)(curDistance / Util.METERS_PER_MILE) != (int)(newDistance / Util.METERS_PER_MILE)) {
+    			speakStats();
+    		}
+    	}
     	if (mUserLapStats != null) mUserLapStats.updatePath(path);
     	if (mAutoLapStats != null) mAutoLapStats.updatePath(path);    	
     	mMapView.invalidate();
+    }
+
+    private void speakStats() {
     }
     
     private LocationManager mLocationManager;

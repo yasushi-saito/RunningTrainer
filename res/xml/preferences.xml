@@ -6,49 +6,77 @@
     android:key="unit"
     android:defaultValue="US"
     android:entries="@array/unit"
-    android:entryValues="@array/unit"/>
+    android:entryValues="@array/unit"/>/>
+  <PreferenceCategory
+    android:key="pref_key_display_settings"
+    android:title="Display" >
+    <ListPreference
+        android:defaultValue="total_distance"
+        android:entries="@array/display_type"
+        android:entryValues="@array/display_type_values"
+        android:key="display0"
+        android:title="Display 1" />
     />
-  <ListPreference
-    android:title="Display 1"
-    android:key="display0"
-    android:defaultValue="total_distance"
-    android:entries="@array/display_type"
-    android:entryValues="@array/display_type_values"/>
+    <ListPreference
+        android:defaultValue="total_elapsed"
+        android:entries="@array/display_type"
+        android:entryValues="@array/display_type_values"
+        android:key="display1"
+        android:title="Display 2" />
     />
-  <ListPreference
-    android:title="Display 2"
-    android:key="display1"
-    android:defaultValue="total_elapsed"
-    android:entries="@array/display_type"
-    android:entryValues="@array/display_type_values"/>
+    <ListPreference
+        android:defaultValue="current_pace"
+        android:entries="@array/display_type"
+        android:entryValues="@array/display_type_values"
+        android:key="display2"
+        android:title="Display 3" />
     />
-  <ListPreference
-    android:title="Display 3"
-    android:key="display2"
-    android:defaultValue="current_pace"
-    android:entries="@array/display_type"
-    android:entryValues="@array/display_type_values"/>
+    <ListPreference
+        android:defaultValue="lap_distance"
+        android:entries="@array/display_type"
+        android:entryValues="@array/display_type_values"
+        android:key="display3"
+        android:title="Display 4" />
     />
-  <ListPreference
-    android:title="Display 4"
-    android:key="display3"
-    android:defaultValue="lap_distance"
-    android:entries="@array/display_type"
-    android:entryValues="@array/display_type_values"/>
+    <ListPreference
+        android:defaultValue="lap_elapsed"
+        android:entries="@array/display_type"
+        android:entryValues="@array/display_type_values"
+        android:key="display4"
+        android:title="Display 5" />
     />
-  <ListPreference
-    android:title="Display 5"
-    android:key="display4"
-    android:defaultValue="lap_elapsed"
-    android:entries="@array/display_type"
-    android:entryValues="@array/display_type_values"/>
+    <ListPreference
+        android:defaultValue="lap_pace"
+        android:entries="@array/display_type"
+        android:entryValues="@array/display_type_values"
+        android:key="display5"
+        android:title="Display 6" />
     />
-  <ListPreference
-    android:title="Display 6"
-    android:key="display5"
-    android:defaultValue="lap_pace"
-    android:entries="@array/display_type"
-    android:entryValues="@array/display_type_values"/>
-    />
-    
+  </PreferenceCategory>
+  <PreferenceCategory
+    android:key="pref_key_voice_settings"
+    android:title="Voice" >
+      <ListPreference
+        android:entries="@array/time_intervals"
+        android:entryValues="@array/time_interval_values"
+        android:key="time_interval"
+        android:title="Voice readout time interval" />
+      <ListPreference
+        android:entries="@array/distance_intervals"
+        android:entryValues="@array/distance_interval_values"
+        android:key="distance_interval"
+        android:title="Voice readout distance interval" />
+
+      <CheckBoxPreference
+        android:key="foo0"
+        android:title="foo0"
+        android:summary="foo0"
+        android:defaultValue="true" />
+      <CheckBoxPreference
+        android:key="foo1"
+        android:title="foo1"
+        android:summary="foo1"
+        android:defaultValue="true" />
+  </PreferenceCategory>
+      
 </PreferenceScreen>

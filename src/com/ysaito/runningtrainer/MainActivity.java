@@ -19,6 +19,7 @@ package com.ysaito.runningtrainer;
  * TODO: notification to show distance, duration, etc.
  * TODO: undo of delete record
  * TODO: reliably check if TTS voice data has been downloaded.
+ * TODO: satellite view
  */
 import java.util.Locale;
 
@@ -29,7 +30,6 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
 import android.app.FragmentTransaction;
-import android.content.Intent;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.Menu;
