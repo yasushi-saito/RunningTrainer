@@ -1,6 +1,8 @@
 package com.ysaito.runningtrainer;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 import com.ysaito.runningtrainer.HealthGraphClient.JsonActivity;
 
@@ -64,8 +66,27 @@ public class RecordListFragment extends ListFragment {
 		
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
-			TextView view = (TextView) super.getView(position, convertView, parent);
-			view.setText(this.getItem(position).toString(mSettings));
+			final TextView view = (TextView) super.getView(position, convertView, parent);
+			final RecordSummary record = this.getItem(position);
+			
+			GregorianCalendar tmpCalendar = new GregorianCalendar();
+			StringBuilder b = new StringBuilder();
+			tmpCalendar.setTimeInMillis(record.startTime);
+		
+			// TODO: change the date format depending on settings.locale
+			b.append(String.format("%04d/%02d/%02d-%02d:%02d ",
+					tmpCalendar.get(Calendar.YEAR),
+					tmpCalendar.get(Calendar.MONTH) - Calendar.JANUARY + 1,
+					tmpCalendar.get(Calendar.DAY_OF_MONTH),
+					tmpCalendar.get(Calendar.HOUR),
+					tmpCalendar.get(Calendar.MINUTE)));
+			b.append(Util.distanceToString(record.distance, mSettings));
+			b.append("  ");
+			b.append(Util.distanceUnitString(mSettings));
+			view.setText(b.toString());
+			if (record.runkeeperPath == null) {
+				view.setTextColor(0xffff0000);
+			}
 			return view;
 		}
 	};
@@ -160,6 +181,8 @@ public class RecordListFragment extends ListFragment {
 							public void onFinish(Exception e, String runkeeperPath) {
 								if (e != null) {
 									Toast.makeText(getActivity(), "Failed to send activity: " + e.toString(), Toast.LENGTH_LONG).show();
+								} else if (runkeeperPath == null) {
+									Toast.makeText(getActivity(), "Failed to send activity (reason unknown)", Toast.LENGTH_LONG).show();
 								} else {
 									Toast.makeText(getActivity(), "Sent activity to runkeeper: " + runkeeperPath, Toast.LENGTH_SHORT).show();
 									mRecordManager.markAsSaved(summary.startTime, runkeeperPath);

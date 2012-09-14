@@ -21,23 +21,4 @@ public class RecordSummary {
 	// The value is null if the record hasn't been sent to runkeeper.
 	public String runkeeperPath;
 	
-	final public String toString(Settings settings) {
-		GregorianCalendar tmpCalendar = new GregorianCalendar();
-		StringBuilder b = new StringBuilder();
-		tmpCalendar.setTimeInMillis(startTime);
-		
-		// TODO: change the date format depending on settings.locale
-		b.append(String.format("%04d/%02d/%02d %02d:%02d [%s]",
-				tmpCalendar.get(Calendar.YEAR),
-				tmpCalendar.get(Calendar.MONTH) - Calendar.JANUARY + 1,
-				tmpCalendar.get(Calendar.DAY_OF_MONTH),
-				tmpCalendar.get(Calendar.HOUR),
-				tmpCalendar.get(Calendar.MINUTE),
-				Util.durationToString(duration)));
-		b.append(Util.distanceToString(distance, settings));
-		if (runkeeperPath == null) {
-			b.append("[not saved]");
-		}
-		return b.toString();
-	}
 }

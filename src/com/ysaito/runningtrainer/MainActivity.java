@@ -3,7 +3,6 @@ package com.ysaito.runningtrainer;
 /**
  * TODO: smooth GPS readouts and reduce sampling rate
  * 
- * TODO: center map on the current location
  * 
  * TODO: workouts. 
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
@@ -19,7 +18,10 @@ package com.ysaito.runningtrainer;
  * TODO: show some indicator when runkeeper communication is happening
  * TODO: notification to show distance, duration, etc.
  * TODO: undo of delete record
+ * TODO: reliably check if TTS voice data has been downloaded.
  */
+import java.util.Locale;
+
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -97,11 +99,6 @@ public class MainActivity extends Activity {
         	toast.show();
         }
         
-        // Check the existence of speech synthesis feature
-        Intent checkIntent = new Intent();
-        checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
-        startActivityForResult(checkIntent, TTS_CHECK_CODE);
-        
         final HealthGraphClient hgClient = HealthGraphClient.getSingleton();
         hgClient.startAuthentication(this);
         hgClient.getUser(new HealthGraphClient.GetResponseListener() {
@@ -113,7 +110,12 @@ public class MainActivity extends Activity {
         		}
         	}
         });
-        
+/*        
+        // Check the existence of speech synthesis feature
+        Intent checkIntent = new Intent();
+        checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
+        startActivityForResult(checkIntent, TTS_CHECK_CODE);
+  */      
    /*     hgClient.getFitnessActivities(new HealthGraphClient.JsonResponseListener() {
         	public void onFinish(Exception e, Object o) {
         		if (e != null) {
@@ -123,26 +125,17 @@ public class MainActivity extends Activity {
         		}
         	}
         });*/
+        mTts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+        	public void onInit(int status) {
+        		Log.d(TAG, "TTS initialized");
+        		mTts.setLanguage(Locale.US);
+        		String myText2 = "60 minutes";
+        		mTts.speak(myText2, TextToSpeech.QUEUE_FLUSH, null);
+        	}
+        });
     }
     
     private TextToSpeech mTts;
-    @Override protected void onActivityResult(
-            int requestCode, int resultCode, Intent data) {
-/*    	
-        if (requestCode == TTS_CHECK_CODE) {
-            if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
-                // success, create the TTS instance
-                mTts = new TextToSpeech(this, this);
-            } else {
-                // missing data, install it
-                Intent installIntent = new Intent();
-                installIntent.setAction(
-                    TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
-                startActivity(installIntent);
-            }
-        }
-        */
-    }
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {

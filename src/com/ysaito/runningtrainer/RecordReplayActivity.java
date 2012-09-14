@@ -14,6 +14,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 
 public class RecordReplayActivity extends MapActivity {
@@ -51,15 +52,35 @@ public class RecordReplayActivity extends MapActivity {
 
             	if (mPoints.size() > 1) {
             		Path path = new Path();
-            		for (int i = 0; i < mPoints.size(); i++) {
-            			GeoPoint gPointA = mPoints.get(i);
-            			Point pointA = new Point();
-            			projection.toPixels(gPointA, pointA);
-            			if (i == 0) { //This is the start point
-            				path.moveTo(pointA.x, pointA.y);
-            			} else {
-            				path.lineTo(pointA.x, pointA.y);
+            		Point lastPoint = new Point();
+            		projection.toPixels(mPoints.get(0), lastPoint);
+            		
+            		Point lastSegmentEndpoint = null; 
+            		final int maxHeight= mapView.getHeight();
+            		final int maxWidth = mapView.getWidth();
+            		
+            		for (int i = 1; i < mPoints.size(); i++) {
+            			GeoPoint geoPoint = mPoints.get(i);
+            			Point point = new Point();
+            			projection.toPixels(geoPoint, point);
+            			
+            			// Draw the line from mPoints[i-1] .. mPoints[i] if either of
+            			// the endpoints are in the view.
+            			boolean drawLine = false;
+            			drawLine |= (
+            					lastPoint.x >= 0 && lastPoint.x < maxWidth &&
+            					lastPoint.y >= 0 && lastPoint.y < maxHeight);
+            			drawLine |= (
+            					point.x >= 0 && point.x < maxWidth &&
+            					point.y >= 0 && point.y < maxHeight);
+            			if (drawLine) {
+            				if (lastSegmentEndpoint != lastPoint) {
+            					path.moveTo(lastPoint.x, lastPoint.y);
+            				}
+            				path.lineTo(point.x, point.y);
+            				lastSegmentEndpoint = point;
             			}
+            			lastPoint = point;
             		}
             		canvas.drawPath(path, paint);
             	}

@@ -70,7 +70,7 @@ public class Util {
 			maxLong = Math.max(maxLong, longitude);
 		}
 		final MapController controller = mapView.getController();
-		controller.zoomToSpan(maxLat - minLat, maxLong - minLong);
-		controller.animateTo(new GeoPoint((minLat + maxLat) / 2, (minLong + maxLong) / 2));
+		// controller.zoomToSpan(maxLat - minLat, maxLong - minLong);
+		// controller.animateTo(new GeoPoint((minLat + maxLat) / 2, (minLong + maxLong) / 2));
 	}
 }
