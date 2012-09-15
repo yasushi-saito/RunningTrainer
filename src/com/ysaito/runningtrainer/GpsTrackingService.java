@@ -1,6 +1,9 @@
 package com.ysaito.runningtrainer;
 
 import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.app.Service;
 import android.content.Context;
@@ -9,7 +12,10 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -19,25 +25,56 @@ public class GpsTrackingService extends Service {
      * reside in one process and are run by the main thread, we just function calls to send GPS updates
      * the GpsTrackingService from RecordingActivity.
      */
-    private static final ArrayList<RecordingActivity> mGpsListeners = new ArrayList<RecordingActivity>();
+    private static final ArrayList<RecordingActivity> mListeners = new ArrayList<RecordingActivity>();
     
-    public static void registerGpsListener(RecordingActivity listener) {
-    	mGpsListeners.add(listener);
+    public static void registerListener(RecordingActivity listener) {
+    	mListeners.add(listener);
     }
-    public static void unregisterGpsListener(RecordingActivity listener) {
-    	mGpsListeners.remove(listener);
+    public static void unregisterListener(RecordingActivity listener) {
+    	mListeners.remove(listener);
+    }
+    public static boolean isListenerRegistered(RecordingActivity listener) {
+    	return mListeners.contains(listener);
     }
     
     private static boolean mGpsServiceStarted = false;
+    private static GpsTrackingService mSingleton = null;
+    
+    private static final int STOPPED = 0;
+    private static final int PAUSED = 1;
+    private static final int RUNNING = 2;
+    private int mState = RUNNING;
+
+    public static GpsTrackingService getSingleton() { return mSingleton; }
+    
+    public void onLapButtonPress() {
+    	mUserLapStats = new LapStats();
+    	speak("New lap started");
+    }
+    
+    public void onPauseButtonPress() {
+    	speak("Paused");
+    	mState = PAUSED;  
+    	updateTimer();
+    }
+    
+    public void onResumeButtonPress() {
+    	speak("Resumed");
+    	mState = RUNNING;
+    	updateTimer();
+    }
+    
     public static boolean isGpsServiceRunning() {
     	return mGpsServiceStarted;
     }
+    
     public static void startGpsServiceIfNecessary(Context context) {
     	if (!mGpsServiceStarted) {
     		mGpsServiceStarted = true;
     		context.startService(new Intent(context, GpsTrackingService.class));
     	}
     }
+    
     public static void stopGpsServiceIfNecessary(Context context) {
     	if (mGpsServiceStarted) {
     		mGpsServiceStarted = false;
@@ -45,14 +82,12 @@ public class GpsTrackingService extends Service {
     	}
     }
     
-    private static void postGpsEvent(
-    			HealthGraphClient.JsonActivity activity,
-    			ArrayList<HealthGraphClient.JsonWGS84> path) {
-    	for (RecordingActivity listener : mGpsListeners) {
-    		listener.onGpsUpdate(activity, path);
+    
+    private void notifyListeners() {
+    	for (RecordingActivity listener : mListeners) {
+    		listener.onGpsUpdate(mRecord, mPath, mTotalStats, mUserLapStats, mAutoLapStats);
     	}
     }
-    
 	
 	private static String TAG = "Gps";
 	private LocationListener mLocationListener;
@@ -60,7 +95,16 @@ public class GpsTrackingService extends Service {
 
 	private HealthGraphClient.JsonActivity mRecord;
 	private ArrayList<HealthGraphClient.JsonWGS84> mPath;
-	private long mStartTime;
+	
+	// Stats since the beginning of the activity. */
+	private LapStats mTotalStats = null;
+	
+    // Stats since the start of the last manual lap
+    private LapStats mUserLapStats = null;
+    
+    // Stats since the start of the last auto lap, i.e., the one that renews every 1mile or 1km.
+    private LapStats mAutoLapStats = null;
+    
 	
 	private static int mInstanceSeq = 0;
 	private int mId;
@@ -80,7 +124,7 @@ public class GpsTrackingService extends Service {
 		mRecord.type = "Running";  // TODO: allow changing
 		mRecord.start_time = HealthGraphClient.generateStartTimeString(System.currentTimeMillis());
 		mRecord.notes = "Recorded by RunningTrainer";
-		mStartTime =  System.currentTimeMillis();
+		mTotalStats = new LapStats();
 		
 		// Define a listener that responds to location updates
 		mLocationListener = new LocationListener() {
@@ -93,7 +137,6 @@ public class GpsTrackingService extends Service {
 				// Called when a new location is found by the network location provider.
 				// makeUseOfNewLocation(location);
 				final long time = System.currentTimeMillis();
-				Log.d(TAG, "loc: " + time + "/" + location.toString());
 				if (time < mLastReportTime + MIN_RECORD_INTERVAL_MS) return;
 				onGpsLocationUpdate(time, location);
 				
@@ -114,9 +157,51 @@ public class GpsTrackingService extends Service {
 		
 		// Register the listener with the Location Manager to receive location updates
 		mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
+
+		mTimer = null;
+		updateTimer();
+        mTts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+        	public void onInit(int status) {
+        		mTts.setLanguage(Locale.US);
+        		speak("started");
+        	}
+        });
+		mSingleton = this;
+	}
+
+    private TextToSpeech mTts;
+	private Timer mTimer;
+
+	private void speak(String text) {
+		mTts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+	}
+
+	private void stopTimer() {
+	}
+	
+	private void updateTimer() {
+    	if (mTimer != null) {
+    		mTimer.cancel();
+    		mTimer.purge();
+    		mTimer = null;
+    	}
+		if (mState == RUNNING) {
+			mTimer = new Timer();
+			mTimer.schedule(new TimerTask() {
+				@Override public void run() {
+					Handler handler = new Handler(Looper.getMainLooper());
+					handler.post(new Runnable() {
+						public void run() { notifyListeners(); }
+					});
+				}
+			}, 0, 1000);
+		}
 	}
 	
 	public void onDestroy() {
+		mSingleton = null;
+		mState = STOPPED;
+		updateTimer();
 		Toast.makeText(this, toString() + ": Stopped", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onDestroy");
 		mLocationManager.removeUpdates(mLocationListener);
@@ -137,11 +222,12 @@ public class GpsTrackingService extends Service {
 			wgs.timestamp = 0;
 			wgs.type = "start";
 		} else {
-			wgs.timestamp = (now - mStartTime) / 1000.0;
+			wgs.timestamp = (now - mTotalStats.getStartTime()) / 1000.0;
 			wgs.type = "gps";
 		}
 		mPath.add(wgs);
-		postGpsEvent(mRecord, mPath);
+		mTotalStats.updatePath(mPath);
+		notifyListeners();
 	}
 
 	@Override

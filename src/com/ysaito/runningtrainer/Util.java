@@ -2,6 +2,9 @@ package com.ysaito.runningtrainer;
 
 import java.util.ArrayList;
 
+import android.content.Context;
+import android.widget.Toast;
+
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
@@ -9,6 +12,20 @@ import com.google.android.maps.MapView;
 public class Util {
 	static final double METERS_PER_MILE = 1609.34;
 
+	static final boolean ASSERT_ENABLED = true;
+	
+	/**
+	 * Crash the program after displaying a message
+	 * @param context Used to show a toast just before crashing
+	 */
+	static void assertFail(Context context, String message) {
+		Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+		
+		// Force a crash
+		String xx = null;
+		xx = xx + "";
+	}
+	
 	static public String durationToString(double seconds) {
 		if (seconds < 3600) {
 			return String.format("%02d:%02d",

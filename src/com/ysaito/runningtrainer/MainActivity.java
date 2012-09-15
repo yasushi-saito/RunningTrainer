@@ -125,17 +125,7 @@ public class MainActivity extends Activity {
         		}
         	}
         });*/
-        mTts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
-        	public void onInit(int status) {
-        		Log.d(TAG, "TTS initialized");
-        		mTts.setLanguage(Locale.US);
-        		String myText2 = "60 minutes";
-        		mTts.speak(myText2, TextToSpeech.QUEUE_FLUSH, null);
-        	}
-        });
     }
-    
-    private TextToSpeech mTts;
     
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
