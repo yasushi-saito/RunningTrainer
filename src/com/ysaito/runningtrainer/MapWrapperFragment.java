@@ -1,22 +1,10 @@
 package com.ysaito.runningtrainer;
 
-import java.util.ArrayList;
-
-import com.google.android.maps.GeoPoint;
-import com.google.android.maps.MapView;
-import com.google.android.maps.Overlay;
-import com.google.android.maps.Projection;
-
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.LocalActivityManager;
 import android.content.Intent;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Point;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;

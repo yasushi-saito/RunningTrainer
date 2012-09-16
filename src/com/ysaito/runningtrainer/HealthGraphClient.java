@@ -39,14 +39,14 @@ public class HealthGraphClient {
 	/** 
 	 * Convert time into a JsonActivity.startTime string that runkeeper expects.
 	 *  
-	 *  @param millis Milliseconds since 1/1/1970
+	 *  @param seconds Seconds since 1/1/1970
 	 *  @return A string like 
 	 * "Tue, 1 Mar 2011 07:00:00"
 	 *	regardless of the user's locale.
 	 */
-	static public String generateStartTimeString(long millis) {
+	static public String generateStartTimeString(double seconds) {
 		GregorianCalendar cal = new GregorianCalendar();
-		cal.setTimeInMillis(millis);
+		cal.setTimeInMillis((long)(seconds * 1000));
 		return String.format("%s, %d %s %04d %02d:%02d:%02d",
 				cal.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US),
 				cal.get(Calendar.DAY_OF_MONTH),

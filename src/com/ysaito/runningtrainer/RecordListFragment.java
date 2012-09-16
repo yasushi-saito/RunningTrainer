@@ -4,9 +4,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import com.ysaito.runningtrainer.HealthGraphClient.JsonActivity;
-
-import android.app.Activity;
 import android.app.ListFragment;
 import android.content.Context;
 import android.os.AsyncTask;
@@ -71,7 +68,8 @@ public class RecordListFragment extends ListFragment {
 			
 			GregorianCalendar tmpCalendar = new GregorianCalendar();
 			StringBuilder b = new StringBuilder();
-			tmpCalendar.setTimeInMillis(record.startTime);
+			Log.d(TAG, "SEC=" + record.startTimeSeconds);
+			tmpCalendar.setTimeInMillis((long)(record.startTimeSeconds * 1000));
 		
 			// TODO: change the date format depending on settings.locale
 			b.append(String.format("%04d/%02d/%02d-%02d:%02d ",
@@ -185,7 +183,7 @@ public class RecordListFragment extends ListFragment {
 									Toast.makeText(getActivity(), "Failed to send activity (reason unknown)", Toast.LENGTH_LONG).show();
 								} else {
 									Toast.makeText(getActivity(), "Sent activity to runkeeper: " + runkeeperPath, Toast.LENGTH_SHORT).show();
-									mRecordManager.markAsSaved(summary.startTime, runkeeperPath);
+									mRecordManager.markAsSaved(summary.startTimeSeconds, runkeeperPath);
 									startListing(); 
 								}
 							}

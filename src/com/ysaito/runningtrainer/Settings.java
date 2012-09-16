@@ -30,6 +30,18 @@ public class Settings {
 			settings.viewTypes[i] = prefs.getString("display" + i, "none");
 		}
 		
+		settings.speakTimeInterval = Double.parseDouble(prefs.getString("time_interval", "0"));
+		settings.speakDistanceInterval = Double.parseDouble(prefs.getString("distance_interval", "0"));
+		settings.speakTotalDistance = prefs.getBoolean("speak_total_distance", false);
+		settings.speakTotalDuration = prefs.getBoolean("speak_total_duration", false);
+		settings.speakAveragePace = prefs.getBoolean("speak_average_pace", false);
+		settings.speakCurrentPace = prefs.getBoolean("speak_current_pace", false);
+		settings.speakLapDistance = prefs.getBoolean("speak_lap_distance", false);
+		settings.speakLapDuration = prefs.getBoolean("speak_lap_duration", false);
+		settings.speakLapPace = prefs.getBoolean("speak_lap_pace", false);
+		settings.speakAutoLapDistance = prefs.getBoolean("speak_auto_lap_distance", false);
+		settings.speakAutoLapDuration = prefs.getBoolean("speak_auto_lap_duration", false);
+		settings.speakAutoLapPace = prefs.getBoolean("speak_auto_lap_pace", false);
 		// TODO: fill the locale
 		return settings;
 	}
@@ -41,4 +53,16 @@ public class Settings {
 	public int unit = METRIC;
 	public Locale locale = Locale.US;
 	public String viewTypes[];
+	public double speakDistanceInterval;  // in meters. <0 if disabled
+	public double speakTimeInterval;  // in seconds. <0 if disabled
+	public boolean speakTotalDistance;
+	public boolean speakTotalDuration;	
+	public boolean speakAveragePace;		
+	public boolean speakCurrentPace;
+	public boolean speakLapDistance;
+	public boolean speakLapDuration;
+	public boolean speakLapPace;	
+	public boolean speakAutoLapDistance;
+	public boolean speakAutoLapDuration;
+	public boolean speakAutoLapPace;	
 }

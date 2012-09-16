@@ -14,7 +14,6 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 
 public class RecordReplayActivity extends MapActivity {
@@ -125,7 +124,7 @@ public class RecordReplayActivity extends MapActivity {
 
     	Settings settings = Settings.getSettings(this);
     	distanceView.setText(Util.distanceToString(mRecord.total_distance, settings));
-    	durationView.setText(Util.durationToString(mRecord.duration));
+    	durationView.setText(Util.durationToString((long)mRecord.duration));
     	if (mRecord.total_distance <= 0.0) {
     		paceView.setText("0:00");
     	} else {

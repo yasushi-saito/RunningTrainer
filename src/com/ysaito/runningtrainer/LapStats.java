@@ -9,10 +9,20 @@ import android.util.Log;
 
 class LapStats {
 	private final String TAG = "LapStats";
+
+	// Current state of the activity. RUNNING if the timer is ticking. PAUSED if the user pressed the "Pause" button
+	private static final int RUNNING = 1;
+	private static final int PAUSED = 2;
+	private int mState = RUNNING;
 	
 	// The time activity started. Millisecs since 1970/1/1
 	// TODO: this should be the first GPS fix after the start, not the time of the start
-	private final long mStartTime;
+	private final long mStartTimeMillis;
+	
+	// The last time "Resume" button was pressed. == mStartTime if resume was never pressed. Millisecs since 1970/1/1.
+	private long mLastResumeTimeMillis;
+	
+	private long mCumulativeDurationBeforeLastResume = 0;
 	
 	// The index of the last path[] element that was handled by updatePath.
 	// We assume that the array path[] passed to updatePath() simply adds new points at the end on 
@@ -40,34 +50,41 @@ class LapStats {
 	private final ArrayDeque<Event> mRecentEvents;
 	
 	LapStats() {
-		mStartTime = System.currentTimeMillis();
+		mStartTimeMillis = System.currentTimeMillis();
+		mLastResumeTimeMillis = mStartTimeMillis;
 		mRecentEvents = new ArrayDeque<Event>();
 	}
-	
+
 	/**
-	 * @return The time this Stats object was created. Milliseconds since 1970/1/1.
+	 * @return The time this Stats object was created. seconds since 1970/1/1.
 	 */
-	public final long getStartTime() { return mStartTime; }
-    	
+	public final double getStartTimeSeconds() { return mStartTimeMillis / 1000.0; }
+
 	/**
 	 * @return the cumulative distance traveled, in meters
 	 */
 	public final double getDistance() { return mDistance; }
     	
 	/**
-	 * @return The number of milliseconds elapsed.
+	 * @return The total number of seconds spent in the activity. Pause periods will be accounted for.
 	 */
-	public final long getDurationMillis() { return System.currentTimeMillis() - mStartTime; }
-
+	public final double getDurationSeconds() {
+		long d = mCumulativeDurationBeforeLastResume; 
+		if (mState == RUNNING) {
+			d += System.currentTimeMillis() - mLastResumeTimeMillis;
+		}
+		return d / 1000.0;
+	}
+	
 	/**
-	 * @return The average pace since the beginning of the activity
+	 * @return The average pace (seconds / meter) since the beginning of the activity
 	 */
 	public final double getPace() {
-		if (mRecentEvents.size() == 0) return 0.0;
+		if (mRecentEvents.size() == 0) return 0;
 		final long maxTimestamp = mRecentEvents.getLast().absTime;
-		final long delta = maxTimestamp - mStartTime;
-		if (delta <= 0 || mDistance <= 0.0) return 0.0;
-		return delta / 1000.0 / mDistance;
+		final long deltaMillis = maxTimestamp - mStartTimeMillis;
+		if (deltaMillis <= 0 || mDistance <= 0.0) return 0;
+		return deltaMillis / 1000.0 / mDistance;
 	}
     	
 	/**
@@ -106,6 +123,22 @@ class LapStats {
     				pace);*/
 	}
 	
+	public final void onPause() {
+		if (mState == RUNNING) {
+			final long now = System.currentTimeMillis();
+			mCumulativeDurationBeforeLastResume += (now - mLastResumeTimeMillis);
+			mState = PAUSED;
+		}
+	}
+	
+	public final void onResume() {
+		if (mState == PAUSED) {
+			final long now = System.currentTimeMillis();
+			mLastResumeTimeMillis = now;
+			mState = RUNNING;
+		}
+	}
+	
 	public final void updatePath(ArrayList<HealthGraphClient.JsonWGS84> path) {
 		if (path.size() > mLastPathSegment + 1) {
 			HealthGraphClient.JsonWGS84 lastPoint = path.get(mLastPathSegment);
@@ -116,7 +149,7 @@ class LapStats {
 						thisPoint.latitude, thisPoint.longitude, mTmp);
 				mDistance += mTmp[0];
 				
-				final long absTime = (long)(mStartTime + thisPoint.timestamp * 1000);
+				final long absTime = (long)(mStartTimeMillis + thisPoint.timestamp * 1000);
 				mRecentEvents.addLast(new Event(mTmp[0], absTime));
 				lastPoint = thisPoint;
 				if (mLastPathSegment >= path.size() - 1) break;

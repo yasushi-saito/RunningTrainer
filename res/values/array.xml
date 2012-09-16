@@ -7,39 +7,39 @@
 
   <string-array name="display_type">
     <item>Total distance</item>
-    <item>Total elapsed time</item>
+    <item>Total elapsed</item>
     <item>Average pace since the start of the activity</item>
     <item>Current pace</item>
     <item>Lap distance</item>
-    <item>Lap elapsed time</item>
+    <item>Lap elapsed</item>
     <item>Lap pace</item>
     <item>Auto lap distance</item>
-    <item>Auto lap elapsed time</item>
+    <item>Auto lap elapsed</item>
     <item>Auto lap pace</item>
     <item>None</item>
   </string-array>
 
   <string-array name="display_type_values">
     <item>total_distance</item>
-    <item>total_elapsed</item>
+    <item>total_duration</item>
     <item>total_pace</item>
     <item>current_pace</item>
     <item>lap_distance</item>
-    <item>lap_elapsed</item>
+    <item>lap_duration</item>
     <item>lap_pace</item>
     <item>auto_lap_distance</item>
-    <item>auto_lap_elapsed</item>
+    <item>auto_lap_duration</item>
     <item>auto_lap_pace</item>
     <item>none</item>
   </string-array>
 
   <string-array name="time_intervals">
     <item>None</item>
-    <item>1 minute</item>    
-    <item>2 minutes</item>        
-    <item>3 minutes</item>        
-    <item>4 minutes</item>        
-    <item>5 minutes</item>            
+    <item>Every 1 minute</item>    
+    <item>Every 2 minutes</item>        
+    <item>Every 3 minutes</item>        
+    <item>Every 4 minutes</item>        
+    <item>Every 5 minutes</item>            
   </string-array>
 
   <string-array name="time_interval_values">
@@ -53,24 +53,24 @@
   
   <string-array name="distance_intervals">
     <item>None</item>
-    <item>400m</item>
-    <item>0.25 mile</item>
-    <item>800m</item>
-    <item>0.5 mile</item>
-    <item>1 km</item>
-    <item>1 mile</item>
-    <item>2km</item>
+    <item>Every 400m</item>
+    <item>Every 800m</item>
+    <item>Every 0.5 mile</item>
+    <item>Every 1 km</item>
+    <item>Every 1 mile</item>
+    <item>Every 2 km</item>
+    <item>Every 2 miles</item>    
   </string-array>
 
   <string-array name="distance_interval_values">
     <item>0</item>  
     <item>400</item>
-    <item>402.25</item>
     <item>800</item>
     <item>804.5</item>
     <item>1000</item>
     <item>1609</item>
     <item>2000</item>
+    <item>3218</item>
   </string-array>
   
 </resources>

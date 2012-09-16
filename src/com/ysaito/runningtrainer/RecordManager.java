@@ -92,20 +92,21 @@ public class RecordManager {
 	 * Given an activity record, generate the summary object that includes that the filename (basename) that will store the record. 
 	 * This function is public only for testing.
 	 * 
-	 * @param startTime The time the activity. Milliseconds since 1970/1/1. 
+	 * @param startTimeSeconds The time the activity. Seconds since 1970/1/1. 
 	 * @param distance distance in meters
-	 * @param duration duration in seconds
+	 * @param mDuration duration in seconds
 	 * @param The path the activity is stored in runkeeper. null if it is not yet sent to runkeeper.
 	 * 
 	 * @return A basename string, in the form "log:<params>.json" 
 	 */
-	static public String generateBasename(long startTime, double distance, double duration, String runkeeperPath) {
+	static public String generateBasename(double startTimeSeconds, double distance, double durationSeconds, String runkeeperPath) {
 		StringBuilder b = new StringBuilder("log:s=");
-		b.append(startTime);
+		// start time is used as the primary key, so round down to integers to avoid rounding errors
+		b.append((long)startTimeSeconds);
 		b.append(":d=");
 		b.append(distance);
 		b.append(":e=");
-		b.append(duration);
+		b.append(durationSeconds);
 		if (runkeeperPath != null) {
 			b.append(":r=");
 			b.append(sanitizeString(runkeeperPath));
@@ -134,11 +135,11 @@ public class RecordManager {
 				final String value = scanner.match().group(2);
 				scanner.next(P1);
 				if (type.equals("s")) {
-					r.startTime = Long.parseLong(value);
+					r.startTimeSeconds = Double.parseDouble(value);
 				} else if (type.equals("d")) {
 					r.distance = Double.parseDouble(value);
 				} else if (type.equals("e")) {
-					r.duration = Double.parseDouble(value);
+					r.durationSeconds = Double.parseDouble(value);
 				} else if (type.equals("r")) {
 					r.runkeeperPath = unsanitizeString(value);
 				}
@@ -147,6 +148,7 @@ public class RecordManager {
 			if (!s.equals(".json")) {
 				return null;
 			}
+			Log.d(TAG, "REC: "+ r.startTimeSeconds + "/" + basename);
 			return r;
 		} catch (Exception e) {
 			Log.e(TAG, basename + ": Failed to parse the basenam");
@@ -154,11 +156,11 @@ public class RecordManager {
 		}
 	}
 	
-	public void addRecord(long startTime, HealthGraphClient.JsonActivity record) {
+	public void addRecord(double startTimeSeconds, HealthGraphClient.JsonActivity record) {
 		if (mRootDir == null) return;
 		Gson gson = new GsonBuilder().create();
 		try {
-			File destFile = new File(mRootDir, generateBasename(startTime, record.total_distance, record.duration, null));
+			File destFile = new File(mRootDir, generateBasename(startTimeSeconds, record.total_distance, record.duration, null));
 			FileWriter out = new FileWriter(destFile);
 			gson.toJson(record, out);
 			out.close();
@@ -174,16 +176,16 @@ public class RecordManager {
 			Gson gson = new GsonBuilder().create();
 			return gson.fromJson(new BufferedReader(new FileReader(sourceFile)), HealthGraphClient.JsonActivity.class);
 		} catch (IOException e) {
-			Toast.makeText(mContext, sourceFile.getPath() + ": " + e.toString(), Toast.LENGTH_LONG).show();
+			Log.d(TAG, sourceFile.getPath() + ": " + e.toString());
 		}
 		return null;
 	}
 	
-	public void markAsSaved(long startTime, String runkeeperPath) {
+	public void markAsSaved(double startTimeSeconds, String runkeeperPath) {
 		ArrayList<RecordSummary> list = listRecords();
 		for (RecordSummary r : list) {
-			if (r.startTime == startTime) {
-				String newBasename = generateBasename(r.startTime, r.distance, r.duration, runkeeperPath);
+			if ((long)r.startTimeSeconds == (long)startTimeSeconds) {
+				String newBasename = generateBasename(r.startTimeSeconds, r.distance, r.durationSeconds, runkeeperPath);
 				File orgFile = new File(mRootDir, r.basename);
 				orgFile.renameTo(new File(mRootDir, newBasename));
 			}

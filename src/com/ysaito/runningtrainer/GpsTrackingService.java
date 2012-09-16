@@ -49,18 +49,26 @@ public class GpsTrackingService extends Service {
     
     public void onLapButtonPress() {
     	mUserLapStats = new LapStats();
+		mSettings = Settings.getSettings(this);  // refresh in case user has changed anything
     	speak("New lap started");
     }
     
     public void onPauseButtonPress() {
     	speak("Paused");
     	mState = PAUSED;  
+    	mTotalStats.onPause();
+    	if (mUserLapStats != null) mUserLapStats.onPause();
+    	if (mAutoLapStats != null) mAutoLapStats.onPause();
     	updateTimer();
     }
     
     public void onResumeButtonPress() {
     	speak("Resumed");
     	mState = RUNNING;
+		mSettings = Settings.getSettings(this);  // refresh in case user has changed anything
+    	mTotalStats.onResume();
+    	if (mUserLapStats != null) mUserLapStats.onResume();
+    	if (mAutoLapStats != null) mAutoLapStats.onResume();
     	updateTimer();
     }
     
@@ -82,8 +90,61 @@ public class GpsTrackingService extends Service {
     	}
     }
     
+    private void speakStats() {
+    	// newerStats is the newer of {user,auto}LapStats.
+    	LapStats newerLapStats = mUserLapStats;
+    	if (mAutoLapStats != null &&
+    			(mAutoLapStats == null || mAutoLapStats.getStartTimeSeconds() < mAutoLapStats.getStartTimeSeconds())) {
+    		newerLapStats = mAutoLapStats;
+    	}
+    	if (mSettings.speakTotalDistance)
+    		speak("Total distance " + Util.distanceToSpeechText(mTotalStats.getDistance(), mSettings));
+    	if (mSettings.speakTotalDuration)
+    		speak("Total time " + Util.durationToSpeechText(mTotalStats.getDurationSeconds()));
+    	if (mSettings.speakCurrentPace)
+    		speak("Current pace " + Util.durationToSpeechText((long)mTotalStats.getCurrentPace()));
+    	if (mSettings.speakAveragePace)
+    		speak("Average pace " + Util.durationToSpeechText((long)mTotalStats.getPace()));
+    	if (newerLapStats != null) {
+    		if (mSettings.speakLapDistance)
+    			speak("Lap distance " + Util.distanceToSpeechText(newerLapStats.getDistance(), mSettings));
+    		if (mSettings.speakLapDuration)
+    			speak("Lap time " + Util.durationToSpeechText((long)newerLapStats.getDurationSeconds()));
+    		if (mSettings.speakLapPace)
+    			speak("Lap pace " + Util.durationToSpeechText((long)newerLapStats.getPace()));
+    	}
+    	if (mAutoLapStats != null) {
+    		if (mSettings.speakAutoLapDistance)
+    			speak("Auto lap distance " + Util.distanceToSpeechText(mAutoLapStats.getDistance(), mSettings));
+    		if (mSettings.speakAutoLapDuration)
+    			speak("Auto lap time " + Util.durationToSpeechText((long)mAutoLapStats.getDurationSeconds()));
+    		if (mSettings.speakAutoLapPace)
+    			speak("Auto lap pace " + Util.durationToSpeechText((long)mAutoLapStats.getPace()));
+    	}
+    }
+    
+    private long mLastReportedTotalDistance = 0;
+    private long mLastReportedTotalDuration = 0;
     
     private void notifyListeners() {
+    	boolean needSpeak = false;
+    	if (mSettings.speakDistanceInterval > 0) {
+    		final int interval = (int)Math.max(15, mSettings.speakDistanceInterval);
+    		final long newDistance = (long)mTotalStats.getDistance();
+    		if ((mLastReportedTotalDistance / interval) != (newDistance / interval)) {
+    			mLastReportedTotalDistance = newDistance;
+    			needSpeak = true;
+    		}
+    	}
+    	if (mSettings.speakTimeInterval > 0) {
+    		final int interval = (int)Math.max(5, mSettings.speakTimeInterval);
+    		final long newDuration = (long)mTotalStats.getDurationSeconds();
+    		if (mLastReportedTotalDuration / interval != newDuration / interval) {
+    			mLastReportedTotalDuration = newDuration;
+    			needSpeak = true;
+    		}
+    	}
+    	if (needSpeak) speakStats();
     	for (RecordingActivity listener : mListeners) {
     		listener.onGpsUpdate(mRecord, mPath, mTotalStats, mUserLapStats, mAutoLapStats);
     	}
@@ -115,6 +176,7 @@ public class GpsTrackingService extends Service {
 	
 	@Override
 	public void onCreate() {
+		mSettings = Settings.getSettings(this);
 		mId = mInstanceSeq++;
 		Toast.makeText(this, toString() + ": Created", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onCreate");
@@ -122,7 +184,7 @@ public class GpsTrackingService extends Service {
 		mPath = new ArrayList<HealthGraphClient.JsonWGS84>();
 		mRecord = new HealthGraphClient.JsonActivity();
 		mRecord.type = "Running";  // TODO: allow changing
-		mRecord.start_time = HealthGraphClient.generateStartTimeString(System.currentTimeMillis());
+		mRecord.start_time = HealthGraphClient.generateStartTimeString(System.currentTimeMillis() / 1000.0);
 		mRecord.notes = "Recorded by RunningTrainer";
 		mTotalStats = new LapStats();
 		
@@ -171,14 +233,12 @@ public class GpsTrackingService extends Service {
 
     private TextToSpeech mTts;
 	private Timer mTimer;
-
-	private void speak(String text) {
-		mTts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
-	}
-
-	private void stopTimer() {
-	}
+	private Settings mSettings;
 	
+	private void speak(String text) {
+		mTts.speak(text, TextToSpeech.QUEUE_ADD, null);
+	}
+
 	private void updateTimer() {
     	if (mTimer != null) {
     		mTimer.cancel();
@@ -214,20 +274,24 @@ public class GpsTrackingService extends Service {
 	}
 
 	private void onGpsLocationUpdate(long now, Location newLocation) {
-		HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
-		wgs.latitude = newLocation.getLatitude();
-		wgs.longitude = newLocation.getLongitude();
-		wgs.altitude = newLocation.getAltitude();
-		if (mPath.size() == 0) {
-			wgs.timestamp = 0;
-			wgs.type = "start";
-		} else {
-			wgs.timestamp = (now - mTotalStats.getStartTime()) / 1000.0;
-			wgs.type = "gps";
+		if (mState == RUNNING) {
+			HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
+			wgs.latitude = newLocation.getLatitude();
+			wgs.longitude = newLocation.getLongitude();
+			wgs.altitude = newLocation.getAltitude();
+			if (mPath.size() == 0) {
+				wgs.timestamp = 0;
+				wgs.type = "start";
+			} else {
+				wgs.timestamp = mTotalStats.getDurationSeconds();
+				wgs.type = "gps";
+			}
+			mPath.add(wgs);
+			
+			
+			mTotalStats.updatePath(mPath);
+			notifyListeners();
 		}
-		mPath.add(wgs);
-		mTotalStats.updatePath(mPath);
-		notifyListeners();
 	}
 
 	@Override

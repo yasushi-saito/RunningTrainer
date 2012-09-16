@@ -25,17 +25,47 @@ public class Util {
 		String xx = null;
 		xx = xx + "";
 	}
+
+	static public String durationToSpeechText(double totalSecondsD) {
+		long totalSeconds = (long)totalSecondsD;
+		final long hours = totalSeconds / 3600;
+		final long minutes = (totalSeconds - hours * 3600) / 60;
+		final long seconds = totalSeconds % 60;
+		StringBuilder b = new StringBuilder();
+		if (hours > 0) {
+			b.append(hours);
+			b.append(hours > 1 ? " hours" : "hour");
+		}
+		if (minutes > 0) {
+			b.append(" ");
+			b.append(minutes);
+			b.append(minutes > 1 ? " minutes" : "minute");
+		}
+		b.append(" ");
+		b.append(seconds);
+		b.append(seconds > 1 ? " seconds" : "second");
+		return b.toString();
+	}
+
+	static public String distanceToSpeechText(double meters, Settings settings) {
+		if (settings.unit == Settings.US) {
+			return String.format("%.2f miles", meters / METERS_PER_MILE);
+		} else {
+			return String.format("%.2f kilometers", meters / 1000.0);
+		}
+	}
 	
-	static public String durationToString(double seconds) {
+	static public String durationToString(double secondsD) {
+		final long seconds = (long)secondsD;
 		if (seconds < 3600) {
 			return String.format("%02d:%02d",
-					(long)seconds / 60,
-					(long)seconds % 60);
+					seconds / 60,
+					seconds % 60);
 		} else {
 			return String.format("%d:%02d:%02d",
-				(long)seconds / 3600,
-				((long)seconds % 3600) / 60,
-				(long)seconds % 60);
+					seconds / 3600,
+					(seconds % 3600) / 60,
+					seconds % 60);
 		}
 	}
 
@@ -65,10 +95,10 @@ public class Util {
 	
 	static public String paceToString(double secondsPerMeter, Settings settings) {
 		if (settings.unit == Settings.US) {
-			double secondsPerMile = secondsPerMeter * METERS_PER_MILE;
+			long secondsPerMile = (long)(secondsPerMeter * METERS_PER_MILE);
 			return durationToString(secondsPerMile);
 		} else {
-			double secondsPerKm = secondsPerMeter * 1000;
+			long secondsPerKm = (long)(secondsPerMeter * 1000);
 			return durationToString(secondsPerKm);
 		}
 	}
@@ -89,7 +119,7 @@ public class Util {
 			maxLong = Math.max(maxLong, longitude);
 		}
 		final MapController controller = mapView.getController();
-		// controller.zoomToSpan(maxLat - minLat, maxLong - minLong);
-		// controller.animateTo(new GeoPoint((minLat + maxLat) / 2, (minLong + maxLong) / 2));
+		controller.zoomToSpan(maxLat - minLat, maxLong - minLong);
+		controller.animateTo(new GeoPoint((minLat + maxLat) / 2, (minLong + maxLong) / 2));
 	}
 }

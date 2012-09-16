@@ -7,22 +7,18 @@ package com.ysaito.runningtrainer;
  * TODO: workouts. 
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * 
- * TODO: voice readout of various stats
  * TODO: automatic syncing of records on reconnect and/or token authorization
  * TODO: delete all recordsand
  * TODO: show status in notification tray
  * TODO: show runkeeper sync status somewhere
  * TODO: detect when the user pauses during running
  * TODO: sync all. remember synced records
- * TODO: show past activity in a map
  * TODO: show some indicator when runkeeper communication is happening
  * TODO: notification to show distance, duration, etc.
  * TODO: undo of delete record
  * TODO: reliably check if TTS voice data has been downloaded.
  * TODO: satellite view
  */
-import java.util.Locale;
-
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -30,7 +26,6 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
 import android.app.FragmentTransaction;
-import android.speech.tts.TextToSpeech;
 import android.util.Log;
 import android.view.Menu;
 import android.widget.Toast;
@@ -60,26 +55,26 @@ public class MainActivity extends Activity {
 			ft.add(android.R.id.content, fragment, text);
 			ft.detach(fragment);
 			ft.commit();
-			
-			ActionBar.Tab tab = getActionBar().newTab()
-					.setText(text)
-					.setTabListener(new MyTabListener(this, fragment));
-			if (toRightOf == null) {
-				bar.addTab(tab, 0);
-			} else {
-				for (int i = 0; i < bar.getTabCount(); ++i) {
-					ActionBar.Tab existing = bar.getTabAt(i);
-					if (toRightOf.equals(existing.getText())) {
-						bar.addTab(tab, i + 1);
-						break;
-					}
-				}
+		}
+		
+		int insertPosition = 0;
+		for (int i = 0; i < bar.getTabCount(); ++i) {
+			ActionBar.Tab existing = bar.getTabAt(i);
+			if (text.equals(existing.getText())) {
+				// the fragment is already in the bar
+				return fragment;
+			}
+			if (toRightOf.equals(existing.getText())) {
+				insertPosition = i + 1;
 			}
 		}
+		
+		ActionBar.Tab tab = getActionBar().newTab()
+				.setText(text)
+				.setTabListener(new MyTabListener(this, fragment));
+		bar.addTab(tab, insertPosition);
 		return fragment;
 	}
-	
-	private static final int TTS_CHECK_CODE = 123;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -91,6 +86,7 @@ public class MainActivity extends Activity {
 
         addTabIfNecessary("Record", "com.ysaito.runningtrainer.RecordingFragment", null);
         addTabIfNecessary("List", "com.ysaito.runningtrainer.RecordListFragment", "Record");
+        addTabIfNecessary("Workouts", "com.ysaito.runningtrainer.WorkoutEditorFragment", "List");
         addTabIfNecessary("Settings", "com.ysaito.runningtrainer.SettingsFragment", "List");
         Log.d(TAG, "RunningTrainer started");
 
@@ -110,21 +106,6 @@ public class MainActivity extends Activity {
         		}
         	}
         });
-/*        
-        // Check the existence of speech synthesis feature
-        Intent checkIntent = new Intent();
-        checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
-        startActivityForResult(checkIntent, TTS_CHECK_CODE);
-  */      
-   /*     hgClient.getFitnessActivities(new HealthGraphClient.JsonResponseListener() {
-        	public void onFinish(Exception e, Object o) {
-        		if (e != null) {
-        			Log.e(TAG, "Get fitnessactivities finished with exception: " + e.toString());
-        		} else {
-        			Log.d(TAG, "Get fitnessactivities ok");
-        		}
-        	}
-        });*/
     }
     
     @Override

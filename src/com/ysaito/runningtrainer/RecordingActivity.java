@@ -18,7 +18,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
@@ -125,7 +124,7 @@ public class RecordingActivity extends MapActivity {
     		// newerStats is the newer of {user,auto}LapStats.
     		LapStats newerLapStats = userLapStats;
     		if (autoLapStats != null &&
-    				(autoLapStats == null || autoLapStats.getStartTime() < autoLapStats.getStartTime())) {
+    				(autoLapStats == null || autoLapStats.getStartTimeSeconds() < autoLapStats.getStartTimeSeconds())) {
     			newerLapStats = autoLapStats;
     		}
     		if (mDisplayType.equals("none")) {
@@ -135,10 +134,10 @@ public class RecordingActivity extends MapActivity {
     			if (totalStats != null) {
     				value = Util.distanceToString(totalStats.getDistance(), settings);
     			}
-    		} else if (mDisplayType.equals("total_elapsed")) {
+    		} else if (mDisplayType.equals("total_duration")) {
     			title = "Total time";
     			if (totalStats != null) {
-    				value = Util.durationToString(totalStats.getDurationMillis() / 1000.0);
+    				value = Util.durationToString(totalStats.getDurationSeconds());
     			}
     		} else if (mDisplayType.equals("total_pace")) {
     			title = "Avg pace";
@@ -155,10 +154,10 @@ public class RecordingActivity extends MapActivity {
     			if (newerLapStats != null) {
     				value = Util.distanceToString(newerLapStats.getDistance(), settings);
     			}
-    		} else if (mDisplayType.equals("lap_elapsed")) {
+    		} else if (mDisplayType.equals("lap_duration")) {
     			title = "Lap time";
     			if (newerLapStats != null) {
-    				value = Util.durationToString(newerLapStats.getDurationMillis() / 1000.0);
+    				value = Util.durationToString(newerLapStats.getDurationSeconds());
     			}
     		} else if (mDisplayType.equals("lap_pace")) {
     			title = "Lap pace";
@@ -170,10 +169,10 @@ public class RecordingActivity extends MapActivity {
     			if (autoLapStats != null) {
     				value = Util.distanceToString(autoLapStats.getDistance(), settings);
     			}
-    		} else if (mDisplayType.equals("auto_lap_elapsed")) {
+    		} else if (mDisplayType.equals("auto_lap_duration")) {
     			title = "Autolap time";
     			if (autoLapStats != null) {
-    				value = Util.durationToString(autoLapStats.getDurationMillis() / 1000.0);
+    				value = Util.durationToString(autoLapStats.getDurationSeconds());
     			}
     		} else if (mDisplayType.equals("auto_lap_pace")) {
     			title = "Autolap pace";
@@ -218,23 +217,13 @@ public class RecordingActivity extends MapActivity {
     	mLastReportedActivity = activity;
     	mLastReportedPath = path;
     	mMapOverlay.updatePath(path);
-    	
     	mTotalStats = totalStats;
-    	final double curDistance = totalStats.getDistance();
-    	final double newDistance = totalStats.getDistance();
-    	if ((int)(curDistance / Util.METERS_PER_MILE) != (int)(newDistance / Util.METERS_PER_MILE)) {
-    		speakStats();
-    	}
-
     	mMapView.invalidate();
     	for (int i = 0; i < mStatsViews.length; ++i) {
     		mStatsViews[i].update(totalStats, userLapStats, autoLapStats, mSettings);
     	}
     }
 
-    private void speakStats() {
-    }
-    
     private LocationManager mLocationManager;
     private LocationListener mLocationListener; 
 
@@ -381,7 +370,7 @@ public class RecordingActivity extends MapActivity {
     		wgs.longitude = last.longitude;
     		wgs.altitude = last.altitude;
     		wgs.type = "end";
-    		wgs.timestamp = (System.currentTimeMillis()- mTotalStats.getStartTime()) / 1000.0;
+    		wgs.timestamp = mTotalStats.getDurationSeconds();
     		mLastReportedPath.add(wgs);
     		mLastReportedActivity.path = new HealthGraphClient.JsonWGS84[mLastReportedPath.size()];
     		for (int i = 0; i < mLastReportedPath.size(); ++i) mLastReportedActivity.path[i] = mLastReportedPath.get(i);
@@ -399,7 +388,7 @@ public class RecordingActivity extends MapActivity {
     			}
     			lastLocation = location;
     		}
-    		mRecordManager.addRecord(mTotalStats.getStartTime(), mLastReportedActivity);
+    		mRecordManager.addRecord(mTotalStats.getStartTimeSeconds(), mLastReportedActivity);
     	}
     }	
     private void onPauseButtonPress() {
