@@ -2,7 +2,7 @@ package com.ysaito.runningtrainer;
 
 /**
  * TODO: smooth GPS readouts and reduce sampling rate
- * 
+ * TODO: align IntervalDialog text boxes
  * TODO: workout editor doesn't allow moving elem below an empty repeats
  * TODO: workouts. 
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)

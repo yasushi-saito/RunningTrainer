@@ -20,6 +20,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.RadioButton;
+import android.widget.Toast;
 
 public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	static public final String TAG = "WorkoutCanvasView";
@@ -30,10 +31,12 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		private EditText mDurationEditor;		
 		private EditText mFastPaceEditor;
 		private EditText mSlowPaceEditor;		
+		private final View mParentView;
 		private final Interval mElem;
 		private final Settings mSettings;
 		
-		public IntervalDialog(Interval elem, Settings settings) { 
+		public IntervalDialog(View parentView, Interval elem, Settings settings) { 
+			mParentView = parentView;
 			mElem = elem; 
 			mSettings = settings;
 		}
@@ -102,7 +105,16 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	                .setPositiveButton(android.R.string.ok,
 	                    new DialogInterface.OnClickListener() {
 	                        public void onClick(DialogInterface dialog, int whichButton) {
-	                        	;
+	                        	String error = mElem.tryUpdate(
+	                        			mDurationEditor.getText().toString(),
+	                        			mDistanceEditor.getText().toString(),
+	                        			mFastPaceEditor.getText().toString(),
+	                        			mSlowPaceEditor.getText().toString());
+	                        	if (error != null) {
+	                        		Toast.makeText(getActivity(), error, Toast.LENGTH_LONG).show();
+	                        	} else {
+	                        		mParentView.invalidate();
+	                        	}
 	                        }
 	                    }
 	                )
@@ -192,15 +204,54 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		// The screen rectangle where this object was last drawn
 		private RectF mLastBoundingBox = new RectF(-1.0f, -1.0f, -1.0f, -1.0f);
 
+		// Accessors
 		public double getDuration() { return mDuration; }
 		public double getDistance() { return mDistance; }
 		public double getFastTargetPace() { return mFastTargetPace; }
 		public double getSlowTargetPace() { return mSlowTargetPace; }		
-		public RectF getLastBoundingBox() { return mLastBoundingBox; }
+
+		/**
+		 * Update the interval params. Arguments are string represention of the new values.
+		 * Returns an error message if the new param values are invalid. Returns null on success.
+		 */
+		public String tryUpdate(String durationStr, String distanceStr, String fastTargetPaceStr, String slowTargetPaceStr) {
+			double distance = -1.0;
+			if (!distanceStr.isEmpty()) {
+				distance = Util.distanceFromString(distanceStr, mSettings);
+				if (distance < 0.0) return "Failed to parse distance " + distanceStr;
+			}
+			double duration = 1.0;
+			if (!durationStr.isEmpty()) {
+				duration = Util.durationFromString(durationStr);
+				if (duration < 0.0) return "Failed to parse duration " + durationStr;
+			}
+			double fastTargetPace = Workout.NO_FAST_TARGET_PACE;
+			if (!fastTargetPaceStr.isEmpty()) {
+				fastTargetPace = Util.paceFromString(fastTargetPaceStr, mSettings);
+				if (fastTargetPace < 0.0) return "Failed to parse pace " + fastTargetPaceStr;
+			}
+			double slowTargetPace = Workout.NO_SLOW_TARGET_PACE;
+			if (!slowTargetPaceStr.isEmpty()) {
+				slowTargetPace = Util.paceFromString(slowTargetPaceStr, mSettings);
+				if (slowTargetPace < 0.0) return "Failed to parse pace " + fastTargetPaceStr;
+			}
+			if (fastTargetPace < slowTargetPace) {
+				return "Empty pace range";
+			}
+			mDistance = distance;
+			mDuration = duration;
+			mFastTargetPace = fastTargetPace;
+			mSlowTargetPace = slowTargetPace;
+			return null;
+		}
 		
 		@Override public String toString() { 
 			return String.format("Interval: duration=%f distance=%f pace=[%f,%f]", mDuration, mDistance, mFastTargetPace, mSlowTargetPace);
 		}
+		
+		
+		// Element interface implementation
+		public RectF getLastBoundingBox() { return mLastBoundingBox; }
 		
 		public ArrayList<Element> getChildren() { return null; }
 		public float getHeight() {
@@ -406,7 +457,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 				if (!mSeenMoveEvent) {
 					// Click event
 					if (mMovingEntry instanceof Interval) {
-						showDialog(new IntervalDialog((Interval)mMovingEntry, mSettings));
+						showDialog(new IntervalDialog(this, (Interval)mMovingEntry, mSettings));
 					}
 				}
 			}
