@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+  xmlns:android="http://schemas.android.com/apk/res/android"
+  android:orientation="vertical"
+  android:layout_width="fill_parent"
+  android:layout_height="fill_parent">
+  
+<RadioGroup
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal" >
+
+    <RadioButton android:id="@+id/radio_distance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Distance"/>
+    <RadioButton android:id="@+id/radio_duration"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Time"/>
+    <RadioButton android:id="@+id/radio_lap_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lap button"/>
+  </RadioGroup>
+
+  <LinearLayout
+      android:id="@+id/box_distance"      
+      android:layout_height="wrap_content"
+      android:layout_width="fill_parent"
+      android:orientation="horizontal" >
+  <TextView
+      android:layout_height="wrap_content"
+      android:layout_width="wrap_content"
+      android:text="Mile:" />
+  <EditText android:id="@+id/edit_distance"
+           android:layout_height="wrap_content"
+           android:layout_width="fill_parent"
+           android:inputType="numberDecimal"
+           android:text="1.00"/>
+  </LinearLayout>
+  
+  <LinearLayout
+      android:id="@+id/box_duration"      
+      android:layout_height="wrap_content"
+      android:layout_width="fill_parent"
+      android:orientation="horizontal" >
+  <TextView
+      android:layout_height="wrap_content"
+      android:layout_width="wrap_content"
+      android:text="Duration:" />
+  <EditText android:id="@+id/edit_duration"
+           android:layout_height="wrap_content"
+           android:layout_width="fill_parent"
+           android:inputType="time"
+           android:text="1:00"/>
+  </LinearLayout>
+</LinearLayout>
