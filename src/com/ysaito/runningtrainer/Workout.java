@@ -7,6 +7,16 @@ public class Workout {
 		// Empty base class
 	}
 	
+	static public final double NO_FAST_TARGET_PACE = 0.0;
+	static public final double NO_SLOW_TARGET_PACE = 9999.0;
+	
+	static public boolean hasFastTargetPace(double pace) {
+		return pace > NO_FAST_TARGET_PACE;
+	}
+	static public boolean hasSlowTargetPace(double pace) {
+		return pace < NO_SLOW_TARGET_PACE;
+	}
+	
 	public static class Interval extends Entry {
 		// At most one of duration or distance is positive.
 		// If duration >= 0, the interval ends at the specified time
@@ -15,9 +25,9 @@ public class Workout {
 		public double duration = -1.0; 
 		public double distance = -1.0;
 		
-		// The pace range lowTargetPace is the faster end of the range.
-		public double lowTargetPace = 0.0;
-		public double highTargetPace = 0.0;		
+		// The fast and slow ends of the pace range.
+		public double fastTargetPace = NO_FAST_TARGET_PACE;
+		public double slowTargetPace = NO_SLOW_TARGET_PACE;
 	}
 	
 	public static class Repeat extends Entry {

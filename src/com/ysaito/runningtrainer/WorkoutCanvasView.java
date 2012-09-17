@@ -16,10 +16,8 @@ import android.graphics.RectF;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.RadioButton;
 
@@ -27,23 +25,19 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	static public final String TAG = "WorkoutCanvasView";
 
 	public static class IntervalDialog extends DialogFragment {
-		View mDistanceBox, mDurationBox;
-		EditText mDistanceEditor;
-		EditText mDurationEditor;		
+		private View mDistanceBox, mDurationBox;
+		private EditText mDistanceEditor;
+		private EditText mDurationEditor;		
+		private EditText mFastPaceEditor;
+		private EditText mSlowPaceEditor;		
+		private final Interval mElem;
+		private final Settings mSettings;
 		
-	    /**
-	     * Create a new instance of MyDialogFragment, providing "num"
-	     * as an argument.
-	     */
-	    static IntervalDialog newInstance() {
-	    	IntervalDialog f = new IntervalDialog();
-
-	        // Supply num input as an argument.
-	        Bundle args = new Bundle();
-	        f.setArguments(args);
-	        return f;
-	    }
-
+		public IntervalDialog(Interval elem, Settings settings) { 
+			mElem = elem; 
+			mSettings = settings;
+		}
+	    
 	    @Override
 	    public void onCreate(Bundle savedInstanceState) {
 	        super.onCreate(savedInstanceState);
@@ -58,22 +52,51 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	        mDistanceEditor = (EditText)v.findViewById(R.id.edit_distance);
 	        mDurationEditor = (EditText)v.findViewById(R.id.edit_duration);
 	        
-	        RadioButton button = (RadioButton)v.findViewById(R.id.radio_distance);
-	        button.setChecked(true);
-	        onDistanceButtonPress();
+	        RadioButton distanceButton = (RadioButton)v.findViewById(R.id.radio_distance);
 	        
-	        button.setOnClickListener(new OnClickListener() {
+	        distanceButton.setOnClickListener(new OnClickListener() {
 	            public void onClick(View v) {  onDistanceButtonPress(); }
 	        });
-	        button = (RadioButton)v.findViewById(R.id.radio_duration);
-	        button.setOnClickListener(new OnClickListener() {
+	        
+	        RadioButton durationButton = (RadioButton)v.findViewById(R.id.radio_duration);
+	        durationButton.setOnClickListener(new OnClickListener() {
 	            public void onClick(View v) {  onDurationButtonPress(); }
 	        });
-	        button = (RadioButton)v.findViewById(R.id.radio_lap_button);
-	        button.setOnClickListener(new OnClickListener() {
+	        
+	        RadioButton lapButton = (RadioButton)v.findViewById(R.id.radio_lap_button);
+	        lapButton.setOnClickListener(new OnClickListener() {
 	            public void onClick(View v) {  onLapButtonPress(); }
 	        });
-	    	
+
+	        if (mElem.getDistance() > 0) {
+	        	distanceButton.setChecked(true);
+	        	mDistanceEditor.setText(Util.distanceToString(mElem.getDistance(), mSettings));
+	        	onDistanceButtonPress();
+	        } else if (mElem.getDuration() > 0) {
+	        	durationButton.setChecked(true);
+	        	mDurationEditor.setText(Util.durationToString(mElem.getDuration()));
+	        	onDurationButtonPress();
+	        } else {
+	        	lapButton.setChecked(true);
+	        	onLapButtonPress();
+	        }
+
+	        mFastPaceEditor = (EditText)v.findViewById(R.id.edit_fast_pace);
+	        final double fast = mElem.getFastTargetPace();
+	        if (Workout.hasFastTargetPace(fast)) {
+	        	mFastPaceEditor.setText(Util.paceToString(fast, mSettings));
+	        } else {
+	        	mFastPaceEditor.setText("");
+	        }
+	        
+	        mSlowPaceEditor = (EditText)v.findViewById(R.id.edit_slow_pace);
+	        final double slow = mElem.getSlowTargetPace();
+	        if (Workout.hasSlowTargetPace(slow)) {
+	        	mSlowPaceEditor.setText(Util.paceToString(slow, mSettings));
+	        } else {
+	        	mSlowPaceEditor.setText("");
+	        }
+	        
 	    	AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
 	                .setTitle("FooBarBar")
 	                .setPositiveButton(android.R.string.ok,
@@ -119,8 +142,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	}
 
 	private final float mScreenDensity = getContext().getResources().getDisplayMetrics().scaledDensity;
-		
-	
+			
 	private class PlaceholderDuringMove implements Element {
 		private float mHeight = 1.0f;
 		
@@ -160,26 +182,24 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		// If duration >= 0, the interval ends at the specified time
 		// If distance >= 0, the interval ends at the specified distance
 		// Else, the interval ends once the user presses the "Lap" button.
-		public double mDuration = -1.0; 
-		public double mDistance = -1.0;
+		private double mDuration = -1.0; 
+		private double mDistance = -1.0;
 		
 		// The pace range lowTargetPace is the faster end of the range.
-		public double mLowTargetPace = 0.0;
-		public double mHighTargetPace = 0.0;
+		private double mFastTargetPace = 0.0;
+		private double mSlowTargetPace = 0.0;
 		
 		// The screen rectangle where this object was last drawn
 		private RectF mLastBoundingBox = new RectF(-1.0f, -1.0f, -1.0f, -1.0f);
-		
+
+		public double getDuration() { return mDuration; }
+		public double getDistance() { return mDistance; }
+		public double getFastTargetPace() { return mFastTargetPace; }
+		public double getSlowTargetPace() { return mSlowTargetPace; }		
 		public RectF getLastBoundingBox() { return mLastBoundingBox; }
 		
-		private final float mScreenDensity; // For converting sp -> pixels
-		
-		public Interval() {
-			mScreenDensity = getContext().getResources().getDisplayMetrics().scaledDensity;
-		}
-		
 		@Override public String toString() { 
-			return String.format("Interval: duration=%f distance=%f pace=[%f,%f]", mDuration, mDistance, mLowTargetPace, mHighTargetPace);
+			return String.format("Interval: duration=%f distance=%f pace=[%f,%f]", mDuration, mDistance, mFastTargetPace, mSlowTargetPace);
 		}
 		
 		public ArrayList<Element> getChildren() { return null; }
@@ -214,17 +234,17 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 				b.append("Until Lap");
 			}
 			b.append(" @ ");
-			if (mLowTargetPace <= 0 && mHighTargetPace <= 0) {
+			if (mFastTargetPace <= 0 && mSlowTargetPace <= 0) {
 				b.append("No target");
 			} else {
-				if (mLowTargetPace > 0) {
-					b.append(Util.paceToString(mLowTargetPace, mSettings));
+				if (mFastTargetPace > 0) {
+					b.append(Util.paceToString(mFastTargetPace, mSettings));
 				} else {
 					b.append("-");
 				}
 				b.append(" to ");
-				if (mHighTargetPace > 0) {
-					b.append(Util.paceToString(mHighTargetPace, mSettings));
+				if (mSlowTargetPace > 0) {
+					b.append(Util.paceToString(mSlowTargetPace, mSettings));
 				} else {
 					b.append("-");
 				}
@@ -238,14 +258,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	private class Repeats implements Element {
 		public int mRepeats = 0;
 		public final ArrayList<Element> mEntries = new ArrayList<Element>();
-
 		private RectF mLastBoundingBox = new RectF(-1.0f, -1.0f, -1.0f, -1.0f);
-
-		private final float mScreenDensity; // For converting sp -> pixels
-
-		public Repeats() {
-			mScreenDensity = getContext().getResources().getDisplayMetrics().scaledDensity;
-		}
 
 		@Override public String toString() { 
 			StringBuilder b = new StringBuilder();
@@ -310,14 +323,14 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 		Interval interval = new Interval();
 		interval.mDistance = Util.METERS_PER_MILE;
-		interval.mLowTargetPace = -1.0;
-		interval.mHighTargetPace = 330 / Util.METERS_PER_MILE;
+		interval.mFastTargetPace = -1.0;
+		interval.mSlowTargetPace = 330 / Util.METERS_PER_MILE;
 		mEntries.add(interval);
 
 		interval = new Interval();
 		interval.mDuration = 300;
-		interval.mLowTargetPace = 400/ Util.METERS_PER_MILE;
-		interval.mHighTargetPace = 430 / Util.METERS_PER_MILE;
+		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
+		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
 		mEntries.add(interval);
 
 		Repeats r = new Repeats();
@@ -325,28 +338,28 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 		interval = new Interval();
 		interval.mDuration = 300;
-		interval.mLowTargetPace = 400/ Util.METERS_PER_MILE;
-		interval.mHighTargetPace = 430 / Util.METERS_PER_MILE;
+		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
+		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
 		r.mEntries.add(interval);
 
 		interval = new Interval();
 		interval.mDuration = 250;
-		interval.mLowTargetPace = 400/ Util.METERS_PER_MILE;
-		interval.mHighTargetPace = 430 / Util.METERS_PER_MILE;
+		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
+		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
 		r.mEntries.add(interval);
 
 		mEntries.add(r);
 
 		interval = new Interval();
-		interval.mLowTargetPace = 400/ Util.METERS_PER_MILE;
-		interval.mHighTargetPace = 430 / Util.METERS_PER_MILE;
+		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
+		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
 		mEntries.add(interval);
 	}
 
 	public void addNewInterval() {
 		Interval interval = new Interval();
-		interval.mLowTargetPace = 400/ Util.METERS_PER_MILE;
-		interval.mHighTargetPace = 430 / Util.METERS_PER_MILE;
+		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
+		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
 		mEntries.add(interval);
 		invalidate();
 	}
@@ -389,11 +402,12 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		}
 		if (action == MotionEvent.ACTION_UP) {
 			if (mMovingEntry != null) {
-				if (mSeenMoveEvent) {
-					replaceElement(mPlaceholder, mMovingEntry);
-				} else {
+				replaceElement(mPlaceholder, mMovingEntry);
+				if (!mSeenMoveEvent) {
 					// Click event
-					showDialog();
+					if (mMovingEntry instanceof Interval) {
+						showDialog(new IntervalDialog((Interval)mMovingEntry, mSettings));
+					}
 				}
 			}
 			mMovingEntry = null;
@@ -533,7 +547,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		}
 	}
 	
-	public void showDialog() {
+	public void showDialog(DialogFragment fragment) {
 	    // DialogFragment.show() will take care of adding the fragment
 	    // in a transaction.  We also want to remove any currently showing
 	    // dialog, so make our own transaction and take care of that here.
@@ -544,9 +558,6 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	        ft.remove(prev);
 	    }
 	    ft.addToBackStack(null);
-
-	    // Create and show the dialog.
-	    DialogFragment newFragment = IntervalDialog.newInstance();
-	    newFragment.show(ft, "interval_dialog");
+	    fragment.show(ft, "interval_dialog");
 	}
 }
