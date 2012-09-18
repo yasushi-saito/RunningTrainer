@@ -13,7 +13,6 @@ import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -192,7 +191,9 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	// They contain all the fields in Workout.java, and a few internal things, 
 	// such as the display screen locations.
 	private interface Element {
-		public ArrayList<Element> getChildren();
+		public Repeats getParent();
+		public void setParent(Repeats p);
+		
 		public void draw(Canvas canvas, float x, float y);
 		public float getHeight();
 		public RectF getLastBoundingBox();
@@ -204,12 +205,15 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		private float mHeight = 1.0f;
 		
 		private final RectF mLastBoundingBox = new RectF(-1.0f, -1.0f, -1.0f, -1.0f);
-
+		private Repeats mParent = null;
+		
 		public void setDimension(float height) { 
 			mHeight = height; 
 		}
 		
-		public ArrayList<Element> getChildren() { return null; }
+		public Repeats getParent() { return mParent; };
+		public void setParent(Repeats p) { mParent = p; }
+		
 		public void draw(Canvas canvas, float x, float y) { 
 			mPaint.setStyle(Paint.Style.STROKE);
 			mPaint.setColor(0xffc0ffc0);
@@ -248,12 +252,16 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		
 		// The screen rectangle where this object was last drawn
 		private RectF mLastBoundingBox = new RectF(-1.0f, -1.0f, -1.0f, -1.0f);
+		private Repeats mParent = null;
 
 		// Accessors
 		public double getDuration() { return mDuration; }
 		public double getDistance() { return mDistance; }
 		public double getFastTargetPace() { return mFastTargetPace; }
 		public double getSlowTargetPace() { return mSlowTargetPace; }		
+
+		public Repeats getParent() { return mParent; };
+		public void setParent(Repeats p) { mParent = p; }
 
 		/**
 		 * Update the interval params. Arguments are string represention of the new values.
@@ -299,7 +307,6 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		// Element interface implementation
 		public RectF getLastBoundingBox() { return mLastBoundingBox; }
 		
-		public ArrayList<Element> getChildren() { return null; }
 		public float getHeight() {
 			return 48 * mScreenDensity;
 		}
@@ -358,8 +365,48 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public int mRepeats = 0;
 		public final ArrayList<Element> mEntries = new ArrayList<Element>();
 		private RectF mLastBoundingBox = new RectF(-1.0f, -1.0f, -1.0f, -1.0f);
+		private Repeats mParent = null;
+		
+		public Repeats(int n) { mRepeats = n; }
+		
+		public final int getRepeats() { return mRepeats; }
+		
+		public final Repeats getParent() { return mParent; };
+		public final void setParent(Repeats p) { mParent = p; }
+		
+		public final int getNumChildren() { return mEntries.size(); }
+		public final Element getChild(int i) { return mEntries.get(i); }
+		public final ArrayList<Element> getChildren() { return mEntries; }
 
-		public int getRepeats() { return mRepeats; }
+		/**
+		 * Add @p elem before @p existing. @p existing must be in the list
+		 */
+		public final void addBefore(Element existing, Element elem) {
+			mEntries.add(mEntries.indexOf(existing), elem); 
+		}
+		
+		/**
+		 * Add @p elem after @p existing. @p existing must be in the list
+		 */
+		public final void addAfter(Element existing, Element elem) {
+			mEntries.add(mEntries.indexOf(existing) + 1, elem); 
+			elem.setParent(this);
+		}
+		
+		public final void append(Element elem) {
+			mEntries.add(elem);
+			elem.setParent(this);
+		}
+
+		public final void removeChildAtIndex(int i) {
+			mEntries.get(i).setParent(null);
+			mEntries.remove(i);
+		}
+
+		public void replaceChildAtIndex(int i, Element elem) {
+			mEntries.set(i, elem);
+			elem.setParent(this);
+		}
 		
 		/**
 		 * Update the interval params. Arguments are string represention of the new values.
@@ -391,8 +438,6 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			b.append("}");
 			return b.toString();
 		}
-
-		public ArrayList<Element> getChildren() { return mEntries; }
 
 		public RectF getLastBoundingBox() { return mLastBoundingBox; }
 
@@ -433,7 +478,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		return y >= bbox.top + height / 2 && y < bbox.bottom + height / 2;
 	}
 
-	private ArrayList<Element> mEntries = new ArrayList<Element>();
+	private Repeats mRoot = new Repeats(1);
 
 	public WorkoutCanvasView(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -443,22 +488,21 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		interval.mDistance = Util.METERS_PER_MILE;
 		interval.mFastTargetPace = -1.0;
 		interval.mSlowTargetPace = 330 / Util.METERS_PER_MILE;
-		mEntries.add(interval);
+		mRoot.append(interval);
 
 		interval = new Interval();
 		interval.mDuration = 300;
 		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
 		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
-		mEntries.add(interval);
+		mRoot.append(interval);
 
-		Repeats r = new Repeats();
-		r.mRepeats = 95;
+		Repeats r = new Repeats(95);
 
 		interval = new Interval();
 		interval.mDuration = 300;
 		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
 		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
-		r.mEntries.add(interval);
+		r.append(interval);
 
 		interval = new Interval();
 		interval.mDuration = 250;
@@ -466,12 +510,12 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
 		r.mEntries.add(interval);
 
-		mEntries.add(r);
+		mRoot.append(r);
 
 		interval = new Interval();
 		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
 		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
-		mEntries.add(interval);
+		mRoot.append(interval);
 	}
 
 	public void addNewInterval() {
@@ -479,14 +523,13 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		interval.mDistance = Util.METERS_PER_MILE;
 		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
 		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
-		mEntries.add(interval);
+		mRoot.append(interval);
 		invalidate();
 	}
 
 	public void addNewRepeats() {
-		Repeats repeats = new Repeats();
-		repeats.mRepeats = 5;
-		mEntries.add(repeats);
+		Repeats repeats = new Repeats(5);
+		mRoot.append(repeats);
 		invalidate();
 	}
 	
@@ -570,52 +613,50 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		return true;
 	}
 
-	static private Element findEntryAtPositionRec(Element e, float x, float y) {
-		// Find the children first since they have smaller bounding boxes since allows
-		// for more specific matches.
-		ArrayList<Element> children = e.getChildren();
-		if (children != null) {
-			for (Element child : children) {
-				Element e2 = findEntryAtPositionRec(child, x, y);
+	static private Element findEntryAtPositionRec(Repeats container, float x, float y) {
+		for (Element elem : container.getChildren()) {
+			if (elem instanceof Repeats) {
+				// Find the children first since they have smaller bounding boxes since allows
+				// for more specific matches.
+				Element e2 = findEntryAtPositionRec((Repeats)elem, x, y);
 				if (e2 != null) return e2;
 			}
+			if (isSelected(x, y, elem.getLastBoundingBox())) return elem;
 		}
-		if (isSelected(x, y, e.getLastBoundingBox())) return e;
 		return null;
 	}
 
-	private boolean findMoveDestinationRec(ArrayList<Element> list, Element movingEntry, float x, float y) {
-		final int N = list.size();
-		for (int i = 0; i < N; ++i) {
-			final Element entry = list.get(i);
-			if (entry == mPlaceholder) continue;
+	private Element findEntryAtPosition(float x, float y) {
+		return findEntryAtPositionRec(mRoot, x, y);
+	}
+	
+	private boolean findMoveDestinationRec(Repeats container, Element movingEntry, float x, float y) {
+		for (Element elem : container.getChildren()) {
+			if (elem == mPlaceholder) continue;
 			
 			// Search inside children first, since they have smaller bounding boxes so they will find
 			// more specific matches.
-			ArrayList<Element> children = entry.getChildren();
-			if (children != null) {
-				if (findMoveDestinationRec(children, movingEntry, x, y)) return true;
+			if (elem instanceof Repeats) {
+				if (findMoveDestinationRec((Repeats)elem, movingEntry, x, y)) return true;
 			}
 
-			final RectF rect = entry.getLastBoundingBox();
+			final RectF rect = elem.getLastBoundingBox();
 			final float height = rect.bottom - rect.top;
 			
 			final boolean xInBounds = x >= rect.left && x < rect.right;
 			
-			// If the point is in the upper 1/3 of the rect, create space above the entry.
+			// If the point is in the upper 1/3 of the rect, create space above the elem.
 			if (xInBounds && y < rect.top + height / 3 && y >= rect.top - 10) {
 				PlaceholderDuringMove placeholder = getPlaceholder(movingEntry.getHeight());
 				removeElement(placeholder);
-				list.add(list.indexOf(entry), placeholder); 
-				Log.d(TAG, "Move above: "+ entry.toString());
+				container.addBefore(elem, placeholder);
 				return true;
 			}
-			// If the point is in the bottom 1/3 of the rect, create space below the entry.
+			// If the point is in the bottom 1/3 of the rect, create space below the elem.
 			if (xInBounds && y >= rect.bottom - height / 3 && y < rect.bottom- 10) {
 				PlaceholderDuringMove placeholder = getPlaceholder(movingEntry.getHeight());
 				removeElement(placeholder);
-				list.add(list.indexOf(entry) + 1, placeholder); 
-				Log.d(TAG, "Move below: "+ entry.toString());
+				container.addAfter(elem, placeholder);
 				return true;
 			}
 		}
@@ -623,56 +664,46 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	}
 
 	private boolean findMoveDestination(Element movingEntry, float x, float y) {
-		return findMoveDestinationRec(mEntries, movingEntry, x, y);
+		return findMoveDestinationRec(mRoot, movingEntry, x, y);
 	}
 
 	private boolean removeElement(Element toRemove) {
-		return removeElementRec(mEntries, toRemove);
+		return removeElementRec(mRoot, toRemove);
 	}
 
 	private boolean replaceElement(Element toRemove, Element toAdd) {
 		removeElement(toAdd);
-		return replaceElementRec(mEntries, toRemove, toAdd);
+		return replaceElementRec(mRoot, toRemove, toAdd);
 	}
 
-	private boolean replaceElementRec(ArrayList<Element> list, Element toRemove, Element toAdd) {
-		final int N = list.size();
+	private boolean replaceElementRec(Repeats container, Element toRemove, Element toAdd) {
+		final int N = container.getNumChildren();
 		for (int i = 0; i < N; ++i) {
-			Element entry = list.get(i);
+			final Element entry = container.getChild(i);
 			if (entry == toRemove) {
-				list.set(i, toAdd);
+				container.replaceChildAtIndex(i, toAdd);
 				return true;
 			}
-			ArrayList<Element> children = entry.getChildren();
-			if (children != null) {
-				if (replaceElementRec(children, toRemove, toAdd)) return true;
+			if (entry instanceof Repeats) {
+				if (replaceElementRec((Repeats)entry, toRemove, toAdd)) return true;
 			}
 		}
 		return false;
 	}
 
-	private boolean removeElementRec(ArrayList<Element> list, Element toRemove) {
-		final int N = list.size();
+	private boolean removeElementRec(Repeats container, Element toRemove) {
+		final int N = container.getNumChildren();
 		for (int i = 0; i < N; ++i) {
-			Element entry = list.get(i);
+			final Element entry = container.getChild(i);
 			if (entry == toRemove) {
-				list.remove(i);
+				container.removeChildAtIndex(i);
 				return true;
 			}
-			ArrayList<Element> children = entry.getChildren();
-			if (children != null) {
-				if (removeElementRec(children, toRemove)) return true;
+			if (entry instanceof Repeats) {
+				if (removeElementRec((Repeats)entry, toRemove)) return true;
 			}
 		}
 		return false;
-	}
-
-	private Element findEntryAtPosition(float x, float y) {
-		for (Element entry : mEntries) {
-			Element e = findEntryAtPositionRec(entry, x, y);
-			if (e != null) return e;
-		}
-		return null;
 	}
 
 	//
@@ -690,7 +721,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		final float density = getContext().getResources().getDisplayMetrics().scaledDensity;
 		float x = 20 * density;
 
-		for (Element entry : mEntries) {
+		for (Element entry : mRoot.getChildren()) {
 			entry.draw(canvas, x, y);
 			y += entry.getHeight();
 		}
