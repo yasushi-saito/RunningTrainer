@@ -24,11 +24,33 @@
       android:layout_alignParentTop="true"
       android:layout_alignParentRight="true"
        />
+
+    <TextView
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/title_workout_name"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/new_interval_button"
+        android:layout_marginBottom="20sp"
+        android:text="Workout Name: " />
+
+    <EditText
+        android:textSize="22sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/edit_workout_name"
+        android:layout_toRightOf="@id/title_workout_name"
+        android:layout_alignBaseline="@id/title_workout_name"
+        android:layout_marginBottom="20sp"
+        android:text="New Workout" />
+    
     <com.ysaito.runningtrainer.WorkoutCanvasView
         android:id="@+id/canvas"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_below="@id/new_interval_button"
+        android:layout_below="@id/title_workout_name"
     />
 
 </RelativeLayout>

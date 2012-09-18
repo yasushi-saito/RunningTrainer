@@ -10,7 +10,11 @@ import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.os.Bundle;
@@ -40,11 +44,6 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			mElem = elem; 
 			mSettings = settings;
 		}
-	    
-	    @Override
-	    public void onCreate(Bundle savedInstanceState) {
-	        super.onCreate(savedInstanceState);
-	    }
 	    
 	    @Override
 	    public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -101,7 +100,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	        }
 	        
 	    	AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
-	                .setTitle("FooBarBar")
+	                .setTitle("Edit Interval")
 	                .setPositiveButton(android.R.string.ok,
 	                    new DialogInterface.OnClickListener() {
 	                        public void onClick(DialogInterface dialog, int whichButton) {
@@ -142,6 +141,52 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	    	mDurationBox.setVisibility(View.GONE);	
 	    }
 	}
+
+	public static class RepeatsDialog extends DialogFragment {
+		private EditText mNumRepeatsEditor;
+		private final View mParentView;
+		private final Repeats mElem;
+		private final Settings mSettings;
+		
+		public RepeatsDialog(View parentView, Repeats elem, Settings settings) { 
+			mParentView = parentView;
+			mElem = elem; 
+			mSettings = settings;
+		}
+	    
+	    @Override
+	    public Dialog onCreateDialog(Bundle savedInstanceState) {
+	    	View v = getActivity().getLayoutInflater().inflate(R.layout.repeats_dialog, null);
+
+	        mNumRepeatsEditor = (EditText)v.findViewById(R.id.edit_num_repeats);
+	        mNumRepeatsEditor.setText(Integer.toString(mElem.getRepeats()));
+	        
+	    	AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
+	                .setTitle("Edit Repeats")
+	                .setPositiveButton(android.R.string.ok,
+	                    new DialogInterface.OnClickListener() {
+	                        public void onClick(DialogInterface dialog, int whichButton) {
+	                        	String error = mElem.tryUpdate(
+	                        			mNumRepeatsEditor.getText().toString());
+	                        	if (error != null) {
+	                        		Toast.makeText(getActivity(), error, Toast.LENGTH_LONG).show();
+	                        	} else {
+	                        		mParentView.invalidate();
+	                        	}
+	                        }
+	                    }
+	                )
+	                .setNegativeButton(android.R.string.cancel,
+	                    new DialogInterface.OnClickListener() {
+	                        public void onClick(DialogInterface dialog, int whichButton) {
+	                            ;
+	                        }
+	                    }
+	                );
+	    	builder.setView(v);
+	        return builder.create();
+	    }
+	}
 	
 	// Below are internal versions of the classes defined in Workout.java
 	// They contain all the fields in Workout.java, and a few internal things, 
@@ -169,7 +214,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			mPaint.setStyle(Paint.Style.STROKE);
 			mPaint.setColor(0xffc0ffc0);
 			mPaint.setStrokeWidth(2 * mScreenDensity);
-			
+			mPaint.setPathEffect(new DashPathEffect(new float[] {10,20}, 0));			
 			final int screenWidth = getWidth();
 			canvas.drawRect(x, y, screenWidth - 5 * mScreenDensity, y + mHeight, mPaint);
 		}
@@ -235,8 +280,9 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 				slowTargetPace = Util.paceFromString(slowTargetPaceStr, mSettings);
 				if (slowTargetPace < 0.0) return "Failed to parse pace " + fastTargetPaceStr;
 			}
-			if (fastTargetPace < slowTargetPace) {
-				return "Empty pace range";
+			if (fastTargetPace > slowTargetPace) {
+				return String.format("Empty pace range: [%s(%f), %s(%f)]", fastTargetPaceStr, fastTargetPace, 
+						slowTargetPaceStr, slowTargetPace);
 			}
 			mDistance = distance;
 			mDuration = duration;
@@ -303,6 +349,8 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			mPaint.setColor(0xff000000);
 			canvas.drawText(b.toString(), x + 2 * mScreenDensity, y + 25 * mScreenDensity, mPaint);
 			
+			Bitmap bitmap = BitmapFactory.decodeResource(getResources(), android.R.drawable.ic_delete);
+			canvas.drawBitmap(bitmap, x + screenWidth - 2 * bitmap.getWidth(), y, mPaint);
 		}
 	}
 
@@ -311,6 +359,26 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public final ArrayList<Element> mEntries = new ArrayList<Element>();
 		private RectF mLastBoundingBox = new RectF(-1.0f, -1.0f, -1.0f, -1.0f);
 
+		public int getRepeats() { return mRepeats; }
+		
+		/**
+		 * Update the interval params. Arguments are string represention of the new values.
+		 * Returns an error message if the new param values are invalid. Returns null on success.
+		 */
+		public String tryUpdate(String repeatsStr) {
+			try {
+				int n = Integer.parseInt(repeatsStr);
+				if (n <= 0) {
+					return repeatsStr + ": Negative repeats not allowed";
+				}
+				mRepeats = n;
+				Log.d(TAG, "SET REPEATS: " + mRepeats);
+				return null;
+			} catch (NumberFormatException e) {
+				return e.toString();
+			}
+		}
+		
 		@Override public String toString() { 
 			StringBuilder b = new StringBuilder();
 			b.append(String.format("Repeats[%d]{", mRepeats));
@@ -343,7 +411,6 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			canvas.drawRect(x, y, screenWidth - 5 * mScreenDensity, y + 36 * mScreenDensity, mPaint);
 			mPaint.setColor(0xff000000);
 			canvas.drawText(String.format("Repeat %d times", mRepeats), x + 2 * mScreenDensity, y + 25 * mScreenDensity, mPaint);
-
 			mLastBoundingBox.left = x;
 			mLastBoundingBox.right = screenWidth - x;
 			mLastBoundingBox.top = y;
@@ -385,7 +452,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		mEntries.add(interval);
 
 		Repeats r = new Repeats();
-		r.mRepeats = 10;
+		r.mRepeats = 95;
 
 		interval = new Interval();
 		interval.mDuration = 300;
@@ -409,6 +476,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 	public void addNewInterval() {
 		Interval interval = new Interval();
+		interval.mDistance = Util.METERS_PER_MILE;
 		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
 		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
 		mEntries.add(interval);
@@ -417,6 +485,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 	public void addNewRepeats() {
 		Repeats repeats = new Repeats();
+		repeats.mRepeats = 5;
 		mEntries.add(repeats);
 		invalidate();
 	}
@@ -425,19 +494,34 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	// onTouch processing
 	//
 	private Element mMovingEntry;
-	private float mMoveCurrentX, mMoveCurrentY;
-	private float mMoveDeltaX, mMoveDeltaY;
-	private boolean mSeenMoveEvent = false; 
 	
+	// The touch location on the DOWN event
+	private float mMoveStartX, mMoveStartY;
+	
+	// The time of the DOWN event. Seconds since 1970/1/1
+	private double mMoveStartTime; 
+	
+	// The current touch location.
+	private float mMoveCurrentX, mMoveCurrentY;
+	
+	private float mMoveDeltaX, mMoveDeltaY;
+	
+	// Whether the current touch event is considered to be a click or drag.
+	private boolean mIsClick = false; 
+
 	public boolean onTouch(View v, MotionEvent event) {
 		final int action = event.getAction();
+		final double now = System.currentTimeMillis() / 1000.0;
 		if (action == MotionEvent.ACTION_DOWN) {
 			mMovingEntry = findEntryAtPosition(event.getX(), event.getY());
 			if (mMovingEntry != null) {
 				RectF rect = mMovingEntry.getLastBoundingBox();
-				mMoveDeltaX = event.getX() - rect.left;
-				mMoveDeltaY = event.getY() - rect.top;
-				mSeenMoveEvent = false; 
+				mMoveStartX = event.getX();
+				mMoveStartY = event.getY();				
+				mMoveDeltaX = mMoveStartX - rect.left;
+				mMoveDeltaY = mMoveStartY - rect.top;
+				mMoveStartTime = now;
+				mIsClick = true;  
 				replaceElement(mMovingEntry, getPlaceholder(mMovingEntry.getHeight()));
 			}
 			return true;
@@ -445,7 +529,13 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		if (action == MotionEvent.ACTION_MOVE && mMovingEntry != null) {
 			mMoveCurrentX = event.getX();
 			mMoveCurrentY = event.getY();
-			mSeenMoveEvent = true; 
+			
+			if (now - mMoveStartTime >= 1.0) {
+				mIsClick = false;
+			}
+			if (Math.abs(mMoveCurrentY - mMoveStartY) + Math.abs(mMoveCurrentX - mMoveStartX) >= 10.0) {
+				mIsClick = false;
+			}
 
 			findMoveDestination(mMovingEntry, event.getX(), event.getY());
 			invalidate();
@@ -454,10 +544,21 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		if (action == MotionEvent.ACTION_UP) {
 			if (mMovingEntry != null) {
 				replaceElement(mPlaceholder, mMovingEntry);
-				if (!mSeenMoveEvent) {
-					// Click event
+				
+				// TODO: duplicate code
+				mMoveCurrentX = event.getX();
+				mMoveCurrentY = event.getY();
+				if (now - mMoveStartTime >= 1.0) {
+					mIsClick = false;
+				}
+				if (Math.abs(mMoveCurrentY - mMoveStartY) + Math.abs(mMoveCurrentX - mMoveStartX) >= 10.0) {
+					mIsClick = false;
+				}
+				if (mIsClick) {
 					if (mMovingEntry instanceof Interval) {
 						showDialog(new IntervalDialog(this, (Interval)mMovingEntry, mSettings));
+					} else if (mMovingEntry instanceof Repeats) {
+						showDialog(new RepeatsDialog(this, (Repeats)mMovingEntry, mSettings));
 					}
 				}
 			}

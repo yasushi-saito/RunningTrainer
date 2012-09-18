@@ -14,6 +14,7 @@ public class WorkoutEditorFragment extends Fragment {
     		LayoutInflater inflater, 
     		ViewGroup container,
             Bundle savedInstanceState) {
+		if (container == null) return null;
         View view = inflater.inflate(R.layout.workout_editor, container, false);
         
         final WorkoutCanvasView canvas = (WorkoutCanvasView)view.findViewById(R.id.canvas);
