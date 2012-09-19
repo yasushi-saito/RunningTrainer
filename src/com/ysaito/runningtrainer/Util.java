@@ -28,6 +28,10 @@ public class Util {
 		xx = xx + "";
 	}
 
+	static public String paceToSpeechText(double secondsPerMeter, Settings settings) {
+		return durationToSpeechText(secondsPerMeter * (settings.unit == Settings.US ? METERS_PER_MILE : 1000.0));
+	}
+	
 	static public String durationToSpeechText(double totalSecondsD) {
 		long totalSeconds = (long)totalSecondsD;
 		final long hours = totalSeconds / 3600;

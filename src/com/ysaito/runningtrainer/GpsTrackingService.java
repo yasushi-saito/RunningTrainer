@@ -102,16 +102,16 @@ public class GpsTrackingService extends Service {
     	if (mSettings.speakTotalDuration)
     		speak("Total time " + Util.durationToSpeechText(mTotalStats.getDurationSeconds()));
     	if (mSettings.speakCurrentPace)
-    		speak("Current pace " + Util.durationToSpeechText((long)mTotalStats.getCurrentPace()));
+    		speak("Current pace " + Util.paceToSpeechText((long)mTotalStats.getCurrentPace(), mSettings));
     	if (mSettings.speakAveragePace)
-    		speak("Average pace " + Util.durationToSpeechText((long)mTotalStats.getPace()));
+    		speak("Average pace " + Util.paceToSpeechText((long)mTotalStats.getPace(), mSettings));
     	if (newerLapStats != null) {
     		if (mSettings.speakLapDistance)
     			speak("Lap distance " + Util.distanceToSpeechText(newerLapStats.getDistance(), mSettings));
     		if (mSettings.speakLapDuration)
     			speak("Lap time " + Util.durationToSpeechText((long)newerLapStats.getDurationSeconds()));
     		if (mSettings.speakLapPace)
-    			speak("Lap pace " + Util.durationToSpeechText((long)newerLapStats.getPace()));
+    			speak("Lap pace " + Util.paceToSpeechText((long)newerLapStats.getPace(), mSettings));
     	}
     	if (mAutoLapStats != null) {
     		if (mSettings.speakAutoLapDistance)
@@ -119,7 +119,7 @@ public class GpsTrackingService extends Service {
     		if (mSettings.speakAutoLapDuration)
     			speak("Auto lap time " + Util.durationToSpeechText((long)mAutoLapStats.getDurationSeconds()));
     		if (mSettings.speakAutoLapPace)
-    			speak("Auto lap pace " + Util.durationToSpeechText((long)mAutoLapStats.getPace()));
+    			speak("Auto lap pace " + Util.paceToSpeechText((long)mAutoLapStats.getPace(), mSettings));
     	}
     }
     
