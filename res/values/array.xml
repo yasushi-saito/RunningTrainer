@@ -59,7 +59,7 @@
     <item>Every 1 km</item>
     <item>Every 1 mile</item>
     <item>Every 2 km</item>
-    <item>Every 2 miles</item>    
+    <item>Every 2 mile</item>    
   </string-array>
 
   <string-array name="distance_interval_values">

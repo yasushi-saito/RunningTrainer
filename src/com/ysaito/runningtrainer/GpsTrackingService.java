@@ -125,8 +125,17 @@ public class GpsTrackingService extends Service {
     
     private long mLastReportedTotalDistance = 0;
     private long mLastReportedTotalDuration = 0;
+    private long mLastReportedAutoLapDistance = 0;
     
     private void notifyListeners() {
+    	if (mSettings.autoLapDistanceInterval > 0) {
+    		final int interval = (int)Math.max(50, mSettings.autoLapDistanceInterval);
+    		final long newDistance = (long)mTotalStats.getDistance();
+    		if ((mLastReportedAutoLapDistance / interval) != (newDistance / interval)) {
+    			mLastReportedAutoLapDistance = newDistance;
+    			mAutoLapStats = new LapStats();
+    		}
+    	}
     	boolean needSpeak = false;
     	if (mSettings.speakDistanceInterval > 0) {
     		final int interval = (int)Math.max(15, mSettings.speakDistanceInterval);

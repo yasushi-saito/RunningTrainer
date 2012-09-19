@@ -29,9 +29,10 @@ public class Settings {
 		for (int i = 0; i < settings.viewTypes.length; ++i) {
 			settings.viewTypes[i] = prefs.getString("display" + i, "none");
 		}
-		
-		settings.speakTimeInterval = Double.parseDouble(prefs.getString("time_interval", "0"));
-		settings.speakDistanceInterval = Double.parseDouble(prefs.getString("distance_interval", "0"));
+
+		settings.autoLapDistanceInterval = Double.parseDouble(prefs.getString("autolap_distance_interval", "0"));
+		settings.speakTimeInterval = Double.parseDouble(prefs.getString("speak_time_interval", "0"));
+		settings.speakDistanceInterval = Double.parseDouble(prefs.getString("speak_distance_interval", "0"));
 		settings.speakTotalDistance = prefs.getBoolean("speak_total_distance", false);
 		settings.speakTotalDuration = prefs.getBoolean("speak_total_duration", false);
 		settings.speakAveragePace = prefs.getBoolean("speak_average_pace", false);
@@ -53,8 +54,9 @@ public class Settings {
 	public int unit = METRIC;
 	public Locale locale = Locale.US;
 	public String viewTypes[];
-	public double speakDistanceInterval;  // in meters. <0 if disabled
-	public double speakTimeInterval;  // in seconds. <0 if disabled
+	public double autoLapDistanceInterval; // in meters. <= 0 if disabled
+	public double speakDistanceInterval;  // in meters. <=0 if disabled
+	public double speakTimeInterval;  // in seconds. <=0 if disabled
 	public boolean speakTotalDistance;
 	public boolean speakTotalDuration;	
 	public boolean speakAveragePace;		

@@ -1,12 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen
   xmlns:android="http://schemas.android.com/apk/res/android">
-  <ListPreference
-    android:title="@string/unit_of_measurement"
-    android:key="unit"
-    android:defaultValue="US"
-    android:entries="@array/unit"
-    android:entryValues="@array/unit"/>/>
+  <PreferenceCategory
+    android:key="pref_key_autolap_settings"
+    android:title="Miscellaneous" >
+      <ListPreference
+          android:defaultValue="US"
+          android:entries="@array/unit"
+          android:entryValues="@array/unit"
+          android:key="unit"
+          android:title="@string/unit_of_measurement" />
+     <ListPreference
+         android:defaultValue="0"
+         android:entries="@array/distance_intervals"
+         android:entryValues="@array/distance_interval_values"
+         android:key="autolap_distance_interval"
+         android:title="Autolap distance interval" />
+  </PreferenceCategory>
   <PreferenceCategory
     android:key="pref_key_display_settings"
     android:title="Display" >
@@ -59,12 +69,12 @@
       <ListPreference
         android:entries="@array/time_intervals"
         android:entryValues="@array/time_interval_values"
-        android:key="time_interval"
+        android:key="speak_time_interval"
         android:title="Time interval" />
       <ListPreference
         android:entries="@array/distance_intervals"
         android:entryValues="@array/distance_interval_values"
-        android:key="distance_interval"
+        android:key="speak_distance_interval"
         android:title="Distance interval" />
 
       <CheckBoxPreference
