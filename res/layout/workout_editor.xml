@@ -15,16 +15,35 @@
        />
 
     <Button
-      android:id="@+id/new_repeats_button"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginLeft="10dip"
-      android:layout_marginRight="10dip"
-      android:text="Repeats"
-      android:layout_alignParentTop="true"
-      android:layout_alignParentRight="true"
-       />
+        android:id="@+id/new_repeats_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="10dip"
+        android:layout_marginRight="10dip"
+        android:layout_toRightOf="@id/new_interval_button"
+        android:text="Repeats" />
 
+    <Button
+        android:id="@+id/save_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="10dip"
+        android:layout_marginRight="10dip"
+        android:layout_toRightOf="@id/new_repeats_button"
+        android:text="Save" />
+    
+    <Button
+        android:id="@+id/cancel_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="10dip"
+        android:layout_marginRight="10dip"
+        android:layout_toRightOf="@id/save_button"
+        android:text="Cancel" />
+    
     <TextView
         android:textSize="22sp"
         android:textStyle="bold"

@@ -198,6 +198,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public float getHeight();
 		public float getWidth();
 		public RectF getLastBoundingBox();
+		public Workout toWorkout();
 	}
 
 	private final float SCREEN_DENSITY = getContext().getResources().getDisplayMetrics().scaledDensity;
@@ -232,6 +233,13 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public RectF getLastBoundingBox() { 
 			return mLastBoundingBox;
 		}
+		public Workout toWorkout() { 
+			// This shouldn't be called in practice. create some dummy entry
+			Workout w = new Workout();
+			w.type = "Interval";
+			return w;
+		}
+
 		@Override public String toString() { 
 			return "placeholder";
 		}
@@ -268,6 +276,17 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public Repeats getParent() { return mParent; };
 		public void setParent(Repeats p) { mParent = p; }
 
+		public Workout toWorkout() { 
+			// This shouldn't be called in practice. create some dummy entry
+			Workout w = new Workout();
+			w.type = "Interval";
+			w.distance = mDistance;
+			w.duration = mDuration;
+			w.fastTargetPace = mFastTargetPace;
+			w.slowTargetPace = mSlowTargetPace; 
+			return w;
+		}
+		
 		/**
 		 * Update the interval params. Arguments are string represention of the new values.
 		 * Returns an error message if the new param values are invalid. Returns null on success.
@@ -382,6 +401,18 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public final Element getChild(int i) { return mEntries.get(i); }
 		public final ArrayList<Element> getChildren() { return mEntries; }
 
+		public Workout toWorkout() { 
+			// This shouldn't be called in practice. create some dummy entry
+			Workout w = new Workout();
+			w.type = "Repeats";
+			w.repeats = mRepeats;
+			w.children = new Workout[mEntries.size()];
+			for (int i = 0; i < mEntries.size(); ++i) {
+				w.children[i] = mEntries.get(i).toWorkout();
+			}
+			return w;
+		}
+		
 		public float getWidth() { 
 			int n = 0;
 			Repeats parent = this;
@@ -766,5 +797,14 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	    }
 	    ft.addToBackStack(null);
 	    fragment.show(ft, "interval_dialog");
+	}
+	
+	public Workout getWorkout() {
+		Workout workout = mRoot.toWorkout();
+		
+		// the workout will be of "Repeats" type, so make it into a "Root" type
+		workout.type = "Root";
+		workout.repeats = -1;  // not used
+		return workout;
 	}
 }
