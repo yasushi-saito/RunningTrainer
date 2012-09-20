@@ -63,6 +63,7 @@
         android:layout_toRightOf="@id/title_workout_name"
         android:layout_alignBaseline="@id/title_workout_name"
         android:layout_marginBottom="20sp"
+        android:inputType="text"
         android:text="New Workout" />
     
     <com.ysaito.runningtrainer.WorkoutCanvasView

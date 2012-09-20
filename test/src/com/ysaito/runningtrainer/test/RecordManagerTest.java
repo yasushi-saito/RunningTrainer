@@ -15,19 +15,19 @@ public class RecordManagerTest extends InstrumentationTestCase {
 	public void testBasename() {
 		String basename = RecordManager.generateBasename(345678, 12345.0, 2345, null);
 		RecordSummary s = RecordManager.parseBasename(basename);
-		assertEquals(345678, s.startTime);
+		assertEquals(345678, s.startTimeSeconds);
 		assertEquals(basename, s.basename);
 		assertEquals(12345.0, s.distance);
-		assertEquals(2345.0, s.duration);
+		assertEquals(2345.0, s.durationSeconds);
 	}
 
 	public void testBasenameWithRunkeeperPath() {
 		String basename = RecordManager.generateBasename(345678, 12345.0, 2345, "/foobar/52");
 		RecordSummary s = RecordManager.parseBasename(basename);
-		assertEquals(345678, s.startTime);
+		assertEquals(345678, s.startTimeSeconds);
 		assertEquals(basename, s.basename);
 		assertEquals(12345.0, s.distance);
-		assertEquals(2345.0, s.duration);
+		assertEquals(2345.0, s.durationSeconds);
 		assertEquals("/foobar/52", s.runkeeperPath);		
 	}
 	

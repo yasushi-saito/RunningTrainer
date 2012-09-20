@@ -115,9 +115,7 @@ public class RecordingActivity extends MapActivity {
     		mDisplayType = displayType;
     	}
     	
-    	public void update(
-    			LapStats totalStats, LapStats userLapStats, LapStats autoLapStats,
-    			Settings settings) {
+    	public void update(LapStats totalStats, LapStats userLapStats, LapStats autoLapStats) {
     		String value = "         ";
     		String title = "YY";
     		
@@ -130,9 +128,9 @@ public class RecordingActivity extends MapActivity {
     		if (mDisplayType.equals("none")) {
     			;
     		} else if (mDisplayType.equals("total_distance")) {
-    			title = "Total " + Util.distanceUnitString(settings);
+    			title = "Total " + Util.distanceUnitString();
     			if (totalStats != null) {
-    				value = Util.distanceToString(totalStats.getDistance(), settings);
+    				value = Util.distanceToString(totalStats.getDistance());
     			}
     		} else if (mDisplayType.equals("total_duration")) {
     			title = "Total time";
@@ -142,17 +140,17 @@ public class RecordingActivity extends MapActivity {
     		} else if (mDisplayType.equals("total_pace")) {
     			title = "Avg pace";
     			if (totalStats != null) {
-    				value = Util.paceToString(totalStats.getPace(), settings);
+    				value = Util.paceToString(totalStats.getPace());
     			}
     		} else if (mDisplayType.equals("current_pace")) {
     			title = "Cur pace";
     			if (totalStats != null) {
-    				value = Util.paceToString(totalStats.getCurrentPace(), settings);
+    				value = Util.paceToString(totalStats.getCurrentPace());
     			}
     		} else if (mDisplayType.equals("lap_distance")) {
-    			title = "Lap " + Util.distanceUnitString(settings);
+    			title = "Lap " + Util.distanceUnitString();
     			if (newerLapStats != null) {
-    				value = Util.distanceToString(newerLapStats.getDistance(), settings);
+    				value = Util.distanceToString(newerLapStats.getDistance());
     			}
     		} else if (mDisplayType.equals("lap_duration")) {
     			title = "Lap time";
@@ -162,12 +160,12 @@ public class RecordingActivity extends MapActivity {
     		} else if (mDisplayType.equals("lap_pace")) {
     			title = "Lap pace";
     			if (newerLapStats != null) {
-    				value = Util.paceToString(newerLapStats.getPace(), settings);
+    				value = Util.paceToString(newerLapStats.getPace());
     			}
     		} else if (mDisplayType.equals("auto_lap_distance")) {
-    			title = "Autolap " + Util.distanceUnitString(settings);
+    			title = "Autolap " + Util.distanceUnitString();
     			if (autoLapStats != null) {
-    				value = Util.distanceToString(autoLapStats.getDistance(), settings);
+    				value = Util.distanceToString(autoLapStats.getDistance());
     			}
     		} else if (mDisplayType.equals("auto_lap_duration")) {
     			title = "Autolap time";
@@ -177,7 +175,7 @@ public class RecordingActivity extends MapActivity {
     		} else if (mDisplayType.equals("auto_lap_pace")) {
     			title = "Autolap pace";
     			if (autoLapStats != null) {
-    				value = Util.paceToString(autoLapStats.getPace(), settings);
+    				value = Util.paceToString(autoLapStats.getPace());
     			}
     		} else {
     			value = "Unknown display type: " + mDisplayType;
@@ -196,7 +194,6 @@ public class RecordingActivity extends MapActivity {
     private Button mPauseResumeButton;
     private Button mStartStopButton;
     private Button mLapButton;    
-    private Settings mSettings;  // User pref settings at the start of the activity
     private RecordManager mRecordManager;
 
     private static final int STOPPED = 0;
@@ -220,7 +217,7 @@ public class RecordingActivity extends MapActivity {
     	mTotalStats = totalStats;
     	mMapView.invalidate();
     	for (int i = 0; i < mStatsViews.length; ++i) {
-    		mStatsViews[i].update(totalStats, userLapStats, autoLapStats, mSettings);
+    		mStatsViews[i].update(totalStats, userLapStats, autoLapStats);
     	}
     }
 
@@ -246,7 +243,6 @@ public class RecordingActivity extends MapActivity {
         	mStartStopButton.setText(R.string.start);
         }
     	
-    	mSettings = Settings.getSettings(this);
         // Define a listener that responds to location updates
         mLocationListener = new LocationListener() {
     		public void onLocationChanged(Location location) {
@@ -266,14 +262,14 @@ public class RecordingActivity extends MapActivity {
         mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
 
         mStatsViews = new StatsView[6];
-        mStatsViews[0] = new StatsView(this, R.id.view0, R.id.view0_title, mSettings.viewTypes[0]);
-        mStatsViews[1] = new StatsView(this, R.id.view1, R.id.view1_title, mSettings.viewTypes[1]);        
-        mStatsViews[2] = new StatsView(this, R.id.view2, R.id.view2_title, mSettings.viewTypes[2]);        
-        mStatsViews[3] = new StatsView(this, R.id.view3, R.id.view3_title, mSettings.viewTypes[3]);        
-        mStatsViews[4] = new StatsView(this, R.id.view4, R.id.view4_title, mSettings.viewTypes[4]);        
-        mStatsViews[5] = new StatsView(this, R.id.view5, R.id.view5_title, mSettings.viewTypes[5]);
+        mStatsViews[0] = new StatsView(this, R.id.view0, R.id.view0_title, Settings.viewTypes[0]);
+        mStatsViews[1] = new StatsView(this, R.id.view1, R.id.view1_title, Settings.viewTypes[1]);        
+        mStatsViews[2] = new StatsView(this, R.id.view2, R.id.view2_title, Settings.viewTypes[2]);        
+        mStatsViews[3] = new StatsView(this, R.id.view3, R.id.view3_title, Settings.viewTypes[3]);        
+        mStatsViews[4] = new StatsView(this, R.id.view4, R.id.view4_title, Settings.viewTypes[4]);        
+        mStatsViews[5] = new StatsView(this, R.id.view5, R.id.view5_title, Settings.viewTypes[5]);
         for (int i = 0; i < mStatsViews.length; ++i) {
-        	mStatsViews[i].update(null,  null, null, mSettings);
+        	mStatsViews[i].update(null,  null, null);
         }
         updateTimerIfNecessary();
     }

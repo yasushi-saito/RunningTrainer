@@ -37,7 +37,6 @@ public class RecordListFragment extends ListFragment {
 	   */
 	  @Override
 	  protected ArrayList<RecordSummary> doInBackground(Void... unused) {
-		  Log.d(TAG, "Start listing");
 		  return mRecordManager.listRecords();
 	  }
 
@@ -53,9 +52,7 @@ public class RecordListFragment extends ListFragment {
 			super(activity, android.R.layout.simple_list_item_1);
 		}
 
-		private Settings mSettings;
 		public void reset(ArrayList<RecordSummary> newRecords) {
-			mSettings = Settings.getSettings(getContext());
 			clear();
 			addAll(newRecords);
 			notifyDataSetChanged();
@@ -68,7 +65,6 @@ public class RecordListFragment extends ListFragment {
 			
 			GregorianCalendar tmpCalendar = new GregorianCalendar();
 			StringBuilder b = new StringBuilder();
-			Log.d(TAG, "SEC=" + record.startTimeSeconds);
 			tmpCalendar.setTimeInMillis((long)(record.startTimeSeconds * 1000));
 		
 			// TODO: change the date format depending on settings.locale
@@ -76,14 +72,16 @@ public class RecordListFragment extends ListFragment {
 					tmpCalendar.get(Calendar.YEAR),
 					tmpCalendar.get(Calendar.MONTH) - Calendar.JANUARY + 1,
 					tmpCalendar.get(Calendar.DAY_OF_MONTH),
-					tmpCalendar.get(Calendar.HOUR),
+					tmpCalendar.get(Calendar.HOUR_OF_DAY),
 					tmpCalendar.get(Calendar.MINUTE)));
-			b.append(Util.distanceToString(record.distance, mSettings));
+			b.append(Util.distanceToString(record.distance));
 			b.append("  ");
-			b.append(Util.distanceUnitString(mSettings));
+			b.append(Util.distanceUnitString());
 			view.setText(b.toString());
 			if (record.runkeeperPath == null) {
 				view.setTextColor(0xffff0000);
+			} else {
+				view.setTextColor(0xffffffff);
 			}
 			return view;
 		}
@@ -105,15 +103,28 @@ public class RecordListFragment extends ListFragment {
 		registerForContextMenu(getListView());
 	}
 
+	Settings.OnChangeListener mSettingsListener = new Settings.OnChangeListener() {
+		public void onChange() { 
+			Log.d(TAG, "ONCHANGESTE");
+			startListing();
+		}
+	};
+	
 	@Override public void onResume() {
 		super.onResume();
-		Log.d(TAG, "ListFrag: resume");
+		Settings.registerOnChangeListener(mSettingsListener);
+		Log.d(TAG, "RESUMERUSUME");
 		startListing();
 	}
 
+	@Override public void onPause() {
+		super.onPause();
+		Settings.UnregisterOnChangeListener(mSettingsListener);
+		Log.d(TAG, "PAUSE");
+	}
+	
 	@Override public void onStart() {
 		super.onStart();
-		Log.d(TAG, "ListFrag: start");
 		startListing();
 	}
 	

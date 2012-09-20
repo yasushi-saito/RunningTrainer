@@ -28,8 +28,8 @@ public class Util {
 		xx = xx + "";
 	}
 
-	static public String paceToSpeechText(double secondsPerMeter, Settings settings) {
-		return durationToSpeechText(secondsPerMeter * (settings.unit == Settings.US ? METERS_PER_MILE : 1000.0));
+	static public String paceToSpeechText(double secondsPerMeter) {
+		return durationToSpeechText(secondsPerMeter * (Settings.unit == Settings.US ? METERS_PER_MILE : 1000.0));
 	}
 	
 	static public String durationToSpeechText(double totalSecondsD) {
@@ -53,8 +53,8 @@ public class Util {
 		return b.toString();
 	}
 
-	static public String distanceToSpeechText(double meters, Settings settings) {
-		if (settings.unit == Settings.US) {
+	static public String distanceToSpeechText(double meters) {
+		if (Settings.unit == Settings.US) {
 			return String.format("%.2f miles", meters / METERS_PER_MILE);
 		} else {
 			return String.format("%.2f kilometers", meters / 1000.0);
@@ -105,16 +105,16 @@ public class Util {
 		}
 	}
 	
-	static public String distanceUnitString(Settings settings) {
-		if (settings.unit == Settings.US) {
+	static public String distanceUnitString() {
+		if (Settings.unit == Settings.US) {
 			return "mile";
 		} else {
 			return "km";
 		}
 	}
 
-	static public String distanceToString(double meters, Settings settings) {
-		if (settings.unit == Settings.US) {
+	static public String distanceToString(double meters) {
+		if (Settings.unit == Settings.US) {
 			return String.format("%.2f", meters / METERS_PER_MILE);
 		} else {
 			return String.format("%.2f", meters / 1000.0);
@@ -125,25 +125,25 @@ public class Util {
 	 * Given a textual distance string, such as "1.0", return the value in meters.
 	 * The unit is extracted from @p settings. Return -1.0 on error.
 	 */
-	static public double distanceFromString(String s, Settings settings) {
+	static public double distanceFromString(String s) {
 		try {
-			double multiplier = (settings.unit == Settings.US ? METERS_PER_MILE : 1000.0);
+			double multiplier = (Settings.unit == Settings.US ? METERS_PER_MILE : 1000.0);
 			return Double.parseDouble(s) * multiplier;
 		} catch (NumberFormatException e) {
 			return -1.0;
 		}
 	}
 	
-	static public String paceUnitString(Settings settings) {
-		if (settings.unit == Settings.US) {
+	static public String paceUnitString() {
+		if (Settings.unit == Settings.US) {
 			return "s/mile";
 		} else {
 			return "s/km";
 		}
 	}
 	
-	static public String paceToString(double secondsPerMeter, Settings settings) {
-		if (settings.unit == Settings.US) {
+	static public String paceToString(double secondsPerMeter) {
+		if (Settings.unit == Settings.US) {
 			long secondsPerMile = (long)(secondsPerMeter * METERS_PER_MILE);
 			return durationToString(secondsPerMile);
 		} else {
@@ -156,10 +156,10 @@ public class Util {
 	 * Given a pace string, such as "7:00", return the numeric value as seconds per meter.
 	 * Returns a regative value on parse error.
 	 */
-	static public double paceFromString(String s, Settings settings) {
+	static public double paceFromString(String s) {
 		final double d = durationFromString(s);
 		if (d < 0.0) return d;
-		return d / (settings.unit == Settings.US ? METERS_PER_MILE : 1000.0);
+		return d / (Settings.unit == Settings.US ? METERS_PER_MILE : 1000.0);
 	}
 	
 	static public void RescaleMapView(MapView mapView, ArrayList<GeoPoint> points) {

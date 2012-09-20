@@ -16,7 +16,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 public class RecordManager {
-	private final static String TAG = "Util";
+	private final static String TAG = "RecordManager";
 	
 	// The SDCARD directory in which records are stored
 	private final File mRootDir;
@@ -148,7 +148,6 @@ public class RecordManager {
 			if (!s.equals(".json")) {
 				return null;
 			}
-			Log.d(TAG, "REC: "+ r.startTimeSeconds + "/" + basename);
 			return r;
 		} catch (Exception e) {
 			Log.e(TAG, basename + ": Failed to parse the basenam");
@@ -198,11 +197,8 @@ public class RecordManager {
 	
 	public ArrayList<RecordSummary> listRecords() {
 		ArrayList<RecordSummary> list = new ArrayList<RecordSummary>();
-		Log.d(TAG, "LIST:");
 		if (mRootDir != null) {
-			Log.d(TAG, "LIST2:");
 			for (String basename : mRootDir.list()) {
-				Log.d(TAG, "File: " + basename);
 				if (basename.startsWith("log:")) {
 					RecordSummary summary = parseBasename(basename);
 					if (summary != null) list.add(summary);

@@ -100,14 +100,12 @@ class LapStats {
 		long minTimestamp = now + 100000;
 		long maxTimestamp = 0;
 		double totalDistance = 0.0;
-		Log.d(TAG, "PACE: now=" + now);
 		while (iter.hasNext()) {
 			Event event = iter.next();
 			if (event.absTime >= now - 15 * 1000) {
 				minTimestamp = Math.min(minTimestamp, event.absTime);
 				maxTimestamp = Math.max(maxTimestamp, event.absTime);
 				totalDistance += event.distance;
-				Log.d(TAG, "PACE: log abs=" + event.absTime + " distance=" + event.distance);
 			}
 		}
 		double pace;
@@ -116,11 +114,7 @@ class LapStats {
 		} else {
 			pace = (maxTimestamp - minTimestamp) / 1000.0 / totalDistance;
 		}
-		Log.d(TAG, "PACE: timedelta=" + (maxTimestamp - minTimestamp) + " distance=" + totalDistance + " pace=" + pace);
 		return pace;
-		/*return String.format("now-max=%d delta=%d n=%d total=%f pace=%f", 
-    				now - maxTimestamp, maxTimestamp - minTimestamp, n, totalDistance, 
-    				pace);*/
 	}
 	
 	public final void onPause() {
@@ -147,7 +141,7 @@ class LapStats {
 				HealthGraphClient.JsonWGS84 thisPoint = path.get(mLastPathSegment);
 				Location.distanceBetween(lastPoint.latitude, lastPoint.longitude,
 						thisPoint.latitude, thisPoint.longitude, mTmp);
-				mDistance += mTmp[0];
+				mDistance += mTmp[0] + 100;
 				
 				final long absTime = (long)(mStartTimeMillis + thisPoint.timestamp * 1000);
 				mRecentEvents.addLast(new Event(mTmp[0], absTime));

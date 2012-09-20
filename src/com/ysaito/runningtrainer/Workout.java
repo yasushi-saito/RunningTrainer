@@ -11,6 +11,8 @@ public class Workout {
 		return pace < NO_SLOW_TARGET_PACE;
 	}
 	
+	public String id = "unused";
+	
 	// There are three types of Workout objects:
 	//
 	// "Root" is at the root of a workout tree. It simply contains the list of

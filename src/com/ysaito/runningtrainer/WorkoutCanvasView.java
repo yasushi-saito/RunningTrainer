@@ -36,12 +36,10 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		private EditText mSlowPaceEditor;		
 		private final View mParentView;
 		private final Interval mElem;
-		private final Settings mSettings;
 		
-		public IntervalDialog(View parentView, Interval elem, Settings settings) { 
+		public IntervalDialog(View parentView, Interval elem) { 
 			mParentView = parentView;
 			mElem = elem; 
-			mSettings = settings;
 		}
 	    
 	    @Override
@@ -71,7 +69,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 	        if (mElem.getDistance() > 0) {
 	        	distanceButton.setChecked(true);
-	        	mDistanceEditor.setText(Util.distanceToString(mElem.getDistance(), mSettings));
+	        	mDistanceEditor.setText(Util.distanceToString(mElem.getDistance()));
 	        	onDistanceButtonPress();
 	        } else if (mElem.getDuration() > 0) {
 	        	durationButton.setChecked(true);
@@ -85,7 +83,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	        mFastPaceEditor = (EditText)v.findViewById(R.id.edit_fast_pace);
 	        final double fast = mElem.getFastTargetPace();
 	        if (Workout.hasFastTargetPace(fast)) {
-	        	mFastPaceEditor.setText(Util.paceToString(fast, mSettings));
+	        	mFastPaceEditor.setText(Util.paceToString(fast));
 	        } else {
 	        	mFastPaceEditor.setText("");
 	        }
@@ -93,7 +91,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	        mSlowPaceEditor = (EditText)v.findViewById(R.id.edit_slow_pace);
 	        final double slow = mElem.getSlowTargetPace();
 	        if (Workout.hasSlowTargetPace(slow)) {
-	        	mSlowPaceEditor.setText(Util.paceToString(slow, mSettings));
+	        	mSlowPaceEditor.setText(Util.paceToString(slow));
 	        } else {
 	        	mSlowPaceEditor.setText("");
 	        }
@@ -145,12 +143,10 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		private EditText mNumRepeatsEditor;
 		private final View mParentView;
 		private final Repeats mElem;
-		private final Settings mSettings;
 		
-		public RepeatsDialog(View parentView, Repeats elem, Settings settings) { 
+		public RepeatsDialog(View parentView, Repeats elem) { 
 			mParentView = parentView;
 			mElem = elem; 
-			mSettings = settings;
 		}
 	    
 	    @Override
@@ -294,7 +290,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public String tryUpdate(String durationStr, String distanceStr, String fastTargetPaceStr, String slowTargetPaceStr) {
 			double distance = -1.0;
 			if (!distanceStr.isEmpty()) {
-				distance = Util.distanceFromString(distanceStr, mSettings);
+				distance = Util.distanceFromString(distanceStr);
 				if (distance < 0.0) return "Failed to parse distance " + distanceStr;
 			}
 			double duration = 1.0;
@@ -304,12 +300,12 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			}
 			double fastTargetPace = Workout.NO_FAST_TARGET_PACE;
 			if (!fastTargetPaceStr.isEmpty()) {
-				fastTargetPace = Util.paceFromString(fastTargetPaceStr, mSettings);
+				fastTargetPace = Util.paceFromString(fastTargetPaceStr);
 				if (fastTargetPace < 0.0) return "Failed to parse pace " + fastTargetPaceStr;
 			}
 			double slowTargetPace = Workout.NO_SLOW_TARGET_PACE;
 			if (!slowTargetPaceStr.isEmpty()) {
-				slowTargetPace = Util.paceFromString(slowTargetPaceStr, mSettings);
+				slowTargetPace = Util.paceFromString(slowTargetPaceStr);
 				if (slowTargetPace < 0.0) return "Failed to parse pace " + fastTargetPaceStr;
 			}
 			if (fastTargetPace > slowTargetPace) {
@@ -355,9 +351,9 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			
 			b.setLength(0);
 			if (mDistance >= 0) {
-				b.append(Util.distanceToString(mDistance, mSettings));
+				b.append(Util.distanceToString(mDistance));
 				b.append(" ");
-				b.append(Util.distanceUnitString(mSettings));
+				b.append(Util.distanceUnitString());
 			} else if (mDuration >= 0) {
 				b.append(Util.durationToString(mDuration));
 			} else {
@@ -368,13 +364,13 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 				b.append("No target");
 			} else {
 				if (mFastTargetPace > 0) {
-					b.append(Util.paceToString(mFastTargetPace, mSettings));
+					b.append(Util.paceToString(mFastTargetPace));
 				} else {
 					b.append("-");
 				}
 				b.append(" to ");
 				if (mSlowTargetPace > 0) {
-					b.append(Util.paceToString(mSlowTargetPace, mSettings));
+					b.append(Util.paceToString(mSlowTargetPace));
 				} else {
 					b.append("-");
 				}
@@ -656,9 +652,9 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 						// The remove mark ("X") was pressed.
 						removeElement(mRoot, mSelectedElement);
 					} else if (mSelectedElement instanceof Interval) {
-						showDialog(new IntervalDialog(this, (Interval)mSelectedElement, mSettings));
+						showDialog(new IntervalDialog(this, (Interval)mSelectedElement));
 					} else if (mSelectedElement instanceof Repeats) {
-						showDialog(new RepeatsDialog(this, (Repeats)mSelectedElement, mSettings));
+						showDialog(new RepeatsDialog(this, (Repeats)mSelectedElement));
 					}
 				}
 			}
@@ -766,10 +762,8 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	//
 	private final Paint mPaint = new Paint();
 	private final StringBuilder mTmpStringBuilder = new StringBuilder();
-	private Settings mSettings = null;
 
 	@Override public void onDraw(Canvas canvas) {
-		mSettings = Settings.getSettings(getContext());
 		mPaint.setAntiAlias(true);
 		
 		float y = 0;

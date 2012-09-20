@@ -106,9 +106,8 @@ public class RecordReplayActivity extends MapActivity {
 
     @Override public void onResume() {
     	super.onResume();
-    	Settings settings = Settings.getSettings(this);
     	((TextView)findViewById(R.id.distance_title)).setText(
-    			Util.distanceUnitString(settings));
+    			Util.distanceUnitString());
     	((TextView)findViewById(R.id.duration_title)).setText("Time");
     	((TextView)findViewById(R.id.pace_title)).setText("Pace");
     	
@@ -122,13 +121,12 @@ public class RecordReplayActivity extends MapActivity {
     	TextView durationView = (TextView)findViewById(R.id.duration);
     	TextView paceView = (TextView)findViewById(R.id.pace);    	
 
-    	Settings settings = Settings.getSettings(this);
-    	distanceView.setText(Util.distanceToString(mRecord.total_distance, settings));
+    	distanceView.setText(Util.distanceToString(mRecord.total_distance));
     	durationView.setText(Util.durationToString((long)mRecord.duration));
     	if (mRecord.total_distance <= 0.0) {
     		paceView.setText("0:00");
     	} else {
-    		paceView.setText(Util.paceToString(mRecord.duration / mRecord.total_distance, settings));
+    		paceView.setText(Util.paceToString(mRecord.duration / mRecord.total_distance));
     	}
     	
     	 if (mRecord.path.length > 0) {

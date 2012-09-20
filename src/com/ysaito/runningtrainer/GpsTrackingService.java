@@ -49,7 +49,6 @@ public class GpsTrackingService extends Service {
     
     public void onLapButtonPress() {
     	mUserLapStats = new LapStats();
-		mSettings = Settings.getSettings(this);  // refresh in case user has changed anything
     	speak("New lap started");
     }
     
@@ -65,7 +64,6 @@ public class GpsTrackingService extends Service {
     public void onResumeButtonPress() {
     	speak("Resumed");
     	mState = RUNNING;
-		mSettings = Settings.getSettings(this);  // refresh in case user has changed anything
     	mTotalStats.onResume();
     	if (mUserLapStats != null) mUserLapStats.onResume();
     	if (mAutoLapStats != null) mAutoLapStats.onResume();
@@ -97,29 +95,29 @@ public class GpsTrackingService extends Service {
     			(mAutoLapStats == null || mAutoLapStats.getStartTimeSeconds() < mAutoLapStats.getStartTimeSeconds())) {
     		newerLapStats = mAutoLapStats;
     	}
-    	if (mSettings.speakTotalDistance)
-    		speak("Total distance " + Util.distanceToSpeechText(mTotalStats.getDistance(), mSettings));
-    	if (mSettings.speakTotalDuration)
+    	if (Settings.speakTotalDistance)
+    		speak("Total distance " + Util.distanceToSpeechText(mTotalStats.getDistance()));
+    	if (Settings.speakTotalDuration)
     		speak("Total time " + Util.durationToSpeechText(mTotalStats.getDurationSeconds()));
-    	if (mSettings.speakCurrentPace)
-    		speak("Current pace " + Util.paceToSpeechText((long)mTotalStats.getCurrentPace(), mSettings));
-    	if (mSettings.speakAveragePace)
-    		speak("Average pace " + Util.paceToSpeechText((long)mTotalStats.getPace(), mSettings));
+    	if (Settings.speakCurrentPace)
+    		speak("Current pace " + Util.paceToSpeechText(mTotalStats.getCurrentPace()));
+    	if (Settings.speakAveragePace)
+    		speak("Average pace " + Util.paceToSpeechText(mTotalStats.getPace()));
     	if (newerLapStats != null) {
-    		if (mSettings.speakLapDistance)
-    			speak("Lap distance " + Util.distanceToSpeechText(newerLapStats.getDistance(), mSettings));
-    		if (mSettings.speakLapDuration)
-    			speak("Lap time " + Util.durationToSpeechText((long)newerLapStats.getDurationSeconds()));
-    		if (mSettings.speakLapPace)
-    			speak("Lap pace " + Util.paceToSpeechText((long)newerLapStats.getPace(), mSettings));
+    		if (Settings.speakLapDistance)
+    			speak("Lap distance " + Util.distanceToSpeechText(newerLapStats.getDistance()));
+    		if (Settings.speakLapDuration)
+    			speak("Lap time " + Util.durationToSpeechText(newerLapStats.getDurationSeconds()));
+    		if (Settings.speakLapPace)
+    			speak("Lap pace " + Util.paceToSpeechText(newerLapStats.getPace()));
     	}
     	if (mAutoLapStats != null) {
-    		if (mSettings.speakAutoLapDistance)
-    			speak("Auto lap distance " + Util.distanceToSpeechText(mAutoLapStats.getDistance(), mSettings));
-    		if (mSettings.speakAutoLapDuration)
-    			speak("Auto lap time " + Util.durationToSpeechText((long)mAutoLapStats.getDurationSeconds()));
-    		if (mSettings.speakAutoLapPace)
-    			speak("Auto lap pace " + Util.paceToSpeechText((long)mAutoLapStats.getPace(), mSettings));
+    		if (Settings.speakAutoLapDistance)
+    			speak("Auto lap distance " + Util.distanceToSpeechText(mAutoLapStats.getDistance()));
+    		if (Settings.speakAutoLapDuration)
+    			speak("Auto lap time " + Util.durationToSpeechText(mAutoLapStats.getDurationSeconds()));
+    		if (Settings.speakAutoLapPace)
+    			speak("Auto lap pace " + Util.paceToSpeechText(mAutoLapStats.getPace()));
     	}
     }
     
@@ -128,8 +126,8 @@ public class GpsTrackingService extends Service {
     private long mLastReportedAutoLapDistance = 0;
     
     private void notifyListeners() {
-    	if (mSettings.autoLapDistanceInterval > 0) {
-    		final int interval = (int)Math.max(50, mSettings.autoLapDistanceInterval);
+    	if (Settings.autoLapDistanceInterval > 0) {
+    		final int interval = (int)Math.max(50, Settings.autoLapDistanceInterval);
     		final long newDistance = (long)mTotalStats.getDistance();
     		if ((mLastReportedAutoLapDistance / interval) != (newDistance / interval)) {
     			mLastReportedAutoLapDistance = newDistance;
@@ -137,16 +135,16 @@ public class GpsTrackingService extends Service {
     		}
     	}
     	boolean needSpeak = false;
-    	if (mSettings.speakDistanceInterval > 0) {
-    		final int interval = (int)Math.max(15, mSettings.speakDistanceInterval);
+    	if (Settings.speakDistanceInterval > 0) {
+    		final int interval = (int)Math.max(15, Settings.speakDistanceInterval);
     		final long newDistance = (long)mTotalStats.getDistance();
     		if ((mLastReportedTotalDistance / interval) != (newDistance / interval)) {
     			mLastReportedTotalDistance = newDistance;
     			needSpeak = true;
     		}
     	}
-    	if (mSettings.speakTimeInterval > 0) {
-    		final int interval = (int)Math.max(5, mSettings.speakTimeInterval);
+    	if (Settings.speakTimeInterval > 0) {
+    		final int interval = (int)Math.max(5, Settings.speakTimeInterval);
     		final long newDuration = (long)mTotalStats.getDurationSeconds();
     		if (mLastReportedTotalDuration / interval != newDuration / interval) {
     			mLastReportedTotalDuration = newDuration;
@@ -185,7 +183,7 @@ public class GpsTrackingService extends Service {
 	
 	@Override
 	public void onCreate() {
-		mSettings = Settings.getSettings(this);
+		Settings.Initialize(getApplicationContext());
 		mId = mInstanceSeq++;
 		Toast.makeText(this, toString() + ": Created", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onCreate");
@@ -242,7 +240,6 @@ public class GpsTrackingService extends Service {
 
     private TextToSpeech mTts;
 	private Timer mTimer;
-	private Settings mSettings;
 	
 	private void speak(String text) {
 		mTts.speak(text, TextToSpeech.QUEUE_ADD, null);
@@ -296,9 +293,10 @@ public class GpsTrackingService extends Service {
 				wgs.type = "gps";
 			}
 			mPath.add(wgs);
-			
-			
 			mTotalStats.updatePath(mPath);
+			
+			if (mUserLapStats != null) mUserLapStats.updatePath(mPath);
+			if (mAutoLapStats != null) mAutoLapStats.updatePath(mPath);			
 			notifyListeners();
 		}
 	}
