@@ -240,7 +240,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			return "placeholder";
 		}
 	}
-	
+
 	PlaceholderDuringMove mPlaceholder = new PlaceholderDuringMove();
 	public PlaceholderDuringMove getPlaceholder(Element elem) {
 		removeElement(mRoot, mPlaceholder);
@@ -528,6 +528,25 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 	private Repeats mRoot = new Repeats(0);
 
+	Element fromWorkout(Workout workout) {
+		if (workout.type.equals("Root") || workout.type.equals("Repeats")) {
+			Repeats r = new Repeats(workout.repeats);
+			if (workout.children != null) {  // Repeats, not Root
+				for (Workout child : workout.children) {
+					r.mEntries.add(fromWorkout(child));
+				}
+			}
+			return r;
+		} else {
+			Interval i = new Interval();
+			i.mDistance = workout.distance;
+			i.mDuration = workout.duration;
+			i.mFastTargetPace = workout.fastTargetPace;
+			i.mSlowTargetPace = workout.slowTargetPace;
+			return i;
+		}
+	}
+	
 	public WorkoutCanvasView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		setOnTouchListener(this);
@@ -791,6 +810,12 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	    }
 	    ft.addToBackStack(null);
 	    fragment.show(ft, "interval_dialog");
+	}
+
+	public void setWorkout(Workout workout) {
+		mSelectedElement = null;
+		mRoot = (Repeats)fromWorkout(workout);
+		invalidate();
 	}
 	
 	public Workout getWorkout() {

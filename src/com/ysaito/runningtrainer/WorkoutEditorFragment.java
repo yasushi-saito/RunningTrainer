@@ -16,6 +16,13 @@ import android.widget.Toast;
 public class WorkoutEditorFragment extends Fragment {
 	SharedPreferences mPreferences;
 	
+	private WorkoutCanvasView mCanvas;
+	private Workout mWorkout = null;
+	
+	public void setWorkout(Workout w) { 
+		mWorkout = w;
+		if (mCanvas != null) mCanvas.setWorkout(w);
+	}
 	@Override 
     public View onCreateView(
     		LayoutInflater inflater, 
@@ -25,7 +32,9 @@ public class WorkoutEditorFragment extends Fragment {
 		mPreferences = getActivity().getSharedPreferences("workouts", Context.MODE_WORLD_READABLE);
         View view = inflater.inflate(R.layout.workout_editor, container, false);
         
-        final WorkoutCanvasView canvas = (WorkoutCanvasView)view.findViewById(R.id.canvas);
+        mCanvas = (WorkoutCanvasView)view.findViewById(R.id.canvas);
+        if (mWorkout != null) mCanvas.setWorkout(w);
+        
         Button button = (Button)view.findViewById(R.id.save_button);
         button.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {

@@ -1,8 +1,8 @@
 package com.ysaito.runningtrainer;
 
 /**
+ * TODO: sort record list
  * TODO: smooth GPS readouts and reduce sampling rate
- * TODO: autolap
  * TODO: align IntervalDialog text boxes
  * TODO: workouts. 
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
