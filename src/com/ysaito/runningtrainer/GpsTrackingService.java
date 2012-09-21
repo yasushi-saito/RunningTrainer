@@ -257,7 +257,10 @@ public class GpsTrackingService extends Service {
 				@Override public void run() {
 					Handler handler = new Handler(Looper.getMainLooper());
 					handler.post(new Runnable() {
-						public void run() { notifyListeners(); }
+						public void run() { 
+							dofakeGpsLocationUpdate();
+							notifyListeners(); 
+						}
 					});
 				}
 			}, 0, 1000);
@@ -277,6 +280,7 @@ public class GpsTrackingService extends Service {
 	public void onStart(Intent intent, int startid) {
 		Toast.makeText(this, toString() + ": Started", Toast.LENGTH_LONG).show();
 		mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+		mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
 	}
 
 	private void onGpsLocationUpdate(long now, Location newLocation) {
@@ -293,14 +297,32 @@ public class GpsTrackingService extends Service {
 				wgs.type = "gps";
 			}
 			mPath.add(wgs);
-			mTotalStats.updatePath(mPath);
-			
-			if (mUserLapStats != null) mUserLapStats.updatePath(mPath);
-			if (mAutoLapStats != null) mAutoLapStats.updatePath(mPath);			
+			mTotalStats.onGpsUpdate(wgs);
+			if (mUserLapStats != null) mUserLapStats.onGpsUpdate(wgs);
+			if (mAutoLapStats != null) mAutoLapStats.onGpsUpdate(wgs);
 			notifyListeners();
 		}
 	}
 
+	private void dofakeGpsLocationUpdate() {
+		if (mState == RUNNING) {
+			if (mPath.size() > 0) {
+				HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
+				HealthGraphClient.JsonWGS84 lastWgs = mPath.get(mPath.size() - 1);
+				wgs.latitude = lastWgs.latitude + 0.0008;
+				wgs.longitude = lastWgs.longitude;
+				wgs.altitude = lastWgs.altitude;
+				wgs.timestamp = lastWgs.timestamp + 0.3;
+				wgs.type = "gps";
+				mPath.add(wgs);
+				mTotalStats.onGpsUpdate(wgs);
+				if (mUserLapStats != null) mUserLapStats.onGpsUpdate(wgs);
+				if (mAutoLapStats != null) mAutoLapStats.onGpsUpdate(wgs);
+				notifyListeners();
+			}
+		}
+	}
+	
 	@Override
 	public IBinder onBind(Intent intent) {
 		return null;

@@ -42,7 +42,7 @@ public class RecordListFragment extends ListFragment {
 
 	  @Override
 	  protected void onPostExecute(ArrayList<RecordSummary> records) {
-		  // setProgressBarIndeterminateVisibility(false);
+		  getActivity().setProgressBarIndeterminateVisibility(false);
 		  mAdapter.reset(records);
 	  }
 	}
@@ -130,7 +130,7 @@ public class RecordListFragment extends ListFragment {
 	
 	private void startListing() {
 		ListThread thread = new ListThread();
-		// setProgressBarIndeterminateVisibility(true);
+		getActivity().setProgressBarIndeterminateVisibility(true);
 		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
 	}
 
@@ -184,6 +184,7 @@ public class RecordListFragment extends ListFragment {
 				Toast.makeText(getActivity(), "Failed to read " + summary.basename, Toast.LENGTH_LONG).show();
 			} else {
 				HealthGraphClient hgClient = HealthGraphClient.getSingleton();
+				getActivity().setProgressBarIndeterminateVisibility(true);
 				hgClient.putNewFitnessActivity(
 						activity,
 						new HealthGraphClient.PutNewFitnessActivityListener() {
@@ -194,6 +195,7 @@ public class RecordListFragment extends ListFragment {
 									Toast.makeText(getActivity(), "Failed to send activity (reason unknown)", Toast.LENGTH_LONG).show();
 								} else {
 									Toast.makeText(getActivity(), "Sent activity to runkeeper: " + runkeeperPath, Toast.LENGTH_SHORT).show();
+									getActivity().setProgressBarIndeterminateVisibility(false);
 									mRecordManager.markAsSaved(summary.startTimeSeconds, runkeeperPath);
 									startListing(); 
 								}

@@ -11,7 +11,7 @@ package com.ysaito.runningtrainer;
  * TODO: show status in notification tray
  * TODO: show runkeeper sync status somewhere
  * TODO: detect when the user pauses during running
- * TODO: sync all. remember synced records
+ * TODO: sync all. 
  * TODO: show some indicator when runkeeper communication is happening
  * TODO: notification to show distance, duration, etc.
  * TODO: undo of delete record
@@ -27,6 +27,7 @@ import android.os.Bundle;
 import android.app.FragmentTransaction;
 import android.util.Log;
 import android.view.Menu;
+import android.view.Window;
 import android.widget.Toast;
 
 public class MainActivity extends Activity {
@@ -80,10 +81,12 @@ public class MainActivity extends Activity {
     	super.onCreate(savedInstanceState);
     	
     	Settings.Initialize(getApplicationContext());
+        requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS); 
+        
         final ActionBar bar = getActionBar();
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         bar.setDisplayOptions(0, ActionBar.DISPLAY_SHOW_TITLE);
-
+                
         addTabIfNecessary("Record", "com.ysaito.runningtrainer.RecordingFragment", null);
         addTabIfNecessary("List", "com.ysaito.runningtrainer.RecordListFragment", "Record");
         addTabIfNecessary("Workouts", "com.ysaito.runningtrainer.WorkoutEditorFragment", "List");

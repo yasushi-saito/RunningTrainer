@@ -15,19 +15,19 @@ class LapStats {
 	private static final int PAUSED = 2;
 	private int mState = RUNNING;
 	
-	// The time activity started. Millisecs since 1970/1/1
-	// TODO: this should be the first GPS fix after the start, not the time of the start
-	private final long mStartTimeMillis;
+	// The time this lap started. Millisecs since 1970/1/1
+	private long mLapStartTimeMillis = 0;
 	
+	// The time the activity started. Millisecs since 1970/1/1
+	private long mRecordStartTimeMillis = 0;
+
 	// The last time "Resume" button was pressed. == mStartTime if resume was never pressed. Millisecs since 1970/1/1.
-	private long mLastResumeTimeMillis;
+	private long mLastResumeTimeMillis = 0;
 	
 	private long mCumulativeDurationBeforeLastResume = 0;
-	
-	// The index of the last path[] element that was handled by updatePath.
-	// We assume that the array path[] passed to updatePath() simply adds new points at the end on 
-	// every call
-	private int mLastPathSegment = 0;
+
+	// The last GPS coordinate and timestamp reported.
+	private HealthGraphClient.JsonWGS84 mLastPoint = null;
 	
 	// Cumulative distance of points in path[0..mLastPathSegment].
 	private double mDistance = 0;
@@ -50,15 +50,17 @@ class LapStats {
 	private final ArrayDeque<Event> mRecentEvents;
 	
 	LapStats() {
-		mStartTimeMillis = System.currentTimeMillis();
-		mLastResumeTimeMillis = mStartTimeMillis;
+		mLapStartTimeMillis = System.currentTimeMillis();
+		mLastResumeTimeMillis = mLapStartTimeMillis;
 		mRecentEvents = new ArrayDeque<Event>();
 	}
 
 	/**
 	 * @return The time this Stats object was created. seconds since 1970/1/1.
 	 */
-	public final double getStartTimeSeconds() { return mStartTimeMillis / 1000.0; }
+	public final double getStartTimeSeconds() { 
+		return mLapStartTimeMillis / 1000.0; 
+	}
 
 	/**
 	 * @return the cumulative distance traveled, in meters
@@ -70,7 +72,7 @@ class LapStats {
 	 */
 	public final double getDurationSeconds() {
 		long d = mCumulativeDurationBeforeLastResume; 
-		if (mState == RUNNING) {
+		if (mState == RUNNING && mLastResumeTimeMillis > 0) {
 			d += System.currentTimeMillis() - mLastResumeTimeMillis;
 		}
 		return d / 1000.0;
@@ -80,11 +82,11 @@ class LapStats {
 	 * @return The average pace (seconds / meter) since the beginning of the activity
 	 */
 	public final double getPace() {
-		if (mRecentEvents.size() == 0) return 0;
-		final long maxTimestamp = mRecentEvents.getLast().absTime;
-		final long deltaMillis = maxTimestamp - mStartTimeMillis;
-		if (deltaMillis <= 0 || mDistance <= 0.0) return 0;
-		return deltaMillis / 1000.0 / mDistance;
+		final double duration = getDurationSeconds();
+		final double distance = getDistance();
+		if (distance <= 0.0) return 0.0;
+		Log.d(TAG, "PACE=" + duration + "/" + distance);
+		return duration / distance;
 	}
     	
 	/**
@@ -132,32 +134,29 @@ class LapStats {
 			mState = RUNNING;
 		}
 	}
-	
-	public final void updatePath(ArrayList<HealthGraphClient.JsonWGS84> path) {
-		if (path.size() > mLastPathSegment + 1) {
-			HealthGraphClient.JsonWGS84 lastPoint = path.get(mLastPathSegment);
-			mLastPathSegment++;
-			for (;;) {
-				HealthGraphClient.JsonWGS84 thisPoint = path.get(mLastPathSegment);
-				Location.distanceBetween(lastPoint.latitude, lastPoint.longitude,
-						thisPoint.latitude, thisPoint.longitude, mTmp);
-				mDistance += mTmp[0] + 100;
-				
-				final long absTime = (long)(mStartTimeMillis + thisPoint.timestamp * 1000);
-				mRecentEvents.addLast(new Event(mTmp[0], absTime));
-				lastPoint = thisPoint;
-				if (mLastPathSegment >= path.size() - 1) break;
-				++mLastPathSegment;
-			}
+
+	public final void onGpsUpdate(HealthGraphClient.JsonWGS84 point) {
+		if (mLastPoint == null) {
+			mLastPoint = point;
+			mRecordStartTimeMillis = System.currentTimeMillis() - (long)(point.timestamp * 1000);
+			return;
+		}
+		
+		Location.distanceBetween(mLastPoint.latitude, mLastPoint.longitude,
+				point.latitude, point.longitude, mTmp);
+		mDistance += mTmp[0];
+		
+		final long absTime = mRecordStartTimeMillis + (long)(point.timestamp * 1000);
+		mRecentEvents.addLast(new Event(mTmp[0], absTime));
+		mLastPoint = point;
 			
-			// Drop events that are more than 30 seconds old. But keep at least one record so that	
-			// if the user stops moving, we can still display the current pace.
-			final long lastRetained = System.currentTimeMillis() - 30 * 1000;
-			while (mRecentEvents.size() > 1) {
-				Event e = mRecentEvents.peekFirst();
-				if (e.absTime >= lastRetained) break;
-				mRecentEvents.removeFirst();
-			}
+		// Drop events that are more than 30 seconds old. But keep at least one record so that	
+		// if the user stops moving, we can still display the current pace.
+		final long lastRetained = System.currentTimeMillis() - 30 * 1000;
+		while (mRecentEvents.size() > 1) {
+			Event e = mRecentEvents.peekFirst();
+			if (e.absTime >= lastRetained) break;
+			mRecentEvents.removeFirst();
 		}
 	}
 }
