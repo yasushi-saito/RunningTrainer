@@ -258,7 +258,7 @@ public class GpsTrackingService extends Service {
 					Handler handler = new Handler(Looper.getMainLooper());
 					handler.post(new Runnable() {
 						public void run() { 
-							dofakeGpsLocationUpdate();
+							// dofakeGpsLocationUpdate();
 							notifyListeners(); 
 						}
 					});

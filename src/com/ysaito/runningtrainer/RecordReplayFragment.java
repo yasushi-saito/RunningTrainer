@@ -1,6 +1,7 @@
 package com.ysaito.runningtrainer;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +25,27 @@ public class RecordReplayFragment extends MapWrapperFragment {
 			activity.setRecord(mRecord);
 		}
 		return view;
+	}
+
+	final MainActivity.OnBackPressedListener mOnBackPressedListener = new MainActivity.OnBackPressedListener() {
+		public boolean onBackPressed() {
+			MainActivity activity = (MainActivity)getActivity();
+			activity.setFragmentForTab("Log",
+					activity.findOrCreateFragment("com.ysaito.runningtrainer.RecordListFragment"));
+			return true;
+		}
+	};
+	
+	@Override public void onResume() {
+		Log.d(TAG, "REPLAY RESUME");
+		((MainActivity)getActivity()).registerOnBackPressedListener(mOnBackPressedListener);
+		super.onResume();
+	}
+
+	@Override public void onPause() {
+		Log.d(TAG, "REPLAY PAUSE");
+		((MainActivity)getActivity()).unregisterOnBackPressedListener(mOnBackPressedListener);
+		super.onPause();
 	}
 	
 	public void setRecord(HealthGraphClient.JsonActivity record) {

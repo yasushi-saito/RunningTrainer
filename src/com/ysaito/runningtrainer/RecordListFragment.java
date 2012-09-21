@@ -113,14 +113,12 @@ public class RecordListFragment extends ListFragment {
 	@Override public void onResume() {
 		super.onResume();
 		Settings.registerOnChangeListener(mSettingsListener);
-		Log.d(TAG, "RESUMERUSUME");
 		startListing();
 	}
 
 	@Override public void onPause() {
 		super.onPause();
 		Settings.UnregisterOnChangeListener(mSettingsListener);
-		Log.d(TAG, "PAUSE");
 	}
 	
 	@Override public void onStart() {
@@ -144,12 +142,10 @@ public class RecordListFragment extends ListFragment {
 				Toast.makeText(mActivity,  "Failed to read record", Toast.LENGTH_LONG).show();
 				return;
 			}
-			RecordReplayFragment fragment = (RecordReplayFragment)mActivity.addTabIfNecessary(
-					"Log", 
-					"com.ysaito.runningtrainer.RecordReplayFragment",
-					"List");
+			RecordReplayFragment fragment = (RecordReplayFragment)mActivity.findOrCreateFragment(
+					"com.ysaito.runningtrainer.RecordReplayFragment");
 			fragment.setRecord(record);
-			mActivity.selectTab("Log");
+			mActivity.setFragmentForTab("Log", fragment);
 		}
 	}
 	

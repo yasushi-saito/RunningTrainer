@@ -18,6 +18,8 @@ package com.ysaito.runningtrainer;
  * TODO: reliably check if TTS voice data has been downloaded.
  * TODO: satellite view
  */
+import java.util.HashMap;
+
 import android.app.ActionBar;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
@@ -32,50 +34,43 @@ import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	static final String TAG = "Main";
-
-	public void selectTab(String text) {
-		final ActionBar bar = getActionBar();
-		for (int i = 0; i < bar.getTabCount(); ++i) {
-			ActionBar.Tab tab = bar.getTabAt(i);
-			if (text.equals(tab.getText())) {
-				tab.select();
-				return;
-			}
-		}
-	}
+	private final HashMap<String, MyTabListener> mTabs = new HashMap<String, MyTabListener>();
 	
-	public Fragment addTabIfNecessary(String text, String className, String toRightOf) {
-		final ActionBar bar = getActionBar();
-
+	public Fragment findOrCreateFragment(String className) {
 		final FragmentManager manager = getFragmentManager();
-		Fragment fragment = manager.findFragmentByTag(text);
+		Fragment fragment = manager.findFragmentByTag(className);
+
+		FragmentTransaction ft = manager.beginTransaction();
 		if (fragment == null) {
 		    fragment = Fragment.instantiate(this, className, null);
-		    FragmentTransaction ft = manager.beginTransaction();
-			ft.add(android.R.id.content, fragment, text);
-			ft.detach(fragment);
-			ft.commit();
-		}
+			ft.add(android.R.id.content, fragment, className);
+		} 
 		
-		int insertPosition = 0;
-		for (int i = 0; i < bar.getTabCount(); ++i) {
-			ActionBar.Tab existing = bar.getTabAt(i);
-			if (text.equals(existing.getText())) {
-				// the fragment is already in the bar
-				return fragment;
-			}
-			if (toRightOf.equals(existing.getText())) {
-				insertPosition = i + 1;
-			}
-		}
-		
-		ActionBar.Tab tab = getActionBar().newTab()
-				.setText(text)
-				.setTabListener(new MyTabListener(this, fragment));
-		bar.addTab(tab, insertPosition);
+		// Detach the fragment from the screen just in case it's already running.
+		ft.detach(fragment);
+		ft.commit();
 		return fragment;
 	}
-	
+
+	public void setFragmentForTab(String tabText, Fragment fragment) {
+		final MyTabListener tab = mTabs.get(tabText);
+		tab.setFragment(fragment);
+	}
+
+	public Fragment appendTab(String tabText, Fragment fragment) {
+		final FragmentManager manager = getFragmentManager();
+		
+		ActionBar.Tab tab = getActionBar().newTab();
+		MyTabListener listener = new MyTabListener(this, tab, fragment);
+		mTabs.put(tabText, listener);
+		tab.setText(tabText);
+		tab.setTabListener(listener);
+		final ActionBar bar = getActionBar();
+		bar.addTab(tab);
+
+		return fragment;
+	}
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -87,11 +82,10 @@ public class MainActivity extends Activity {
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         bar.setDisplayOptions(0, ActionBar.DISPLAY_SHOW_TITLE);
                 
-        addTabIfNecessary("Record", "com.ysaito.runningtrainer.RecordingFragment", null);
-        addTabIfNecessary("List", "com.ysaito.runningtrainer.RecordListFragment", "Record");
-        addTabIfNecessary("Workouts", "com.ysaito.runningtrainer.WorkoutEditorFragment", "List");
-        addTabIfNecessary("Settings", "com.ysaito.runningtrainer.SettingsFragment", "List");
-        Log.d(TAG, "RunningTrainer started");
+        appendTab("Record", findOrCreateFragment("com.ysaito.runningtrainer.RecordingFragment"));
+        appendTab("Log", findOrCreateFragment("com.ysaito.runningtrainer.RecordListFragment"));
+        appendTab("Workout", findOrCreateFragment("com.ysaito.runningtrainer.WorkoutEditorFragment"));
+        appendTab("Setting", findOrCreateFragment("com.ysaito.runningtrainer.SettingsFragment"));
 
         if (getExternalFilesDir(null) == null) {
         	Toast toast = Toast.makeText(this, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG);
@@ -116,16 +110,55 @@ public class MainActivity extends Activity {
         getMenuInflater().inflate(R.menu.activity_main, menu);
         return true;
     }
+
+    public interface OnBackPressedListener {
+    	// If the method returns false, the event is propagated to the
+    	// MainActivity's superclass.
+    	public boolean onBackPressed();
+    }
+    
+    // There should be only one foreground fragment, so we need to keep
+    // just one listener. This assumption may not hold on tablets (or super-big-screen
+    // phones), so rethink once we suuport tablets.
+    private OnBackPressedListener mOnBackPressedListener = null;
+    
+    public void registerOnBackPressedListener(OnBackPressedListener listener) {
+    	mOnBackPressedListener = listener;
+    }
+    
+    public void unregisterOnBackPressedListener(OnBackPressedListener listener) {
+    	if (mOnBackPressedListener == listener) {
+    		mOnBackPressedListener = null;
+    	}
+    }
+    
+    @Override public void onBackPressed() {
+    	if (mOnBackPressedListener != null) {
+    		if (mOnBackPressedListener.onBackPressed()) return; 
+    	}
+    	super.onBackPressed();
+    }
     
     public static class MyTabListener implements ActionBar.TabListener {
         private final Activity mActivity;
-        private final Fragment mFragment;
+    	private final ActionBar.Tab mTab;
+        private Fragment mFragment = null;
 
-        public MyTabListener(Activity activity, Fragment fragment) {
+        public MyTabListener(Activity activity,  ActionBar.Tab tab, Fragment fragment) {
         	mActivity = activity;
+        	mTab = tab;
         	mFragment = fragment;
         }
 
+        public void setFragment(Fragment fragment) {
+        	final FragmentManager manager = mActivity.getFragmentManager();
+        	final FragmentTransaction ft = manager.beginTransaction();
+        	ft.detach(mFragment);
+			ft.attach(fragment);
+			ft.commit();
+        	mFragment = fragment;
+        }
+        
         public void onTabSelected(Tab tab, FragmentTransaction ft) {
         	ft.attach(mFragment);
         }

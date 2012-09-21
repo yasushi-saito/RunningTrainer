@@ -14,6 +14,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 
 public class RecordReplayActivity extends MapActivity {
@@ -116,6 +117,11 @@ public class RecordReplayActivity extends MapActivity {
     	}
     }
 
+    @Override public void onBackPressed() {
+    	Log.d(TAG, "BACK PRESNSED!");
+    	super.onBackPressed();
+    }
+    
     private void updateStatsViews() {
     	TextView distanceView = (TextView)findViewById(R.id.distance);
     	TextView durationView = (TextView)findViewById(R.id.duration);
