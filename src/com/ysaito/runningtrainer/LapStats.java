@@ -1,7 +1,6 @@
 package com.ysaito.runningtrainer;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import android.location.Location;

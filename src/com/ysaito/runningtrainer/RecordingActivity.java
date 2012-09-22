@@ -1,5 +1,6 @@
 package com.ysaito.runningtrainer;
 
+import java.io.File;
 import java.util.ArrayList;
 
 import com.google.android.maps.GeoPoint;
@@ -22,6 +23,7 @@ import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class RecordingActivity extends MapActivity {
     static final String TAG = "Recording";
@@ -186,7 +188,8 @@ public class RecordingActivity extends MapActivity {
     		mTitleView.setText(title);
     	}
     }
-    
+
+    private File mRecordDir;
     private MyOverlay mMapOverlay;
     private MapView mMapView;
     private StatsView mStatsViews[];
@@ -194,7 +197,6 @@ public class RecordingActivity extends MapActivity {
     private Button mPauseResumeButton;
     private Button mStartStopButton;
     private Button mLapButton;    
-    private RecordManager mRecordManager;
 
     private static final int STOPPED = 0;
     private static final int PAUSED = 1;
@@ -278,7 +280,7 @@ public class RecordingActivity extends MapActivity {
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.recording);
-        mRecordManager = new RecordManager(this);
+        mRecordDir = FileManager.getRecordDir(this);
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.map_view);
         mMapView.getOverlays().add(mMapOverlay);
@@ -384,7 +386,18 @@ public class RecordingActivity extends MapActivity {
     			}
     			lastLocation = location;
     		}
-    		mRecordManager.addRecord(mTotalStats.getStartTimeSeconds(), mLastReportedActivity);
+    		
+    		FileManager.FilenameSummary summary = new FileManager.FilenameSummary();
+    		summary.putLong(FileManager.KEY_START_TIME, (long)mTotalStats.getStartTimeSeconds());
+    		summary.putLong(FileManager.KEY_DISTANCE, (long)mLastReportedActivity.total_distance);
+    		summary.putLong(FileManager.KEY_DURATION, (long)mLastReportedActivity.duration);
+    		try {
+    			FileManager.writeFile(mRecordDir, summary.getBasename(), mLastReportedActivity);
+    		} catch (Exception e) {
+    			// TODO: sync I/O
+    			Toast.makeText(this, "Failed to write: " + summary.getBasename() + ": " + e.toString(),
+    					Toast.LENGTH_LONG).show();
+    		}
     	}
     }	
     private void onPauseButtonPress() {

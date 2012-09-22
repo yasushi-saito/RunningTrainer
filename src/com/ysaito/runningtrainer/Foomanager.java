@@ -15,14 +15,14 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public class RecordManager {
+public class Foomanager {
 	private final static String TAG = "RecordManager";
 	
 	// The SDCARD directory in which records are stored
 	private final File mRootDir;
 	private final Context mContext;
 	
-	public RecordManager(Context context) {
+	public Foomanager(Context context) {
 		// File externalDir = context.getExternalFilesDir(null);
 		File externalDir = new File("/sdcard/com.ysaito.runningtrainer");
 		mContext = context;
@@ -87,7 +87,7 @@ public class RecordManager {
 		}
 		return b.toString();
 	}
-	
+
 	/**
 	 * Given an activity record, generate the summary object that includes that the filename (basename) that will store the record. 
 	 * This function is public only for testing.

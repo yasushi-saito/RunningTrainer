@@ -58,10 +58,8 @@ public class MainActivity extends Activity {
 	}
 
 	public Fragment appendTab(String tabText, Fragment fragment) {
-		final FragmentManager manager = getFragmentManager();
-		
 		ActionBar.Tab tab = getActionBar().newTab();
-		MyTabListener listener = new MyTabListener(this, tab, fragment);
+		MyTabListener listener = new MyTabListener(this, fragment);
 		mTabs.put(tabText, listener);
 		tab.setText(tabText);
 		tab.setTabListener(listener);
@@ -141,12 +139,10 @@ public class MainActivity extends Activity {
     
     public static class MyTabListener implements ActionBar.TabListener {
         private final Activity mActivity;
-    	private final ActionBar.Tab mTab;
         private Fragment mFragment = null;
 
-        public MyTabListener(Activity activity,  ActionBar.Tab tab, Fragment fragment) {
+        public MyTabListener(Activity activity, Fragment fragment) {
         	mActivity = activity;
-        	mTab = tab;
         	mFragment = fragment;
         }
 

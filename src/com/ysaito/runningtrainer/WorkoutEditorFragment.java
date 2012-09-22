@@ -1,7 +1,10 @@
 package com.ysaito.runningtrainer;
 
+import java.io.File;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.ysaito.runningtrainer.FileManager.FilenameSummary;
 
 import android.app.Fragment;
 import android.content.Context;
@@ -14,8 +17,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 public class WorkoutEditorFragment extends Fragment {
-	SharedPreferences mPreferences;
-	
+	private File mWorkoutDir;
 	private WorkoutCanvasView mCanvas;
 	private Workout mWorkout = null;
 	
@@ -29,22 +31,25 @@ public class WorkoutEditorFragment extends Fragment {
     		ViewGroup container,
             Bundle savedInstanceState) {
 		if (container == null) return null;
-		mPreferences = getActivity().getSharedPreferences("workouts", Context.MODE_WORLD_READABLE);
+		mWorkoutDir = FileManager.getWorkoutDir(getActivity());
         View view = inflater.inflate(R.layout.workout_editor, container, false);
         
         mCanvas = (WorkoutCanvasView)view.findViewById(R.id.canvas);
-        if (mWorkout != null) mCanvas.setWorkout(w);
+        if (mWorkout != null) mCanvas.setWorkout(mWorkout);
         
         Button button = (Button)view.findViewById(R.id.save_button);
         button.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
-        		Workout workout = canvas.getWorkout();
+        		Workout workout = mCanvas.getWorkout();
         		
-        		Gson gson = new GsonBuilder().create();
-        		SharedPreferences.Editor editor = mPreferences.edit();
-        		editor.putString(workout.id, gson.toJson(workout));
-        		if (!editor.commit()) {
-        			Toast.makeText(getActivity(), "FOO!", Toast.LENGTH_LONG).show();
+        		FilenameSummary f = new FilenameSummary();
+        		f.putLong(FileManager.KEY_WORKOUT_ID, workout.id);
+        		f.putString(FileManager.KEY_WORKOUT_NAME, FileManager.sanitizeString(workout.name));
+        		try {
+        			// TODO: async
+        			FileManager.writeFile(mWorkoutDir, f.getBasename(), workout);
+        		} catch (Exception e) {
+        			Toast.makeText(getActivity(), "Failed to save workout: " + e.toString(), Toast.LENGTH_LONG).show();
         		}
         	}
         });
@@ -59,13 +64,13 @@ public class WorkoutEditorFragment extends Fragment {
         button = (Button)view.findViewById(R.id.new_interval_button);
         button.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
-        		canvas.addNewInterval();
+        		mCanvas.addNewInterval();
         	}
         });
         button = (Button)view.findViewById(R.id.new_repeats_button);
         button.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
-        		canvas.addNewRepeats();
+        		mCanvas.addNewRepeats();
         	}
         });
         return view;

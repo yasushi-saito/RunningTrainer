@@ -11,7 +11,8 @@ public class Workout {
 		return pace < NO_SLOW_TARGET_PACE;
 	}
 	
-	public String id = "unused";
+	public long id = 0;
+	public String name = "foo";
 	
 	// There are three types of Workout objects:
 	//
