@@ -82,7 +82,8 @@ public class MainActivity extends Activity {
                 
         appendTab("Record", findOrCreateFragment("com.ysaito.runningtrainer.RecordingFragment"));
         appendTab("Log", findOrCreateFragment("com.ysaito.runningtrainer.RecordListFragment"));
-        appendTab("Workout", findOrCreateFragment("com.ysaito.runningtrainer.WorkoutEditorFragment"));
+        // appendTab("Workout", findOrCreateFragment("com.ysaito.runningtrainer.WorkoutEditorFragment"));
+        appendTab("Workout", findOrCreateFragment("com.ysaito.runningtrainer.WorkoutListFragment"));
         appendTab("Setting", findOrCreateFragment("com.ysaito.runningtrainer.SettingsFragment"));
 
         if (getExternalFilesDir(null) == null) {

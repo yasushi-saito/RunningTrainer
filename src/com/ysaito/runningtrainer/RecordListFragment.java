@@ -10,7 +10,6 @@ import com.ysaito.runningtrainer.FileManager.FilenameSummary;
 import android.app.ListFragment;
 import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
 import android.view.MenuInflater;
@@ -28,7 +27,6 @@ import android.widget.Toast;
  *
  */
 public class RecordListFragment extends ListFragment {
-	private static final String TAG = "RecordList";
 	private File mRecordDir;
 	private MainActivity mActivity;
 	private MyAdapter mAdapter;
@@ -76,22 +74,18 @@ public class RecordListFragment extends ListFragment {
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
-		//requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
-		//setContentView(R.layout.record_list);
-		
-		Log.d(TAG, "ListFrag: created");
 		mActivity = (MainActivity)getActivity();
 		mRecordDir = FileManager.getRecordDir(mActivity);
 		mAdapter = new MyAdapter(mActivity);
 		setListAdapter(mAdapter);
 		startListing();
-		
 		registerForContextMenu(getListView());
 	}
-
+	
+	// This listener can't be an anonymous instance. SharedPreferences listener is 
+	// stored only as a weakref.
 	Settings.OnChangeListener mSettingsListener = new Settings.OnChangeListener() {
 		public void onChange() { 
-			Log.d(TAG, "ONCHANGESTE");
 			startListing();
 		}
 	};
@@ -120,28 +114,29 @@ public class RecordListFragment extends ListFragment {
 				if (files != null) {
 					mAdapter.reset(files);
 				}
+				// TODO: handle errors
 			}
 		});
 	}
 
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
-		final FileManager.FilenameSummary summary = mAdapter.getItem(position);
-		if (summary != null) {
-			FileManager.readFileAsync(mRecordDir, summary.getBasename(), HealthGraphClient.JsonActivity.class,
-					new FileManager.ReadListener<HealthGraphClient.JsonActivity>() {
-				public void onFinish(Exception e, HealthGraphClient.JsonActivity record) { 
-					if (record == null) {
-						Toast.makeText(mActivity,  "Failed to read file : " + summary.getBasename() + ": " + e.toString(), Toast.LENGTH_LONG).show();
-						return;
-					}
-					RecordReplayFragment fragment = (RecordReplayFragment)mActivity.findOrCreateFragment(
-							"com.ysaito.runningtrainer.RecordReplayFragment");
-					fragment.setRecord(record);
-					mActivity.setFragmentForTab("Log", fragment);
+		final FileManager.FilenameSummary f = mAdapter.getItem(position);
+		if (f == null) return;
+		
+		FileManager.readFileAsync(mRecordDir, f.getBasename(), HealthGraphClient.JsonActivity.class,
+				new FileManager.ReadListener<HealthGraphClient.JsonActivity>() {
+			public void onFinish(Exception e, HealthGraphClient.JsonActivity record) { 
+				if (record == null) {
+					Toast.makeText(mActivity,  "Failed to read file : " + f.getBasename() + ": " + e.toString(), Toast.LENGTH_LONG).show();
+					return;
 				}
-			});
-		}
+				RecordReplayFragment fragment = (RecordReplayFragment)mActivity.findOrCreateFragment(
+						"com.ysaito.runningtrainer.RecordReplayFragment");
+				fragment.setRecord(record);
+				mActivity.setFragmentForTab("Log", fragment);
+			}
+		});
 	}
 	
 	@Override
@@ -150,7 +145,6 @@ public class RecordListFragment extends ListFragment {
 			View v,
 			ContextMenuInfo menuInfo) {
 		super.onCreateContextMenu(menu, v, menuInfo);
-		
 		final MenuInflater inflater = getActivity().getMenuInflater();
 		inflater.inflate(R.menu.record_list_context_menu, menu);
 	}
@@ -161,13 +155,11 @@ public class RecordListFragment extends ListFragment {
 		for (FileManager.FilenameSummary r : list) {
 			if (r.getLong(FileManager.KEY_START_TIME, -1) == f.getLong(FileManager.KEY_START_TIME, -2)) {
 				f.putString(FileManager.KEY_RUNKEEPER_PATH, FileManager.sanitizeString(runkeeperPath));
-				Log.d(TAG, "RENAME: " + r.getBasename() + "->"+ f.getBasename());
 				File orgFile = new File(mRecordDir, r.getBasename());
 				orgFile.renameTo(new File(mRecordDir, f.getBasename()));
 			}
 		}
 	}
-	
 	
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {

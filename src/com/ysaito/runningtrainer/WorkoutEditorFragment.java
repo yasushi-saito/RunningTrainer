@@ -21,6 +21,8 @@ public class WorkoutEditorFragment extends Fragment {
 	private WorkoutCanvasView mCanvas;
 	private Workout mWorkout = null;
 	
+	// TODO: Add "no target pace" button
+	// TODO: make the code more resilient to corrupt workouts.
 	public void setWorkout(Workout w) { 
 		mWorkout = w;
 		if (mCanvas != null) mCanvas.setWorkout(w);
