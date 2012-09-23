@@ -8,6 +8,7 @@ import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
+import com.ysaito.runningtrainer.FileManager.FilenameSummary;
 
 import android.app.Activity;
 import android.content.Context;
@@ -21,7 +22,9 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -189,11 +192,14 @@ public class RecordingActivity extends MapActivity {
     	}
     }
 
+    private Activity mThisActivity;
     private File mRecordDir;
     private MyOverlay mMapOverlay;
     private MapView mMapView;
     private StatsView mStatsViews[];
 
+    private ArrayAdapter<String> mWorkoutListAdapter;
+    private Spinner mWorkoutListSpinner;
     private Button mPauseResumeButton;
     private Button mStartStopButton;
     private Button mLapButton;    
@@ -233,9 +239,27 @@ public class RecordingActivity extends MapActivity {
         stopTimer();
     }
     
+    private void startListWorkouts() {
+    	final File dir = FileManager.getWorkoutDir(this);
+    	FileManager.listFilesAsync(dir, new FileManager.ListFilesListener() {
+			public void onFinish(Exception e, ArrayList<FilenameSummary> files) {
+				if (e != null) {
+					Toast.makeText(mThisActivity, "Failed to list " + dir.toString() + ": " + e.toString(), Toast.LENGTH_LONG).show();
+				} else {
+					mWorkoutListAdapter.clear();
+					for (FilenameSummary f : files) {
+						mWorkoutListAdapter.add(f.getString(FileManager.KEY_WORKOUT_NAME, "unknown"));
+					}
+					mWorkoutListAdapter.notifyDataSetChanged();
+				}
+			}
+		});
+    }
+    
     @Override public void onResume() {
     	super.onResume();
-    	
+
+    	startListWorkouts();
         GpsTrackingService.registerListener(this);
         if (GpsTrackingService.isGpsServiceRunning()) {
         	mRecordingState = RUNNING;
@@ -280,6 +304,7 @@ public class RecordingActivity extends MapActivity {
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
         setContentView(R.layout.recording);
+        mThisActivity = this;
         mRecordDir = FileManager.getRecordDir(this);
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.map_view);
@@ -287,6 +312,11 @@ public class RecordingActivity extends MapActivity {
         mMapView.setBuiltInZoomControls(true);
 
         mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
+
+        mWorkoutListSpinner = (Spinner)findViewById(R.id.workout_spinner);
+        mWorkoutListAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
+        mWorkoutListSpinner.setAdapter(mWorkoutListAdapter);
+        mWorkoutListAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
         mPauseResumeButton = (Button)findViewById(R.id.pause_resume_button);
         mPauseResumeButton.setEnabled(false); // pause/resume is disabled unless the recorder is running

@@ -11,7 +11,29 @@ public class Workout {
 		return pace < NO_SLOW_TARGET_PACE;
 	}
 	
+	public Workout() {
+		
+	}
+	
+	public Workout(Workout other) {
+		id = other.id;
+		name = other.name;
+		type = other.type;
+		repeats = other.repeats;
+		duration = other.duration;
+		distance = other.distance;
+		if (other.children != null) {
+			children = new Workout[other.children.length];
+			for (int i = 0; i < other.children.length; ++i) {
+				children[i] = new Workout(other.children[i]);
+			}
+		}
+	}
+
+	// Unique id of this object. The value is the time (seconds since 1970) of creation.
 	public long id = 0;
+	
+	// The name displayed in the workout list screen. May not be unique.
 	public String name = "foo";
 	
 	// There are three types of Workout objects:

@@ -533,7 +533,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			Repeats r = new Repeats(workout.repeats);
 			if (workout.children != null) {  // Repeats, not Root
 				for (Workout child : workout.children) {
-					r.mEntries.add(fromWorkout(child));
+					r.append(fromWorkout(child));
 				}
 			}
 			return r;
@@ -820,10 +820,6 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	
 	public Workout getWorkout() {
 		Workout workout = mRoot.toWorkout();
-		
-		// the workout will be of "Repeats" type, so make it into a "Root" type
-		workout.type = "Root";
-		workout.repeats = -1;  // not used
 		return workout;
 	}
 }

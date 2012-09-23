@@ -3,133 +3,138 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
-    
     <TextView
-        style="@style/ActivityDisplay"
-        android:id="@+id/view0"
-        android:layout_alignParentTop="true"
+        android:id="@+id/workout_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="20sp"
+        android:layout_marginTop="10sp"
+        android:layout_marginBottom="10sp"
+        android:text="Workout: " />
+    
+    <Spinner
+        android:id="@+id/workout_spinner"
+        android:prompt="@string/foobar"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@id/workout_title"
+        android:layout_toRightOf="@id/workout_title" />
+
+    <View
+        android:id="@+id/strut"
+        android:layout_width="fill_parent"
+        android:layout_height="20sp"
+        android:layout_below="@id/workout_spinner" />
+
+    <Button
+        style="@style/LargeButton"
+        android:id="@+id/start_stop_button"
         android:layout_alignParentLeft="true"
-        />
-    <TextView
-        style="@style/ActivityLegend"
-        android:id="@+id/view0_title"
-        android:layout_below="@id/view0"
-        android:layout_alignRight="@id/view0"
-        />
+        android:layout_below="@id/strut"
+        android:text="@string/start"/>
 
-    <!-- view1 is to the right of view0 -->
-    <TextView
-        style="@style/ActivityDisplay"
-        android:id="@+id/view1"
-        android:layout_alignParentTop="true"
+    <Button
+        style="@style/LargeButton"
+        android:id="@+id/lap_button"
+        android:layout_alignBottom="@id/start_stop_button"
         android:layout_centerHorizontal="true"
-        />
-    <TextView
-        style="@style/ActivityLegend"
-        android:id="@+id/view1_title"
-        android:layout_below="@id/view1"
-        android:layout_alignRight="@id/view1"
-        />
-    
-    <!-- view2 is to the right of view1 -->
-    <TextView
-        style="@style/ActivityDisplay"
-        android:id="@+id/view2"
-        android:layout_alignParentTop="true"
+        android:text="@string/lap"/>
+
+    <Button
+        style="@style/LargeButton"
+        android:id="@+id/pause_resume_button"
+        android:layout_alignBottom="@id/start_stop_button"
         android:layout_alignParentRight="true"
-        />
-    <TextView
-        style="@style/ActivityLegend"
-        android:id="@+id/view2_title"
-        android:layout_below="@id/view2"
-        android:layout_alignRight="@id/view2"
-        />
+        android:text="@string/pause"/>
 
-    <!-- view3 is below view0 -->
     <TextView
+        android:id="@+id/view0"
         style="@style/ActivityDisplay"
-        android:id="@+id/view3"
-        android:layout_below="@id/view0_title"
-        android:layout_alignLeft="@id/view0"
-        />
-    <TextView
-        style="@style/ActivityLegend"
-        android:id="@+id/view3_title"
-        android:layout_below="@id/view3"
-        android:layout_alignRight="@id/view3"
-        />
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/start_stop_button" />
 
-    <!-- view4 is below view1 -->
-    <TextView
-        style="@style/ActivityDisplay"
-        android:id="@+id/view4"
-        android:layout_alignTop="@id/view3"
-        android:layout_alignLeft="@id/view1"
-        />
-    <TextView
-        style="@style/ActivityLegend"
-        android:id="@+id/view4_title"
-        android:layout_alignTop="@id/view3_title"
-        android:layout_alignRight="@id/view4"
-        />
+        <TextView
+            android:id="@+id/view0_title"
+            style="@style/ActivityLegend"
+            android:layout_alignRight="@id/view0"
+            android:layout_below="@id/view0" />
 
-    <!-- view5 is below view2 -->
-    <TextView
-        style="@style/ActivityDisplay"
-        android:id="@+id/view5"
-        android:layout_alignTop="@id/view3"
-        android:layout_alignLeft="@id/view2"
-        />
-    <TextView
-        style="@style/ActivityLegend"
-        android:id="@+id/view5_title"
-        android:layout_alignTop="@id/view3_title"
-        android:layout_alignRight="@id/view2"
-        />
-    
-    <Button
-      android:id="@+id/start_stop_button"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginLeft="10dip"
-      android:layout_marginRight="10dip"
-      android:text="@string/start"
-      android:textSize="30sp"
-      android:layout_below="@id/view3_title"
-      android:layout_alignParentLeft="true"
-       />
-    
-    <Button
-      android:id="@+id/lap_button"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginLeft="10dip"
-      android:layout_marginRight="10dip"
-      android:text="@string/lap"
-      android:textSize="30sp"
-      android:layout_alignBottom="@id/start_stop_button"
-      android:layout_centerHorizontal="true"
-       />
-    <Button
-      android:id="@+id/pause_resume_button"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginLeft="10dip"
-      android:layout_marginRight="10dip"
-      android:text="@string/pause"
-      android:textSize="30sp"
-      android:layout_alignBottom="@id/start_stop_button"
-      android:layout_alignParentRight="true"
-       />
-    
-    
-    <com.google.android.maps.MapView
+        <!-- view1 is to the right of view0 -->
+
+        <TextView
+            android:id="@+id/view1"
+            style="@style/ActivityDisplay"
+            android:layout_alignBottom="@id/view0"
+            android:layout_centerHorizontal="true" />
+
+        <TextView
+            android:id="@+id/view1_title"
+            style="@style/ActivityLegend"
+            android:layout_alignRight="@id/view1"
+            android:layout_below="@id/view1" />
+
+        <!-- view2 is to the right of view1 -->
+
+        <TextView
+            android:id="@+id/view2"
+            style="@style/ActivityDisplay"
+            android:layout_alignBottom="@id/view0"
+            android:layout_alignParentRight="true" />
+
+        <TextView
+            android:id="@+id/view2_title"
+            style="@style/ActivityLegend"
+            android:layout_alignRight="@id/view2"
+            android:layout_below="@id/view2" />
+
+        <!-- view3 is below view0 -->
+
+        <TextView
+            android:id="@+id/view3"
+            style="@style/ActivityDisplay"
+            android:layout_alignLeft="@id/view0"
+            android:layout_below="@id/view0_title" />
+
+        <TextView
+            android:id="@+id/view3_title"
+            style="@style/ActivityLegend"
+            android:layout_alignRight="@id/view3"
+            android:layout_below="@id/view3" />
+
+        <!-- view4 is below view1 -->
+
+        <TextView
+            android:id="@+id/view4"
+            style="@style/ActivityDisplay"
+            android:layout_alignLeft="@id/view1"
+            android:layout_alignTop="@id/view3" />
+
+        <TextView
+            android:id="@+id/view4_title"
+            style="@style/ActivityLegend"
+            android:layout_alignRight="@id/view4"
+            android:layout_alignTop="@id/view3_title" />
+
+        <!-- view5 is below view2 -->
+
+        <TextView
+            android:id="@+id/view5"
+            style="@style/ActivityDisplay"
+            android:layout_alignLeft="@id/view2"
+            android:layout_alignTop="@id/view3" />
+
+        <TextView
+            android:id="@+id/view5_title"
+            style="@style/ActivityLegend"
+            android:layout_alignRight="@id/view2"
+            android:layout_alignTop="@id/view3_title" />
+
+        <com.google.android.maps.MapView
             xmlns:android="http://schemas.android.com/apk/res/android"
             android:id="@+id/map_view"
-            android:layout_below="@id/start_stop_button"
-            android:clickable="true"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
+            android:layout_below="@id/view5_title"
             android:apiKey="0bz2DrYPiw87fMixiWlMONq1nDV9ZDJP7XgzESQ"
-                 />
+            android:clickable="true" />
 </RelativeLayout>

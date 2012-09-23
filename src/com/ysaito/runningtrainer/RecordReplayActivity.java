@@ -118,7 +118,6 @@ public class RecordReplayActivity extends MapActivity {
     }
 
     @Override public void onBackPressed() {
-    	Log.d(TAG, "BACK PRESNSED!");
     	super.onBackPressed();
     }
     
