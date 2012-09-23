@@ -1,6 +1,7 @@
 package com.ysaito.runningtrainer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -16,6 +17,8 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -29,6 +32,11 @@ public class GpsTrackingService extends Service {
     
     public static void registerListener(RecordingActivity listener) {
     	mListeners.add(listener);
+
+    	if (mSingleton != null) {
+    		// Call the listener immediately to give the initial stats
+    		listener.onGpsUpdate(mSingleton.mRecord, mSingleton.mPath, mSingleton.mTotalStats, mSingleton.mUserLapStats, mSingleton.mAutoLapStats);
+    	}
     }
     public static void unregisterListener(RecordingActivity listener) {
     	mListeners.remove(listener);
@@ -40,8 +48,8 @@ public class GpsTrackingService extends Service {
     private static boolean mGpsServiceStarted = false;
     private static GpsTrackingService mSingleton = null;
     
-    private static final int STOPPED = 0;
-    private static final int PAUSED = 1;
+    private static final int RESET = 0;
+    private static final int STOPPED = 1;
     private static final int RUNNING = 2;
     private int mState = RUNNING;
 
@@ -49,12 +57,12 @@ public class GpsTrackingService extends Service {
     
     public void onLapButtonPress() {
     	mUserLapStats = new LapStats();
-    	speak("New lap started");
+    	speak("New lap", null);
     }
     
     public void onPauseButtonPress() {
-    	speak("Paused");
-    	mState = PAUSED;  
+    	speak("Paused", null);
+    	mState = STOPPED;  
     	mTotalStats.onPause();
     	if (mUserLapStats != null) mUserLapStats.onPause();
     	if (mAutoLapStats != null) mAutoLapStats.onPause();
@@ -62,7 +70,7 @@ public class GpsTrackingService extends Service {
     }
     
     public void onResumeButtonPress() {
-    	speak("Resumed");
+    	speak("Resumed", null);
     	mState = RUNNING;
     	mTotalStats.onResume();
     	if (mUserLapStats != null) mUserLapStats.onResume();
@@ -70,8 +78,12 @@ public class GpsTrackingService extends Service {
     	updateTimer();
     }
     
-    public static boolean isGpsServiceRunning() {
-    	return mGpsServiceStarted;
+    public static int getServiceState() {
+    	if (mSingleton == null) {
+    		return RESET;
+    	} else {
+    		return mSingleton.mState;
+    	}
     }
     
     public static void startGpsServiceIfNecessary(Context context) {
@@ -81,10 +93,16 @@ public class GpsTrackingService extends Service {
     	}
     }
     
-    public static void stopGpsServiceIfNecessary(Context context) {
+    public static void stopGpsServiceIfNecessary(final Context context) {
     	if (mGpsServiceStarted) {
     		mGpsServiceStarted = false;
-    		context.stopService(new Intent(context, GpsTrackingService.class));
+    		if (mSingleton != null) {
+    			mSingleton.speak("Reset", new SpeakDoneListener() {
+    				public void onDone() {
+    					context.stopService(new Intent(context, GpsTrackingService.class));
+    				}
+    			});
+    		}
     	}
     }
     
@@ -96,36 +114,36 @@ public class GpsTrackingService extends Service {
     		newerLapStats = mAutoLapStats;
     	}
     	if (Settings.speakTotalDistance)
-    		speak("Total distance " + Util.distanceToSpeechText(mTotalStats.getDistance()));
+    		speak("Total distance " + Util.distanceToSpeechText(mTotalStats.getDistance()), null);
     	if (Settings.speakTotalDuration)
-    		speak("Total time " + Util.durationToSpeechText(mTotalStats.getDurationSeconds()));
+    		speak("Total time " + Util.durationToSpeechText(mTotalStats.getDurationSeconds()), null);
     	if (Settings.speakCurrentPace)
-    		speak("Current pace " + Util.paceToSpeechText(mTotalStats.getCurrentPace()));
+    		speak("Current pace " + Util.paceToSpeechText(mTotalStats.getCurrentPace()), null);
     	if (Settings.speakAveragePace)
-    		speak("Average pace " + Util.paceToSpeechText(mTotalStats.getPace()));
+    		speak("Average pace " + Util.paceToSpeechText(mTotalStats.getPace()), null);
     	if (newerLapStats != null) {
     		if (Settings.speakLapDistance)
-    			speak("Lap distance " + Util.distanceToSpeechText(newerLapStats.getDistance()));
+    			speak("Lap distance " + Util.distanceToSpeechText(newerLapStats.getDistance()), null);
     		if (Settings.speakLapDuration)
-    			speak("Lap time " + Util.durationToSpeechText(newerLapStats.getDurationSeconds()));
+    			speak("Lap time " + Util.durationToSpeechText(newerLapStats.getDurationSeconds()), null);
     		if (Settings.speakLapPace)
-    			speak("Lap pace " + Util.paceToSpeechText(newerLapStats.getPace()));
+    			speak("Lap pace " + Util.paceToSpeechText(newerLapStats.getPace()), null);
     	}
     	if (mAutoLapStats != null) {
     		if (Settings.speakAutoLapDistance)
-    			speak("Auto lap distance " + Util.distanceToSpeechText(mAutoLapStats.getDistance()));
+    			speak("Auto lap distance " + Util.distanceToSpeechText(mAutoLapStats.getDistance()), null);
     		if (Settings.speakAutoLapDuration)
-    			speak("Auto lap time " + Util.durationToSpeechText(mAutoLapStats.getDurationSeconds()));
+    			speak("Auto lap time " + Util.durationToSpeechText(mAutoLapStats.getDurationSeconds()), null);
     		if (Settings.speakAutoLapPace)
-    			speak("Auto lap pace " + Util.paceToSpeechText(mAutoLapStats.getPace()));
+    			speak("Auto lap pace " + Util.paceToSpeechText(mAutoLapStats.getPace()), null);
     	}
     }
     
     private long mLastReportedTotalDistance = 0;
     private long mLastReportedTotalDuration = 0;
     private long mLastReportedAutoLapDistance = 0;
-    
-    private void notifyListeners() {
+
+    private void updateStats() {
     	if (Settings.autoLapDistanceInterval > 0) {
     		final int interval = (int)Math.max(50, Settings.autoLapDistanceInterval);
     		final long newDistance = (long)mTotalStats.getDistance();
@@ -152,6 +170,10 @@ public class GpsTrackingService extends Service {
     		}
     	}
     	if (needSpeak) speakStats();
+    }
+    
+    private void notifyListeners() {
+    	updateStats();
     	for (RecordingActivity listener : mListeners) {
     		listener.onGpsUpdate(mRecord, mPath, mTotalStats, mUserLapStats, mAutoLapStats);
     	}
@@ -232,17 +254,40 @@ public class GpsTrackingService extends Service {
         mTts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
         	public void onInit(int status) {
         		mTts.setLanguage(Locale.US);
-        		speak("started");
+        		speak("started", null);
         	}
         });
+        mTtsListener = new OnUtteranceCompletedListener() {
+			public void onUtteranceCompleted(String utteranceId) {
+        		SpeakDoneListener listener = mSpeakDoneListeners.get(utteranceId);
+        		mSpeakDoneListeners.remove(utteranceId);
+        		if (listener != null) listener.onDone();
+			}
+        };
+        mTts.setOnUtteranceCompletedListener(mTtsListener);
 		mSingleton = this;
 	}
 
     private TextToSpeech mTts;
+	private OnUtteranceCompletedListener mTtsListener;
 	private Timer mTimer;
 	
-	private void speak(String text) {
-		mTts.speak(text, TextToSpeech.QUEUE_ADD, null);
+	private interface SpeakDoneListener {
+		public void onDone();
+	}
+	private int mUtteranceId = 0;
+	private HashMap<String, SpeakDoneListener> mSpeakDoneListeners = new HashMap<String, SpeakDoneListener>();
+	
+	private void speak(String text, SpeakDoneListener listener) {
+		if (listener == null) {
+			mTts.speak(text, TextToSpeech.QUEUE_ADD, null);
+		} else {
+			HashMap<String, String> params = new HashMap<String, String>();
+			String key = "utterance:" + mUtteranceId++;
+			params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, key);
+			mSpeakDoneListeners.put(key, listener);
+			mTts.speak(text, TextToSpeech.QUEUE_ADD, params);
+		}
 	}
 
 	private void updateTimer() {
@@ -258,7 +303,7 @@ public class GpsTrackingService extends Service {
 					Handler handler = new Handler(Looper.getMainLooper());
 					handler.post(new Runnable() {
 						public void run() { 
-							dofakeGpsLocationUpdate();
+							// dofakeGpsLocationUpdate();
 							notifyListeners(); 
 						}
 					});
@@ -269,7 +314,7 @@ public class GpsTrackingService extends Service {
 	
 	public void onDestroy() {
 		mSingleton = null;
-		mState = STOPPED;
+		mState = RESET;
 		updateTimer();
 		Toast.makeText(this, toString() + ": Stopped", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onDestroy");

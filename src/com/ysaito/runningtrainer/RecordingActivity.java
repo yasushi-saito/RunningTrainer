@@ -20,6 +20,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -198,16 +199,16 @@ public class RecordingActivity extends MapActivity {
     private MapView mMapView;
     private StatsView mStatsViews[];
 
+    private TextView mWorkoutTitle;
     private ArrayAdapter<String> mWorkoutListAdapter;
     private Spinner mWorkoutListSpinner;
-    private Button mPauseResumeButton;
     private Button mStartStopButton;
     private Button mLapButton;    
 
-    private static final int STOPPED = 0;
-    private static final int PAUSED = 1;
+    private static final int RESET = 0;
+    private static final int STOPPED = 1;
     private static final int RUNNING = 2;
-    private int mRecordingState = STOPPED;
+    private int mRecordingState = RESET;
     
     private LapStats mTotalStats = null;
     HealthGraphClient.JsonActivity mLastReportedActivity = null;
@@ -236,7 +237,6 @@ public class RecordingActivity extends MapActivity {
     	super.onPause();
     	GpsTrackingService.unregisterListener(this);
         mLocationManager.removeUpdates(mLocationListener);
-        stopTimer();
     }
     
     private void startListWorkouts() {
@@ -259,16 +259,6 @@ public class RecordingActivity extends MapActivity {
     @Override public void onResume() {
     	super.onResume();
 
-    	startListWorkouts();
-        GpsTrackingService.registerListener(this);
-        if (GpsTrackingService.isGpsServiceRunning()) {
-        	mRecordingState = RUNNING;
-        	mStartStopButton.setText(R.string.stop); 
-        } else {
-        	mRecordingState = STOPPED;
-        	mStartStopButton.setText(R.string.start);
-        }
-    	
         // Define a listener that responds to location updates
         mLocationListener = new LocationListener() {
     		public void onLocationChanged(Location location) {
@@ -297,7 +287,19 @@ public class RecordingActivity extends MapActivity {
         for (int i = 0; i < mStatsViews.length; ++i) {
         	mStatsViews[i].update(null,  null, null);
         }
-        updateTimerIfNecessary();
+
+    	startListWorkouts();
+        mRecordingState = GpsTrackingService.getServiceState();
+        if (mRecordingState == RUNNING) {
+        	mStartStopButton.setText(R.string.pause); 
+        } else if (mRecordingState == RESET) {
+        	mStartStopButton.setText(R.string.start);
+        } else {
+        	mStartStopButton.setText(R.string.resume);
+        }
+        
+        // RegisterListener may call the listener method
+        GpsTrackingService.registerListener(this);
     }
     
     @Override
@@ -313,29 +315,14 @@ public class RecordingActivity extends MapActivity {
 
         mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
 
+        mWorkoutTitle = (TextView)findViewById(R.id.workout_title);
         mWorkoutListSpinner = (Spinner)findViewById(R.id.workout_spinner);
         mWorkoutListAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1);
         mWorkoutListSpinner.setAdapter(mWorkoutListAdapter);
         mWorkoutListAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 
-        mPauseResumeButton = (Button)findViewById(R.id.pause_resume_button);
-        mPauseResumeButton.setEnabled(false); // pause/resume is disabled unless the recorder is running
-        mPauseResumeButton.setOnClickListener(new Button.OnClickListener() {
-        	public void onClick(View v) {
-        		if (mRecordingState == RUNNING) {
-        			onPauseButtonPress();
-        			mPauseResumeButton.setText(R.string.resume);
-        		} else if (mRecordingState == PAUSED) {
-        			// Either running or paused
-        			onResumeButtonPress();
-        			mPauseResumeButton.setText(R.string.pause); 
-        		} else {
-        			// Stopped. This shouldn't happen, since the button is disabled in this state.
-        		}
-        	}
-        });
-
         mLapButton = (Button)findViewById(R.id.lap_button);
+    	mLapButton.setEnabled(false);  // the lap button is disabled unless the activity is running
         mLapButton.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
         		GpsTrackingService service = GpsTrackingService.getSingleton();  
@@ -346,22 +333,22 @@ public class RecordingActivity extends MapActivity {
         mStartStopButton = (Button)findViewById(R.id.start_stop_button);
         mStartStopButton.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
-        		if (mRecordingState == STOPPED) {
-        			mLapButton.setEnabled(true);
-        			mPauseResumeButton.setEnabled(true);
-        			mPauseResumeButton.setText(R.string.pause);
-        			mStartStopButton.setText(R.string.stop); 
+        		if (mRecordingState == RESET || mRecordingState == STOPPED) {
         			onStartButtonPress();
         		} else {
-        			// Either running or paused
-        			mLapButton.setEnabled(false);
-        			mPauseResumeButton.setEnabled(false);
-        			mPauseResumeButton.setText(R.string.pause);
-        			mStartStopButton.setText(R.string.start); 
         			onStopButtonPress();
         		}
         	}
         });
+        
+        mStartStopButton.setOnLongClickListener(new Button.OnLongClickListener() { 
+        	public boolean onLongClick(View v) {
+        		mLapButton.setEnabled(false);
+        		mStartStopButton.setText(R.string.start); 
+        		onResetButtonPress();
+        		return true;
+        	}
+        });        
     }
 
     @Override
@@ -372,24 +359,30 @@ public class RecordingActivity extends MapActivity {
     	}
     }
 
-    private void updateTimerIfNecessary() {
-    	stopTimer();
-    }
-    
-    private void stopTimer() {
-    }
-    
     void onStartButtonPress() {
-        mRecordingState = RUNNING;
-    	mMapOverlay.clearPath();
-    	mMapView.invalidate();
-    	GpsTrackingService.startGpsServiceIfNecessary(this);
-    	updateTimerIfNecessary();    	
+    	mLapButton.setEnabled(true);
+    	mStartStopButton.setText(R.string.pause); 
+    	mWorkoutListSpinner.setVisibility(View.GONE);
+    	mWorkoutTitle.setText("Workout: foobarfoobarfoobar");
+    	if (mRecordingState == RESET) {
+    		// Starting a new activity
+    		mMapOverlay.clearPath();
+    		mMapView.invalidate();
+    		GpsTrackingService.startGpsServiceIfNecessary(this);
+    	} else if (mRecordingState == STOPPED) {
+    		// Resuming an activity
+    		GpsTrackingService service = GpsTrackingService.getSingleton();  
+    		if (service != null) service.onResumeButtonPress();
+    	}
+    	mRecordingState = RUNNING;
     }
 
-    private void onStopButtonPress() {
-    	mRecordingState = STOPPED;
-    	updateTimerIfNecessary();
+    private void onResetButtonPress() {
+    	mRecordingState = RESET;
+    	mLapButton.setEnabled(false);
+    	mWorkoutListSpinner.setVisibility(View.VISIBLE);
+    	mWorkoutTitle.setText("Workout: ");
+    	
     	GpsTrackingService.stopGpsServiceIfNecessary(this);
     	if (mTotalStats != null && mLastReportedPath != null && mLastReportedPath.size() >= 1) {
     		HealthGraphClient.JsonWGS84 last = mLastReportedPath.get(mLastReportedPath.size() - 1);
@@ -430,18 +423,13 @@ public class RecordingActivity extends MapActivity {
     		}
     	}
     }	
-    private void onPauseButtonPress() {
-    	mRecordingState = PAUSED;
-    	updateTimerIfNecessary();
+    
+    private void onStopButtonPress() {
+    	mLapButton.setEnabled(false);
+    	mStartStopButton.setText(R.string.resume); 
+    	mRecordingState = STOPPED;
     	GpsTrackingService service = GpsTrackingService.getSingleton();  
     	if (service != null) service.onPauseButtonPress();
-    }
-
-    private void onResumeButtonPress() {
-    	mRecordingState = RUNNING;
-    	updateTimerIfNecessary();
-    	GpsTrackingService service = GpsTrackingService.getSingleton();  
-    	if (service != null) service.onResumeButtonPress();
     }
 
     @Override

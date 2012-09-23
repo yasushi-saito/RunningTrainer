@@ -24,7 +24,7 @@
         android:id="@+id/strut"
         android:layout_width="fill_parent"
         android:layout_height="20sp"
-        android:layout_below="@id/workout_spinner" />
+        android:layout_below="@id/workout_title" />
 
     <Button
         style="@style/LargeButton"
@@ -37,15 +37,8 @@
         style="@style/LargeButton"
         android:id="@+id/lap_button"
         android:layout_alignBottom="@id/start_stop_button"
-        android:layout_centerHorizontal="true"
-        android:text="@string/lap"/>
-
-    <Button
-        style="@style/LargeButton"
-        android:id="@+id/pause_resume_button"
-        android:layout_alignBottom="@id/start_stop_button"
         android:layout_alignParentRight="true"
-        android:text="@string/pause"/>
+        android:text="@string/lap"/>
 
     <TextView
         android:id="@+id/view0"
