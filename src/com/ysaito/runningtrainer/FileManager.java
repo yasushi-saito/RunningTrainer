@@ -109,11 +109,11 @@ public class FileManager {
 		public final TreeMap<String, String> mKeys = new TreeMap<String, String>();
 		public FilenameSummary() { }
 		
-		void putLong(String key, long value) {
+		public void putLong(String key, long value) {
 			mKeys.put(key, Long.toString(value));
 		}
 
-		void putString(String key, String value) {
+		public void putString(String key, String value) {
 			mKeys.put(key, value);
 		}
 
@@ -170,7 +170,7 @@ public class FileManager {
 	 *  @return The struct containing the parsed result, or null if the basename is malformed. 
 	 */
 	static final Pattern P0 = Pattern.compile("log");
-	static final Pattern P1 = Pattern.compile("([a-zA-Z+])=([^:]+)");
+	static final Pattern P1 = Pattern.compile("([a-zA-Z]+)=([^:]+)");
 	
 	static public FilenameSummary parseBasename(String basename) {
 		try {

@@ -232,7 +232,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public Workout toWorkout() { 
 			// This shouldn't be called in practice. create some dummy entry
 			Workout w = new Workout();
-			w.type = "Interval";
+			w.type = Workout.TYPE_INTERVAL;
 			return w;
 		}
 
@@ -273,9 +273,8 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public void setParent(Repeats p) { mParent = p; }
 
 		public Workout toWorkout() { 
-			// This shouldn't be called in practice. create some dummy entry
 			Workout w = new Workout();
-			w.type = "Interval";
+			w.type = Workout.TYPE_INTERVAL;
 			w.distance = mDistance;
 			w.duration = mDuration;
 			w.fastTargetPace = mFastTargetPace;
@@ -398,9 +397,8 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public final ArrayList<Element> getChildren() { return mEntries; }
 
 		public Workout toWorkout() { 
-			// This shouldn't be called in practice. create some dummy entry
 			Workout w = new Workout();
-			w.type = "Repeats";
+			w.type = Workout.TYPE_REPEATS;
 			w.repeats = mRepeats;
 			w.children = new Workout[mEntries.size()];
 			for (int i = 0; i < mEntries.size(); ++i) {
@@ -526,10 +524,10 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		return y >= bbox.top + height / 2 && y < bbox.bottom + height / 2;
 	}
 
-	private Repeats mRoot = new Repeats(0);
+	private Repeats mRoot = new Repeats(1);
 
 	Element fromWorkout(Workout workout) {
-		if (workout.type.equals("Root") || workout.type.equals("Repeats")) {
+		if (workout.type == Workout.TYPE_REPEATS) {
 			Repeats r = new Repeats(workout.repeats);
 			if (workout.children != null) {  // Repeats, not Root
 				for (Workout child : workout.children) {

@@ -48,6 +48,12 @@ public class GpsTrackingService extends Service {
     private static boolean mGpsServiceStarted = false;
     private static GpsTrackingService mSingleton = null;
     
+    // Used to pass the workout to the newly created GpsTrackingService instance.
+    //
+    // TODO: there should be a cleaner way to achieve the the same effect. The use of the global variable is rather ugly.
+    private static Workout mNewestSpecifiedWorkout;
+    
+    
     private static final int RESET = 0;
     private static final int STOPPED = 1;
     private static final int RUNNING = 2;
@@ -86,9 +92,10 @@ public class GpsTrackingService extends Service {
     	}
     }
     
-    public static void startGpsServiceIfNecessary(Context context) {
+    public static void startGpsServiceIfNecessary(Context context, Workout workout) {
     	if (!mGpsServiceStarted) {
     		mGpsServiceStarted = true;
+    		mNewestSpecifiedWorkout = workout;
     		context.startService(new Intent(context, GpsTrackingService.class));
     	}
     }
@@ -198,6 +205,7 @@ public class GpsTrackingService extends Service {
 	
 	private static int mInstanceSeq = 0;
 	private int mId;
+	private Workout mWorkout;
 	
 	@Override public String toString() {
 		return "GpsService[" + mId + "]";
@@ -206,6 +214,9 @@ public class GpsTrackingService extends Service {
 	@Override
 	public void onCreate() {
 		Settings.Initialize(getApplicationContext());
+		mWorkout = null;
+		if (mNewestSpecifiedWorkout != null) mWorkout = new Workout(mNewestSpecifiedWorkout);
+		
 		mId = mInstanceSeq++;
 		Toast.makeText(this, toString() + ": Created", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onCreate");

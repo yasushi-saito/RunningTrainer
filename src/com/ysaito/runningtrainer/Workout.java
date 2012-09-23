@@ -29,12 +29,34 @@ public class Workout {
 			}
 		}
 	}
+	
+	@Override public String toString() {
+		StringBuilder b = new StringBuilder();
+		if (type == TYPE_REPEATS) {
+			b.append("Repeats: repeats=");
+			b.append(repeats);
+			b.append(", #child=" + children.length);
+		} else {
+			b.append("Interval: duration=");
+			b.append(duration);
+			b.append(", distance=");
+			b.append(distance);
+			b.append(", fast=");
+			b.append(fastTargetPace);
+			b.append(", slow=");
+			b.append(slowTargetPace);
+		}
+		return b.toString();
+	}
 
 	// Unique id of this object. The value is the time (seconds since 1970) of creation.
 	public long id = 0;
 	
 	// The name displayed in the workout list screen. May not be unique.
 	public String name = "foo";
+
+	static public int TYPE_REPEATS = 1;
+	static public int TYPE_INTERVAL = 2;
 	
 	// There are three types of Workout objects:
 	//
@@ -49,12 +71,14 @@ public class Workout {
 	//
 	// Note that this class is translated to and from JSON strings, so we don't want to use
 	// inheritance to represent these types of objets.
-	public String type;  // either "Root", "Repeats" or "Interval"
+	public int type;  // One of TYPE_XXX.
 
 	// Meaningful only when type=="Root" or type=="Repeats"
 	public Workout[] children;
 
-	// Meaningful only when type=="Repeats"
+    // Number of the times the children[] are repeated, sequentially.
+	// INVARIANT: >0 if type==TYPE_REPEATS
+	// INVARIANT: ==0 if type!=TYPE_REPEATS
 	public int repeats = 0;
 
 	// The remaining fields are meaningful only when type=="Interval"

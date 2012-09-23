@@ -13,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 public class WorkoutEditorFragment extends Fragment {
@@ -45,8 +44,9 @@ public class WorkoutEditorFragment extends Fragment {
         		Workout newWorkout = mCanvas.getWorkout();
 		
         		// the workout will be of "Repeats" type, so make it into a "Root" type
-        		newWorkout.type = "Root";
-        		newWorkout.repeats = -1;  // not used
+        		// TODO: this probably isn't necessary.
+        		newWorkout.type = Workout.TYPE_REPEATS;
+        		newWorkout.repeats = 1; 
         		newWorkout.name = mWorkoutNameEditor.getText().toString();
         		newWorkout.id = mWorkout.id;
 

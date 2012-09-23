@@ -18,11 +18,12 @@ public class Util {
 	
 	/**
 	 * Crash the program after displaying a message
-	 * @param context Used to show a toast just before crashing
+	 * @param context If not null, used to show a toast just before crashing. 
 	 */
 	static void assertFail(Context context, String message) {
-		Toast.makeText(context, message, Toast.LENGTH_LONG).show();
-		
+		if (context != null) {
+			Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+		}
 		// Force a crash
 		String xx = null;
 		xx = xx + "";

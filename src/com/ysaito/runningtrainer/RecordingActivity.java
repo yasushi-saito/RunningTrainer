@@ -20,7 +20,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -238,6 +237,11 @@ public class RecordingActivity extends MapActivity {
     	GpsTrackingService.unregisterListener(this);
         mLocationManager.removeUpdates(mLocationListener);
     }
+
+    // List of workout files, under FileManager.getWorkoutDir().
+    // The first entry is always null (corresponds to "no workout").
+    // The i'th entry (i>0) corresponds to the i'th entry in the mWorkoutListSpinner.
+    private ArrayList<String> mWorkoutFiles = new ArrayList<String>();
     
     private void startListWorkouts() {
     	final File dir = FileManager.getWorkoutDir(this);
@@ -247,8 +251,12 @@ public class RecordingActivity extends MapActivity {
 					Toast.makeText(mThisActivity, "Failed to list " + dir.toString() + ": " + e.toString(), Toast.LENGTH_LONG).show();
 				} else {
 					mWorkoutListAdapter.clear();
+					mWorkoutFiles.clear();
+					mWorkoutListAdapter.add("None");
+					mWorkoutFiles.add(null);
 					for (FilenameSummary f : files) {
 						mWorkoutListAdapter.add(f.getString(FileManager.KEY_WORKOUT_NAME, "unknown"));
+						mWorkoutFiles.add(f.getBasename());
 					}
 					mWorkoutListAdapter.notifyDataSetChanged();
 				}
@@ -360,21 +368,27 @@ public class RecordingActivity extends MapActivity {
     }
 
     void onStartButtonPress() {
-    	mLapButton.setEnabled(true);
-    	mStartStopButton.setText(R.string.pause); 
-    	mWorkoutListSpinner.setVisibility(View.GONE);
-    	mWorkoutTitle.setText("Workout: foobarfoobarfoobar");
-    	if (mRecordingState == RESET) {
-    		// Starting a new activity
-    		mMapOverlay.clearPath();
-    		mMapView.invalidate();
-    		GpsTrackingService.startGpsServiceIfNecessary(this);
-    	} else if (mRecordingState == STOPPED) {
-    		// Resuming an activity
-    		GpsTrackingService service = GpsTrackingService.getSingleton();  
-    		if (service != null) service.onResumeButtonPress();
-    	}
-    	mRecordingState = RUNNING;
+    	int pos = mWorkoutListSpinner.getSelectedItemPosition();
+    	final String workoutFilename = (pos >= 0  && pos < mWorkoutFiles.size() ? mWorkoutFiles.get(pos) : null);
+    	FileManager.readFileAsync(FileManager.getWorkoutDir(this), workoutFilename, Workout.class, new FileManager.ReadListener<Workout>() {
+    		public void onFinish(Exception e, Workout workout) {
+    			mLapButton.setEnabled(true);
+    			mStartStopButton.setText(R.string.pause); 
+    			mWorkoutListSpinner.setVisibility(View.GONE);
+    			mWorkoutTitle.setText("Workout: foobarfoobarfoobar");
+    			if (mRecordingState == RESET) {
+    				// Starting a new activity
+    				mMapOverlay.clearPath();
+    				mMapView.invalidate();
+    				GpsTrackingService.startGpsServiceIfNecessary(mThisActivity, workout);
+    			} else if (mRecordingState == STOPPED) {
+    				// Resuming an activity
+    				GpsTrackingService service = GpsTrackingService.getSingleton();  
+    				if (service != null) service.onResumeButtonPress();
+    			}
+    			mRecordingState = RUNNING;
+    		}
+    	});
     }
 
     private void onResetButtonPress() {

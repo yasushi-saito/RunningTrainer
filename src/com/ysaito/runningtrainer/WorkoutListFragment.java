@@ -2,8 +2,6 @@ package com.ysaito.runningtrainer;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.GregorianCalendar;
 
 import android.app.ListFragment;
 import android.content.Context;
@@ -121,7 +119,8 @@ public class WorkoutListFragment extends ListFragment {
 			Workout workout = new Workout();
 			workout.id = System.currentTimeMillis() / 1000;
 			workout.name = "Unnamed Workout";
-			workout.type = "Root";
+			workout.type = Workout.TYPE_INTERVAL;
+			workout.repeats = 1;
 			workout.children = new Workout[0];
 			startWorkoutEditor(workout);
 		} else {
