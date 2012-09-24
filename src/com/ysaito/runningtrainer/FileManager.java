@@ -194,17 +194,46 @@ public class FileManager {
 			return null;
 		}
 	}
-	
-	/**
-	 * 
-	 * @return an error object. Null on success.
-	 */
-	public static void writeFile(File dir, String basename, Object jsonObject) throws IOException {
-		Gson gson = new GsonBuilder().create();
-		File destFile = new File(dir, basename);
-		FileWriter out = new FileWriter(destFile);
-		gson.toJson(jsonObject, out);
-		out.close();
+
+	private static class WriteFileThread extends AsyncTask<Void, Void, Void> {
+		private final File mDir;
+		private final String mBasename;
+		private final Object mJsonObject;
+		private final ResultListener mListener;
+		private Exception mException = null;
+		
+		public WriteFileThread(
+				File dir,
+				String basename,
+				Object jsonObject,
+				ResultListener listener) { 
+			mDir = dir; 
+			mBasename = basename;
+			mJsonObject = jsonObject;
+			mListener = listener; 
+		}
+		
+		@Override protected Void doInBackground(Void... unused) {
+			try {
+				Gson gson = new GsonBuilder().create();
+				File destFile = new File(mDir, mBasename);
+				FileWriter out = new FileWriter(destFile);
+				gson.toJson(mJsonObject, out);
+				out.close();
+			} catch (Exception e) {
+				mException = e;
+			}
+			return null;
+		}
+		
+		@Override protected void onPostExecute(Void unused) {
+			mListener.onFinish(mException);
+		}
+	}
+
+	public static void writeFileAsync(File dir, String basename, Object jsonObject, ResultListener listener) {
+		WriteFileThread thread = new WriteFileThread(dir, basename, jsonObject, listener);
+		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
 	}
 	
 	public interface ReadListener<T> {

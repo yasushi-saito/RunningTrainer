@@ -41,49 +41,30 @@ public class WorkoutEditorFragment extends Fragment {
         Button button = (Button)view.findViewById(R.id.save_button);
         button.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
-        		Workout newWorkout = mCanvas.getWorkout();
+        		final long workoutId = mWorkout.id;
+        		final Workout newWorkout = mCanvas.getWorkout();
 		
         		// the workout will be of "Repeats" type, so make it into a "Root" type
         		// TODO: this probably isn't necessary.
         		newWorkout.type = Workout.TYPE_REPEATS;
         		newWorkout.repeats = 1; 
         		newWorkout.name = mWorkoutNameEditor.getText().toString();
-        		newWorkout.id = mWorkout.id;
+        		newWorkout.id = workoutId;
 
         		final FilenameSummary f = new FilenameSummary();
         		f.putLong(FileManager.KEY_WORKOUT_ID, newWorkout.id);
         		f.putString(FileManager.KEY_WORKOUT_NAME, FileManager.sanitizeString(newWorkout.name));
         		final String newBasename = f.getBasename();
-        		
-        		try {
-        			// TODO: async
-        			FileManager.writeFile(mWorkoutDir, f.getBasename(), newWorkout);
-        		} catch (Exception e) {
-        			Toast.makeText(getActivity(), "Failed to save workout: " + e.toString(), Toast.LENGTH_LONG).show();
-        		}
-        		FileManager.listFilesAsync(mWorkoutDir, new FileManager.ListFilesListener() {
-					public void onFinish(Exception e, ArrayList<FilenameSummary> files) {
-						// Delete the old file(s) for the same workout
-						ArrayList<String> toDelete = new ArrayList<String>();
-						for (FileManager.FilenameSummary f : files) {
-							if (f.getLong(FileManager.KEY_WORKOUT_ID, -1) == mWorkout.id &&
-									!f.getBasename().equals(newBasename)) {
-								toDelete.add(f.getBasename());
-							}
-						}
-						if (toDelete.size() > 0) {
-							String[] array = toDelete.toArray(new String[0]);
-							FileManager.deleteFilesAsync(mWorkoutDir, array, new FileManager.ResultListener() {
-								public void onFinish(Exception e) {
-									showWorkoutListFragment();
-									// TODO: handle errors
-								}
-							});
-						} else {
-							showWorkoutListFragment();							
-						}
-					}
-				});
+
+        		FileManager.writeFileAsync(mWorkoutDir, f.getBasename(), newWorkout, new FileManager.ResultListener() {
+        			public void onFinish(Exception e) {
+        				if (e != null) {
+        					Util.error(getActivity(), "Failed to save workout: " + e);
+        					return;
+        				}
+        				deleteOldFilesForWorkout(workoutId, newBasename);
+        			}
+        		});
         	}
         });
         
@@ -109,6 +90,32 @@ public class WorkoutEditorFragment extends Fragment {
         return view;
 	}
 
+	private void deleteOldFilesForWorkout(final long workoutId, final String newBasename) {
+		FileManager.listFilesAsync(mWorkoutDir, new FileManager.ListFilesListener() {
+			public void onFinish(Exception e, ArrayList<FilenameSummary> files) {
+				// Delete the old file(s) for the same workout
+				ArrayList<String> toDelete = new ArrayList<String>();
+				for (FileManager.FilenameSummary f : files) {
+					if (f.getLong(FileManager.KEY_WORKOUT_ID, -1) == workoutId &&
+							!f.getBasename().equals(newBasename)) {
+						toDelete.add(f.getBasename());
+					}
+				}
+				if (toDelete.size() > 0) {
+					String[] array = toDelete.toArray(new String[0]);
+					FileManager.deleteFilesAsync(mWorkoutDir, array, new FileManager.ResultListener() {
+						public void onFinish(Exception e) {
+							showWorkoutListFragment();
+							// TODO: handle errors
+						}
+					});
+				} else {
+					showWorkoutListFragment();							
+				}
+			}
+		});
+	}
+	
 	public final void showWorkoutListFragment() {
 		MainActivity activity = (MainActivity)getActivity();
 		activity.setFragmentForTab("Workout",

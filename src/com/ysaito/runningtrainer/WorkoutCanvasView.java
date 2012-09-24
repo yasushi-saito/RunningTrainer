@@ -105,15 +105,15 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	                        			mDurationEditor.getText().toString() : "";
 	                        	String distanceStr = (mDistanceBox.getVisibility() == View.VISIBLE) ? 
 	                        			mDistanceEditor.getText().toString() : "";
-	                        	String error = mElem.tryUpdate(
+                       			try {
+                       				mElem.update(
 	                        			durationStr,
 	                        			distanceStr,
 	                        			mFastPaceEditor.getText().toString(),
 	                        			mSlowPaceEditor.getText().toString());
-	                        	if (error != null) {
-	                        		Util.error(getActivity(), "Failed to update interval: " + error);
-	                        	} else {
 	                        		mParentView.invalidate();
+                       			} catch (Exception e) {
+	                        		Util.error(getActivity(), "Failed to update interval: " + e);
 	                        	}
 	                        }
 	                    }
@@ -165,12 +165,11 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	                .setPositiveButton(android.R.string.ok,
 	                    new DialogInterface.OnClickListener() {
 	                        public void onClick(DialogInterface dialog, int whichButton) {
-	                        	String error = mElem.tryUpdate(
-	                        			mNumRepeatsEditor.getText().toString());
-	                        	if (error != null) {
-	                        		Util.error(getActivity(), "Failed to update repeats: " + error);
-	                        	} else {
+	                        	try {
+	                        		mElem.update(mNumRepeatsEditor.getText().toString());
 	                        		mParentView.invalidate();
+	                        	} catch (Exception e) {
+	                        		Util.error(getActivity(), "Failed to update repeats: " + e);
 	                        	}
 	                        }
 	                    }
@@ -288,40 +287,37 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		
 		/**
 		 * Update the interval params. Arguments are string represention of the new values.
-		 * Returns an error message if the new param values are invalid. Returns null on success.
-		 *
-		 * TODO: this should raise an exception.
+		 * Raises an exception on illegal param values.
 		 */
-		public String tryUpdate(String durationStr, String distanceStr, String fastTargetPaceStr, String slowTargetPaceStr) {
+		public void update(String durationStr, String distanceStr, String fastTargetPaceStr, String slowTargetPaceStr) throws Exception {
 			double distance = -1.0;
 			if (!distanceStr.isEmpty()) {
 				distance = Util.distanceFromString(distanceStr);
-				if (distance < 0.0) return "Failed to parse distance " + distanceStr;
+				if (distance < 0.0) throw new Exception("Failed to parse distance " + distanceStr);
 			}
 			double duration = -1.0;
 			if (!durationStr.isEmpty()) {
 				duration = Util.durationFromString(durationStr);
-				if (duration < 0.0) return "Failed to parse duration " + durationStr;
+				if (duration < 0.0) throw new Exception("Failed to parse duration " + durationStr);
 			}
 			double fastTargetPace = Workout.NO_FAST_TARGET_PACE;
 			if (!fastTargetPaceStr.isEmpty()) {
 				fastTargetPace = Util.paceFromString(fastTargetPaceStr);
-				if (fastTargetPace < 0.0) return "Failed to parse pace " + fastTargetPaceStr;
+				if (fastTargetPace < 0.0) throw new Exception("Failed to parse pace " + fastTargetPaceStr);
 			}
 			double slowTargetPace = Workout.NO_SLOW_TARGET_PACE;
 			if (!slowTargetPaceStr.isEmpty()) {
 				slowTargetPace = Util.paceFromString(slowTargetPaceStr);
-				if (slowTargetPace < 0.0) return "Failed to parse pace " + fastTargetPaceStr;
+				if (slowTargetPace < 0.0) throw new Exception("Failed to parse pace " + fastTargetPaceStr);
 			}
 			if (fastTargetPace > slowTargetPace) {
-				return String.format("Empty pace range: [%s(%f), %s(%f)]", fastTargetPaceStr, fastTargetPace, 
-						slowTargetPaceStr, slowTargetPace);
+				throw new Exception(String.format("Empty pace range: [%s(%f), %s(%f)]", fastTargetPaceStr, fastTargetPace, 
+						slowTargetPaceStr, slowTargetPace));
 			}
 			mDistance = distance;
 			mDuration = duration;
 			mFastTargetPace = fastTargetPace;
 			mSlowTargetPace = slowTargetPace;
-			return null;
 		}
 		
 		@Override public String toString() { 
@@ -436,19 +432,14 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		
 		/**
 		 * Update the interval params. Arguments are string represention of the new values.
-		 * Returns an error message if the new param values are invalid. Returns null on success.
+		 * Throws an exception on invalid params.
 		 */
-		public String tryUpdate(String repeatsStr) {
-			try {
-				int n = Integer.parseInt(repeatsStr);
-				if (n <= 0) {
-					return repeatsStr + ": Negative repeats not allowed";
-				}
-				mRepeats = n;
-				return null;
-			} catch (NumberFormatException e) {
-				return e.toString();
+		public void update(String repeatsStr) throws Exception {
+			int n = Integer.parseInt(repeatsStr);
+			if (n <= 0) {
+				throw new Exception(repeatsStr + ": Negative repeats not allowed");
 			}
+			mRepeats = n;
 		}
 		
 		@Override public String toString() { 

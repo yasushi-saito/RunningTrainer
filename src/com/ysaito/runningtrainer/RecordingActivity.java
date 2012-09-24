@@ -259,7 +259,7 @@ public class RecordingActivity extends MapActivity {
     	FileManager.listFilesAsync(dir, new FileManager.ListFilesListener() {
 			public void onFinish(Exception e, ArrayList<FilenameSummary> files) {
 				if (e != null) {
-					Toast.makeText(mThisActivity, "Failed to list " + dir.toString() + ": " + e.toString(), Toast.LENGTH_LONG).show();
+					Toast.makeText(mThisActivity, "Failed to list " + dir + ": " + e, Toast.LENGTH_LONG).show();
 				} else {
 					mWorkoutListAdapter.clear();
 					mWorkoutFiles.clear();
@@ -452,17 +452,15 @@ public class RecordingActivity extends MapActivity {
     			lastLocation = location;
     		}
     		
-    		FileManager.FilenameSummary summary = new FileManager.FilenameSummary();
+    		final FileManager.FilenameSummary summary = new FileManager.FilenameSummary();
     		summary.putLong(FileManager.KEY_START_TIME, (long)mTotalStats.getStartTimeSeconds());
     		summary.putLong(FileManager.KEY_DISTANCE, (long)mRecord.total_distance);
     		summary.putLong(FileManager.KEY_DURATION, (long)mRecord.duration);
-    		try {
-    			FileManager.writeFile(mRecordDir, summary.getBasename(), mRecord);
-    		} catch (Exception e) {
-    			// TODO: sync I/O
-    			Toast.makeText(this, "Failed to write: " + summary.getBasename() + ": " + e.toString(),
-    					Toast.LENGTH_LONG).show();
-    		}
+    		FileManager.writeFileAsync(mRecordDir, summary.getBasename(), mRecord, new FileManager.ResultListener() {
+				public void onFinish(Exception e) {
+					if (e != null) Util.error(mThisActivity, "Failed to write: " + summary.getBasename() + ": " + e);
+				}
+			});
     		mRecord = null;
     	}
     }	
