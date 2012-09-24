@@ -11,6 +11,40 @@ public class Workout {
 		return pace < NO_SLOW_TARGET_PACE;
 	}
 	
+	/**
+	 * Produce a human-readable interval description string and append it to
+	 * @p builder. 
+	 */
+	public static void addIntervalToDisplayStringTo(
+			double duration, double distance, double fastPace, double slowPace,
+			StringBuilder builder) {
+		if (distance >= 0) {
+			builder.append(Util.distanceToString(distance));
+			builder.append(" ");
+			builder.append(Util.distanceUnitString());
+		} else if (duration >= 0) {
+			builder.append(Util.durationToString(duration));
+		} else {
+			builder.append("Until Lap");
+		}
+		builder.append(" @ ");
+		if (fastPace <= 0 && slowPace <= 0) {
+			builder.append("No target");
+		} else {
+			if (fastPace > 0) {
+				builder.append(Util.paceToString(fastPace));
+			} else {
+				builder.append("-");
+			}
+			builder.append(" to ");
+			if (slowPace > 0) {
+				builder.append(Util.paceToString(slowPace));
+			} else {
+				builder.append("-");
+			}
+		}
+	}
+	
 	public Workout() {
 		
 	}
@@ -22,6 +56,8 @@ public class Workout {
 		repeats = other.repeats;
 		duration = other.duration;
 		distance = other.distance;
+		fastTargetPace = other.fastTargetPace;
+		slowTargetPace = other.slowTargetPace;
 		if (other.children != null) {
 			children = new Workout[other.children.length];
 			for (int i = 0; i < other.children.length; ++i) {
@@ -29,7 +65,7 @@ public class Workout {
 			}
 		}
 	}
-	
+
 	@Override public String toString() {
 		StringBuilder b = new StringBuilder();
 		if (type == TYPE_REPEATS) {
@@ -53,7 +89,7 @@ public class Workout {
 	public long id = 0;
 	
 	// The name displayed in the workout list screen. May not be unique.
-	public String name = "foo";
+	public String name = null;
 
 	static public int TYPE_REPEATS = 1;
 	static public int TYPE_INTERVAL = 2;

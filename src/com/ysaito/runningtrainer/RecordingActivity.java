@@ -230,7 +230,13 @@ public class RecordingActivity extends MapActivity {
     		mStatsViews[i].update(totalStats, userLapStats, autoLapStats);
     	}
     	if (currentInterval != null) {
-    		mWorkoutTitle.setText(currentInterval.toString());
+    		StringBuilder b = new StringBuilder(); 
+			Workout.addIntervalToDisplayStringTo(
+					currentInterval.duration, 
+					currentInterval.distance, 
+					currentInterval.fastTargetPace, 
+					currentInterval.slowTargetPace, b);
+    		mWorkoutTitle.setText(b.toString());
     	}
     }
 

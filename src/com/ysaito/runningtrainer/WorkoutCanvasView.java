@@ -101,13 +101,17 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	                .setPositiveButton(android.R.string.ok,
 	                    new DialogInterface.OnClickListener() {
 	                        public void onClick(DialogInterface dialog, int whichButton) {
+	                        	String durationStr = (mDurationBox.getVisibility() == View.VISIBLE) ? 
+	                        			mDurationEditor.getText().toString() : "";
+	                        	String distanceStr = (mDistanceBox.getVisibility() == View.VISIBLE) ? 
+	                        			mDistanceEditor.getText().toString() : "";
 	                        	String error = mElem.tryUpdate(
-	                        			mDurationEditor.getText().toString(),
-	                        			mDistanceEditor.getText().toString(),
+	                        			durationStr,
+	                        			distanceStr,
 	                        			mFastPaceEditor.getText().toString(),
 	                        			mSlowPaceEditor.getText().toString());
 	                        	if (error != null) {
-	                        		Toast.makeText(getActivity(), error, Toast.LENGTH_LONG).show();
+	                        		Util.error(getActivity(), "Failed to update interval: " + error);
 	                        	} else {
 	                        		mParentView.invalidate();
 	                        	}
@@ -164,7 +168,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	                        	String error = mElem.tryUpdate(
 	                        			mNumRepeatsEditor.getText().toString());
 	                        	if (error != null) {
-	                        		Toast.makeText(getActivity(), error, Toast.LENGTH_LONG).show();
+	                        		Util.error(getActivity(), "Failed to update repeats: " + error);
 	                        	} else {
 	                        		mParentView.invalidate();
 	                        	}
@@ -285,6 +289,8 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		/**
 		 * Update the interval params. Arguments are string represention of the new values.
 		 * Returns an error message if the new param values are invalid. Returns null on success.
+		 *
+		 * TODO: this should raise an exception.
 		 */
 		public String tryUpdate(String durationStr, String distanceStr, String fastTargetPaceStr, String slowTargetPaceStr) {
 			double distance = -1.0;
@@ -292,7 +298,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 				distance = Util.distanceFromString(distanceStr);
 				if (distance < 0.0) return "Failed to parse distance " + distanceStr;
 			}
-			double duration = 1.0;
+			double duration = -1.0;
 			if (!durationStr.isEmpty()) {
 				duration = Util.durationFromString(durationStr);
 				if (duration < 0.0) return "Failed to parse duration " + durationStr;
@@ -347,33 +353,9 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			canvas.drawRect(mLastBoundingBox, mPaint);
 			
 			final StringBuilder b = mTmpStringBuilder;
-			
 			b.setLength(0);
-			if (mDistance >= 0) {
-				b.append(Util.distanceToString(mDistance));
-				b.append(" ");
-				b.append(Util.distanceUnitString());
-			} else if (mDuration >= 0) {
-				b.append(Util.durationToString(mDuration));
-			} else {
-				b.append("Until Lap");
-			}
-			b.append(" @ ");
-			if (mFastTargetPace <= 0 && mSlowTargetPace <= 0) {
-				b.append("No target");
-			} else {
-				if (mFastTargetPace > 0) {
-					b.append(Util.paceToString(mFastTargetPace));
-				} else {
-					b.append("-");
-				}
-				b.append(" to ");
-				if (mSlowTargetPace > 0) {
-					b.append(Util.paceToString(mSlowTargetPace));
-				} else {
-					b.append("-");
-				}
-			}
+			Workout.addIntervalToDisplayStringTo(mDuration, mDistance, mFastTargetPace, mSlowTargetPace, b);
+			Log.d(TAG, "TEXT: " + b.toString());
 			mPaint.setColor(0xff000000);
 			canvas.drawText(b.toString(), x + 2 * SCREEN_DENSITY, y + 25 * SCREEN_DENSITY, mPaint);
 			mPaint.setAlpha(128);
@@ -463,7 +445,6 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 					return repeatsStr + ": Negative repeats not allowed";
 				}
 				mRepeats = n;
-				Log.d(TAG, "SET REPEATS: " + mRepeats);
 				return null;
 			} catch (NumberFormatException e) {
 				return e.toString();

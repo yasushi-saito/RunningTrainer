@@ -158,7 +158,8 @@ public class WorkoutListFragment extends ListFragment {
 					new String[]{summary.getBasename()},
 					new FileManager.ResultListener() {
 						public void onFinish(Exception e) { 
-							Util.error(mActivity, "Failed to delete " + summary.getBasename() + ": " + e.toString());
+							if (e != null)
+								Util.error(mActivity, "Failed to delete " + summary.getBasename() + ": " + e.toString());
 							startListing();
 						}
 			});
