@@ -47,12 +47,19 @@ public class FileManager {
 		return dir;
 	}
 	
-	public static File getWorkoutDir(Context context) {
-		return getDirUnderRoot(context, "workouts");
+	static private Util.Singleton<File> mWorkoutDir = new Util.Singleton<File>();
+	static private Util.Singleton<File> mRecordDir = new Util.Singleton<File>();	
+	
+	public static File getWorkoutDir(final Context context) {
+		return mWorkoutDir.get(new Util.SingletonInitializer<File>() {
+			public File createSingleton() { return getDirUnderRoot(context, "workouts"); }
+		});
 	}
 	
-	public static File getRecordDir(Context context) {
-		return getDirUnderRoot(context, "activities");
+	public static File getRecordDir(final Context context) {
+		return mRecordDir.get(new Util.SingletonInitializer<File>() {
+			public File createSingleton() { return getDirUnderRoot(context, "activities"); }
+		});
 	}
 	
 	/**
@@ -105,9 +112,9 @@ public class FileManager {
 		return b.toString();
 	}
 
-	public static class FilenameSummary {
+	public static class ParsedFilename {
 		public final TreeMap<String, String> mKeys = new TreeMap<String, String>();
-		public FilenameSummary() { }
+		public ParsedFilename() { }
 		
 		public void putLong(String key, long value) {
 			mKeys.put(key, Long.toString(value));
@@ -149,7 +156,7 @@ public class FileManager {
 	 * 
 	 * @return A basename string, in the form "log:<params>.json" 
 	 */
-	static public String generateBasename(FilenameSummary f) {
+	static public String generateBasename(ParsedFilename f) {
 		StringBuilder b = new StringBuilder("log");
 		for (Map.Entry<String, String> entry : f.mKeys.entrySet()) {
 			String key = entry.getKey();
@@ -172,9 +179,9 @@ public class FileManager {
 	static final Pattern P0 = Pattern.compile("log");
 	static final Pattern P1 = Pattern.compile("([a-zA-Z]+)=([^:]+)");
 	
-	static public FilenameSummary parseBasename(String basename) {
+	static public ParsedFilename parseBasename(String basename) {
 		try {
-			FilenameSummary f = new FilenameSummary();
+			ParsedFilename f = new ParsedFilename();
 			Scanner scanner = new Scanner(basename).useDelimiter(":");
 			scanner.skip(P0);  // will raise exception on mismatch
 
@@ -195,6 +202,47 @@ public class FileManager {
 		}
 	}
 
+	public static void writeFileAsync(File dir, String basename, Object jsonObject, ResultListener listener) {
+		WriteFileThread thread = new WriteFileThread(dir, basename, jsonObject, listener);
+		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
+	}
+	
+	public interface ReadListener<T> {
+		public void onFinish(Exception e, T obj);
+	}
+	
+	public static <T> void readFileAsync(File dir, String basename, Class<T> classObject, ReadListener<T> listener) {
+		ReadFileThread<T> thread = new ReadFileThread<T>(dir, basename, classObject, listener);
+		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
+	}
+	
+	public interface ResultListener {
+		void onFinish(Exception e);
+	}
+
+	public interface ListFilesListener {
+		/**
+		 * Called when listFilesAsync finishes. Exactly one of @p e or @p files is non-null.
+		 */
+		void onFinish(Exception e, ArrayList<ParsedFilename> files);
+	}
+
+	/**
+	 * List and parse filenames under @p dir in the background. Run @p listener when done.
+	 */
+	public static void listFilesAsync(File dir, ListFilesListener listener) {
+		ListThread thread = new ListThread(dir, listener);
+		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
+	}
+	
+	/**
+	 * Delete files @p basenames in @p dir in the background. Call @p listener on completion
+	 */
+	public static void deleteFilesAsync(File dir, String[] basenames, ResultListener listener) {
+		DeleteFilesThread thread = new DeleteFilesThread(dir, basenames, listener);
+		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
+	}
+	
 	private static class WriteFileThread extends AsyncTask<Void, Void, Void> {
 		private final File mDir;
 		private final String mBasename;
@@ -231,15 +279,6 @@ public class FileManager {
 		}
 	}
 
-	public static void writeFileAsync(File dir, String basename, Object jsonObject, ResultListener listener) {
-		WriteFileThread thread = new WriteFileThread(dir, basename, jsonObject, listener);
-		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-	}
-	
-	public interface ReadListener<T> {
-		public void onFinish(Exception e, T obj);
-	}
-	
 	private static class ReadFileThread<T> extends AsyncTask<Void, Void, T> {
 		private final File mDir;
 		private final String mBasename;
@@ -270,14 +309,6 @@ public class FileManager {
 		}
 	}
 	
-	public static <T> void readFileAsync(File dir, String basename, Class<T> classObject, ReadListener<T> listener) {
-		ReadFileThread<T> thread = new ReadFileThread<T>(dir, basename, classObject, listener);
-		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-	}
-	
-	public interface ResultListener {
-		void onFinish(Exception e);
-	}
 	private static class DeleteFilesThread extends AsyncTask<Void, Void, Void> {
 		private final File mDir;
 		private final String[] mBasenames;
@@ -305,28 +336,19 @@ public class FileManager {
 		}
 	}
 
-	public static void deleteFilesAsync(File dir, String[] basenames, ResultListener listener) {
-		DeleteFilesThread thread = new DeleteFilesThread(dir, basenames, listener);
-		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-	}
-	
 	private static void deleteFile(File dir, String basename) {
 		Log.d(TAG, "Delete: " + basename);
 		new File(dir, basename).delete(); // TODO: handle errors
 	}
 
-	public interface ListFilesListener {
-		void onFinish(Exception e, ArrayList<FilenameSummary> files);
-	}
-	
-	private static class ListThread extends AsyncTask<Void, Void, ArrayList<FilenameSummary>> {
+	private static class ListThread extends AsyncTask<Void, Void, ArrayList<ParsedFilename>> {
 		private final File mDir;
 		private final ListFilesListener mListener;
 		private Exception mException = null;
 		ListThread(File dir, ListFilesListener listener) { mDir = dir; mListener = listener; }
 		
 		@Override
-		protected ArrayList<FilenameSummary> doInBackground(Void... unused) {
+		protected ArrayList<ParsedFilename> doInBackground(Void... unused) {
 			try {
 				return listFiles(mDir);
 			} catch (Exception e) {
@@ -336,21 +358,16 @@ public class FileManager {
 		}
 
 		@Override
-		protected void onPostExecute(ArrayList<FilenameSummary> records) {
+		protected void onPostExecute(ArrayList<ParsedFilename> records) {
 			mListener.onFinish(mException, records);
 		}
 	}
 
-	public static void listFilesAsync(File dir, ListFilesListener listener) {
-		ListThread thread = new ListThread(dir, listener);
-		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-	}
-	
-	public static ArrayList<FilenameSummary> listFiles(File dir) {
-		ArrayList<FilenameSummary> list = new ArrayList<FilenameSummary>();
+	public static ArrayList<ParsedFilename> listFiles(File dir) {
+		ArrayList<ParsedFilename> list = new ArrayList<ParsedFilename>();
 		for (String basename : dir.list()) {
 			if (basename.startsWith("log:")) {
-				FilenameSummary summary = parseBasename(basename);
+				ParsedFilename summary = parseBasename(basename);
 				if (summary != null) list.add(summary);
 			}
 		}

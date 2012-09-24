@@ -8,7 +8,7 @@ import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
-import com.ysaito.runningtrainer.FileManager.FilenameSummary;
+import com.ysaito.runningtrainer.FileManager.ParsedFilename;
 
 import android.app.Activity;
 import android.content.Context;
@@ -257,7 +257,7 @@ public class RecordingActivity extends MapActivity {
     private void startListWorkouts() {
     	final File dir = FileManager.getWorkoutDir(this);
     	FileManager.listFilesAsync(dir, new FileManager.ListFilesListener() {
-			public void onFinish(Exception e, ArrayList<FilenameSummary> files) {
+			public void onFinish(Exception e, ArrayList<ParsedFilename> files) {
 				if (e != null) {
 					Toast.makeText(mThisActivity, "Failed to list " + dir + ": " + e, Toast.LENGTH_LONG).show();
 				} else {
@@ -265,7 +265,7 @@ public class RecordingActivity extends MapActivity {
 					mWorkoutFiles.clear();
 					mWorkoutListAdapter.add("None");
 					mWorkoutFiles.add(null);
-					for (FilenameSummary f : files) {
+					for (ParsedFilename f : files) {
 						mWorkoutListAdapter.add(f.getString(FileManager.KEY_WORKOUT_NAME, "unknown"));
 						mWorkoutFiles.add(f.getBasename());
 					}
@@ -452,7 +452,7 @@ public class RecordingActivity extends MapActivity {
     			lastLocation = location;
     		}
     		
-    		final FileManager.FilenameSummary summary = new FileManager.FilenameSummary();
+    		final FileManager.ParsedFilename summary = new FileManager.ParsedFilename();
     		summary.putLong(FileManager.KEY_START_TIME, (long)mTotalStats.getStartTimeSeconds());
     		summary.putLong(FileManager.KEY_DISTANCE, (long)mRecord.total_distance);
     		summary.putLong(FileManager.KEY_DURATION, (long)mRecord.duration);

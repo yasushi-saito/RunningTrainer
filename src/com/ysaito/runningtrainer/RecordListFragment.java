@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import com.ysaito.runningtrainer.FileManager.FilenameSummary;
+import com.ysaito.runningtrainer.FileManager.ParsedFilename;
 
 import android.app.ListFragment;
 import android.content.Context;
@@ -31,12 +31,12 @@ public class RecordListFragment extends ListFragment {
 	private MainActivity mActivity;
 	private MyAdapter mAdapter;
 
-	private static class MyAdapter extends ArrayAdapter<FileManager.FilenameSummary> {
+	private static class MyAdapter extends ArrayAdapter<FileManager.ParsedFilename> {
 		public MyAdapter(Context activity) {
 			super(activity, android.R.layout.simple_list_item_1);
 		}
 
-		public void reset(ArrayList<FileManager.FilenameSummary> newRecords) {
+		public void reset(ArrayList<FileManager.ParsedFilename> newRecords) {
 			clear();
 			addAll(newRecords);
 			notifyDataSetChanged();
@@ -45,7 +45,7 @@ public class RecordListFragment extends ListFragment {
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			final TextView view = (TextView) super.getView(position, convertView, parent);
-			final FileManager.FilenameSummary f = this.getItem(position);
+			final FileManager.ParsedFilename f = this.getItem(position);
 			
 			GregorianCalendar tmpCalendar = new GregorianCalendar();
 			StringBuilder b = new StringBuilder();
@@ -109,7 +109,7 @@ public class RecordListFragment extends ListFragment {
 	private void startListing() {
 		getActivity().setProgressBarIndeterminateVisibility(true);
 		FileManager.listFilesAsync(mRecordDir, new FileManager.ListFilesListener() {
-			public void onFinish(Exception e, ArrayList<FilenameSummary> files) {
+			public void onFinish(Exception e, ArrayList<ParsedFilename> files) {
 				getActivity().setProgressBarIndeterminateVisibility(false);
 				if (files != null) {
 					mAdapter.reset(files);
@@ -121,7 +121,7 @@ public class RecordListFragment extends ListFragment {
 
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
-		final FileManager.FilenameSummary f = mAdapter.getItem(position);
+		final FileManager.ParsedFilename f = mAdapter.getItem(position);
 		if (f == null) return;
 		
 		FileManager.readFileAsync(mRecordDir, f.getBasename(), HealthGraphClient.JsonActivity.class,
@@ -149,10 +149,10 @@ public class RecordListFragment extends ListFragment {
 		inflater.inflate(R.menu.record_list_context_menu, menu);
 	}
 
-	private void markAsSaved(FileManager.FilenameSummary f, String runkeeperPath) {
+	private void markAsSaved(FileManager.ParsedFilename f, String runkeeperPath) {
 		// List the filenames again, just in case some attributes have changed
-		ArrayList<FileManager.FilenameSummary> list = FileManager.listFiles(mRecordDir);
-		for (FileManager.FilenameSummary r : list) {
+		ArrayList<FileManager.ParsedFilename> list = FileManager.listFiles(mRecordDir);
+		for (FileManager.ParsedFilename r : list) {
 			if (r.getLong(FileManager.KEY_START_TIME, -1) == f.getLong(FileManager.KEY_START_TIME, -2)) {
 				f.putString(FileManager.KEY_RUNKEEPER_PATH, FileManager.sanitizeString(runkeeperPath));
 				File orgFile = new File(mRecordDir, r.getBasename());
@@ -164,7 +164,7 @@ public class RecordListFragment extends ListFragment {
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-		final FileManager.FilenameSummary summary = mAdapter.getItem(info.position);
+		final FileManager.ParsedFilename summary = mAdapter.getItem(info.position);
 
 		switch (item.getItemId()) {
 		case R.id.record_list_resend:

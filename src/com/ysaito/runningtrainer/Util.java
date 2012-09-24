@@ -17,6 +17,40 @@ public class Util {
 	static final double METERS_PER_MILE = 1609.34;
 	static final boolean ASSERT_ENABLED = true;
 	
+	public static interface SingletonInitializer<T> {
+		public T createSingleton();
+	}
+	
+	public static class Singleton<T> {
+		private static final int UNINITIALIZED = 0;		
+		private static final int INITIALIZER_RUNNING = 1;
+		private static final int INITIALIZED = 2;
+
+		private T mObject = null;
+		private int mState = UNINITIALIZED;
+		
+		public Singleton() { }
+		
+		/**
+		 * Get the singleton object. If the object hasn't been initialized yet, run the @p initializer.
+		 */
+		synchronized T get(SingletonInitializer<T> initializer) {
+			while (mState == INITIALIZER_RUNNING) {
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					;
+				}
+			}
+			if (mState == UNINITIALIZED) {
+				mState = INITIALIZER_RUNNING;
+				mObject = initializer.createSingleton();
+				mState = INITIALIZED;
+			}
+			return mObject;
+		}
+	}
+	
 	/**
 	 * Crash the program after displaying a message
 	 * @param context If not null, used to show a toast just before crashing. 

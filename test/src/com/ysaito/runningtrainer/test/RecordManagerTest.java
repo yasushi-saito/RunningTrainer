@@ -13,12 +13,12 @@ import android.test.InstrumentationTestCase;
 
 public class RecordManagerTest extends InstrumentationTestCase {
 	public void testBasename() {
-		FileManager.FilenameSummary summary = new FileManager.FilenameSummary();
+		FileManager.ParsedFilename summary = new FileManager.ParsedFilename();
 		summary.putLong("foo", 12345);
 		summary.putString("bar", "str");
 		summary.putString("x", "k");		
 		String basename = summary.getBasename();
-		FileManager.FilenameSummary f = FileManager.parseBasename(basename);
+		FileManager.ParsedFilename f = FileManager.parseBasename(basename);
 		assertEquals(12345, f.getLong("foo", -1));
 		assertEquals("str", f.getString("bar", ""));
 		assertEquals("k", f.getString("x", ""));

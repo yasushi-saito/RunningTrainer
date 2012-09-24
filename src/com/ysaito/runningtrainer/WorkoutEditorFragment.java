@@ -3,7 +3,7 @@ package com.ysaito.runningtrainer;
 import java.io.File;
 import java.util.ArrayList;
 
-import com.ysaito.runningtrainer.FileManager.FilenameSummary;
+import com.ysaito.runningtrainer.FileManager.ParsedFilename;
 
 import android.app.Fragment;
 import android.os.Bundle;
@@ -51,7 +51,7 @@ public class WorkoutEditorFragment extends Fragment {
         		newWorkout.name = mWorkoutNameEditor.getText().toString();
         		newWorkout.id = workoutId;
 
-        		final FilenameSummary f = new FilenameSummary();
+        		final ParsedFilename f = new ParsedFilename();
         		f.putLong(FileManager.KEY_WORKOUT_ID, newWorkout.id);
         		f.putString(FileManager.KEY_WORKOUT_NAME, FileManager.sanitizeString(newWorkout.name));
         		final String newBasename = f.getBasename();
@@ -92,10 +92,10 @@ public class WorkoutEditorFragment extends Fragment {
 
 	private void deleteOldFilesForWorkout(final long workoutId, final String newBasename) {
 		FileManager.listFilesAsync(mWorkoutDir, new FileManager.ListFilesListener() {
-			public void onFinish(Exception e, ArrayList<FilenameSummary> files) {
+			public void onFinish(Exception e, ArrayList<ParsedFilename> files) {
 				// Delete the old file(s) for the same workout
 				ArrayList<String> toDelete = new ArrayList<String>();
-				for (FileManager.FilenameSummary f : files) {
+				for (FileManager.ParsedFilename f : files) {
 					if (f.getLong(FileManager.KEY_WORKOUT_ID, -1) == workoutId &&
 							!f.getBasename().equals(newBasename)) {
 						toDelete.add(f.getBasename());

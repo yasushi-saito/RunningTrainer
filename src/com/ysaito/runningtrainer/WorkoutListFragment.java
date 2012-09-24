@@ -27,14 +27,14 @@ public class WorkoutListFragment extends ListFragment {
 	private MyAdapter mAdapter;
 
 	static final String NEW_WORKOUT = "+ New Workout";
-	private static class MyAdapter extends ArrayAdapter<FileManager.FilenameSummary> {
+	private static class MyAdapter extends ArrayAdapter<FileManager.ParsedFilename> {
 		public MyAdapter(Context activity) {
 			super(activity, android.R.layout.simple_list_item_1);
 		}
 
-		public void reset(ArrayList<FileManager.FilenameSummary> newRecords) {
+		public void reset(ArrayList<FileManager.ParsedFilename> newRecords) {
 			clear();
-			final FileManager.FilenameSummary newWorkout = new FileManager.FilenameSummary();
+			final FileManager.ParsedFilename newWorkout = new FileManager.ParsedFilename();
 			newWorkout.putLong(FileManager.KEY_WORKOUT_ID, -1);
 			newWorkout.putString(FileManager.KEY_WORKOUT_NAME, NEW_WORKOUT);
 			addAll(newRecords);
@@ -45,7 +45,7 @@ public class WorkoutListFragment extends ListFragment {
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			final TextView view = (TextView) super.getView(position, convertView, parent);
-			final FileManager.FilenameSummary f = this.getItem(position);
+			final FileManager.ParsedFilename f = this.getItem(position);
 			
 			StringBuilder b = new StringBuilder();
 			b.append(f.getString(FileManager.KEY_WORKOUT_NAME, "unknown"));
@@ -92,10 +92,10 @@ public class WorkoutListFragment extends ListFragment {
 	private void startListing() {
 		getActivity().setProgressBarIndeterminateVisibility(true);
 		FileManager.listFilesAsync(mWorkoutDir, new FileManager.ListFilesListener() {
-			public void onFinish(Exception e, ArrayList<FileManager.FilenameSummary> files) {
+			public void onFinish(Exception e, ArrayList<FileManager.ParsedFilename> files) {
 				getActivity().setProgressBarIndeterminateVisibility(false);
 				if (files == null) {
-					files = new ArrayList<FileManager.FilenameSummary>();
+					files = new ArrayList<FileManager.ParsedFilename>();
 				}
 				mAdapter.reset(files);
 				// TODO: handle errors
@@ -112,7 +112,7 @@ public class WorkoutListFragment extends ListFragment {
 	
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
-		final FileManager.FilenameSummary f = mAdapter.getItem(position);
+		final FileManager.ParsedFilename f = mAdapter.getItem(position);
 		if (f == null) return;
 		if (f.getString(FileManager.KEY_WORKOUT_NAME, "unknown").equals(NEW_WORKOUT)) {
 			Workout workout = new Workout();
@@ -149,7 +149,7 @@ public class WorkoutListFragment extends ListFragment {
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-		final FileManager.FilenameSummary summary = mAdapter.getItem(info.position);
+		final FileManager.ParsedFilename summary = mAdapter.getItem(info.position);
 
 		switch (item.getItemId()) {
 		case R.id.record_list_delete:
