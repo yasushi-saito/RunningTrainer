@@ -97,7 +97,7 @@ public class Settings {
 		} else if (key.startsWith("display")) {
 			int index = Integer.parseInt(key.substring(7));
 			if (Util.ASSERT_ENABLED && (index < 0 || index >= 6)) {
-				Util.assertFail(mContext, "Out of range display: " + key);
+				Util.crash(mContext, "Out of range display: " + key);
 			} else {
 				viewTypes[index] = mPrefs.getString(key, "none");
 			}
@@ -128,7 +128,7 @@ public class Settings {
 		} else if (key.equals("speak_auto_lap_pace")) {
 			speakAutoLapPace = mPrefs.getBoolean(key, false);
 		} else {
-			if (Util.ASSERT_ENABLED) Util.assertFail(mContext, "Unsupported key: " + key);
+			if (Util.ASSERT_ENABLED) Util.crash(mContext, "Unsupported key: " + key);
 		}
 		for (OnChangeListener listener : mListeners) {
 			listener.onChange();

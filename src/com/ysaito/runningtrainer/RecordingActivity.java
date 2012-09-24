@@ -204,28 +204,33 @@ public class RecordingActivity extends MapActivity {
     private Button mStartStopButton;
     private Button mLapButton;    
 
-    private static final int RESET = 0;
-    private static final int STOPPED = 1;
-    private static final int RUNNING = 2;
+    private static final int RESET = 0;          // Initial state
+    private static final int RUNNING = 1;        // Running state.
+    private static final int STOPPED = 2;        // Paused state. The GPS activity is live, but the stats won't count
+    private static final int TRANSITIONING = 3;  // Doing async I/O. No state transition allowed until the I/O finishes
     private int mRecordingState = RESET;
+
+    // Current activity. Non-null only when mRecordingState != RESET.
+    private HealthGraphClient.JsonActivity mRecord;
     
     private LapStats mTotalStats = null;
-    HealthGraphClient.JsonActivity mLastReportedActivity = null;
     ArrayList<HealthGraphClient.JsonWGS84> mLastReportedPath = null;
     
     public void onGpsUpdate(
-    		HealthGraphClient.JsonActivity activity,
     		ArrayList<HealthGraphClient.JsonWGS84> path,
     		LapStats totalStats,
     		LapStats userLapStats,
-    		LapStats autoLapStats) {
-    	mLastReportedActivity = activity;
+    		LapStats autoLapStats,
+    		Workout currentInterval) {
     	mLastReportedPath = path;
     	mMapOverlay.updatePath(path);
     	mTotalStats = totalStats;
     	mMapView.invalidate();
     	for (int i = 0; i < mStatsViews.length; ++i) {
     		mStatsViews[i].update(totalStats, userLapStats, autoLapStats);
+    	}
+    	if (currentInterval != null) {
+    		mWorkoutTitle.setText(currentInterval.toString());
     	}
     }
 
@@ -351,8 +356,6 @@ public class RecordingActivity extends MapActivity {
         
         mStartStopButton.setOnLongClickListener(new Button.OnLongClickListener() { 
         	public boolean onLongClick(View v) {
-        		mLapButton.setEnabled(false);
-        		mStartStopButton.setText(R.string.start); 
         		onResetButtonPress();
         		return true;
         	}
@@ -363,28 +366,43 @@ public class RecordingActivity extends MapActivity {
     public void onDestroy() {
     	super.onDestroy();
     	if (Util.ASSERT_ENABLED && GpsTrackingService.isListenerRegistered(this)) {
-    		Util.assertFail(this, "onPause not called??");
+    		Util.crash(this, "onPause not called??");
     	}
     }
 
     void onStartButtonPress() {
-    	int pos = mWorkoutListSpinner.getSelectedItemPosition();
+    	if (mRecordingState == TRANSITIONING) return;
+    	
+    	final int pos = mWorkoutListSpinner.getSelectedItemPosition();
     	final String workoutFilename = (pos >= 0  && pos < mWorkoutFiles.size() ? mWorkoutFiles.get(pos) : null);
+    	final int lastState = mRecordingState;
+    	mRecordingState = TRANSITIONING;
+    	
     	FileManager.readFileAsync(FileManager.getWorkoutDir(this), workoutFilename, Workout.class, new FileManager.ReadListener<Workout>() {
     		public void onFinish(Exception e, Workout workout) {
     			mLapButton.setEnabled(true);
     			mStartStopButton.setText(R.string.pause); 
     			mWorkoutListSpinner.setVisibility(View.GONE);
     			mWorkoutTitle.setText("Workout: foobarfoobarfoobar");
-    			if (mRecordingState == RESET) {
+    			if (Util.ASSERT_ENABLED && mRecordingState != TRANSITIONING)
+    				Util.crash(mThisActivity, "Wrong state: " + mRecordingState);
+    			if (lastState == RESET) {
     				// Starting a new activity
     				mMapOverlay.clearPath();
     				mMapView.invalidate();
+    				
+    				mRecord = new HealthGraphClient.JsonActivity();
+    				mRecord.type = "Running";  // TODO: allow changing
+    				mRecord.start_time = HealthGraphClient.generateStartTimeString(System.currentTimeMillis() / 1000.0);
+    				mRecord.notes = "Recorded by RunningTrainer";
+    				
     				GpsTrackingService.startGpsServiceIfNecessary(mThisActivity, workout);
-    			} else if (mRecordingState == STOPPED) {
+    			} else if (lastState == STOPPED) {
     				// Resuming an activity
     				GpsTrackingService service = GpsTrackingService.getSingleton();  
     				if (service != null) service.onResumeButtonPress();
+    			} else {
+    				Util.crash(mThisActivity, "Wrong state: " + lastState);
     			}
     			mRecordingState = RUNNING;
     		}
@@ -392,13 +410,17 @@ public class RecordingActivity extends MapActivity {
     }
 
     private void onResetButtonPress() {
+    	if (mRecordingState == TRANSITIONING) return;
+    	
+    	mLapButton.setEnabled(false);
+    	mStartStopButton.setText(R.string.start); 
     	mRecordingState = RESET;
     	mLapButton.setEnabled(false);
     	mWorkoutListSpinner.setVisibility(View.VISIBLE);
     	mWorkoutTitle.setText("Workout: ");
     	
     	GpsTrackingService.stopGpsServiceIfNecessary(this);
-    	if (mTotalStats != null && mLastReportedPath != null && mLastReportedPath.size() >= 1) {
+    	if (mTotalStats != null && mRecord != null && mLastReportedPath != null && mLastReportedPath.size() >= 1) {
     		HealthGraphClient.JsonWGS84 last = mLastReportedPath.get(mLastReportedPath.size() - 1);
     		HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
     		wgs.latitude = last.latitude;
@@ -407,34 +429,35 @@ public class RecordingActivity extends MapActivity {
     		wgs.type = "end";
     		wgs.timestamp = mTotalStats.getDurationSeconds();
     		mLastReportedPath.add(wgs);
-    		mLastReportedActivity.path = new HealthGraphClient.JsonWGS84[mLastReportedPath.size()];
-    		for (int i = 0; i < mLastReportedPath.size(); ++i) mLastReportedActivity.path[i] = mLastReportedPath.get(i);
+    		mRecord.path = new HealthGraphClient.JsonWGS84[mLastReportedPath.size()];
+    		for (int i = 0; i < mLastReportedPath.size(); ++i) mRecord.path[i] = mLastReportedPath.get(i);
     		
-    		mLastReportedActivity.duration = wgs.timestamp;
+    		mRecord.duration = wgs.timestamp;
     		HealthGraphClient.JsonWGS84 lastLocation = null;
     		
     		float[] distance = new float[1];
-    		for (HealthGraphClient.JsonWGS84 location : mLastReportedActivity.path) {
+    		for (HealthGraphClient.JsonWGS84 location : mRecord.path) {
     			if (lastLocation != null) {
     				Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
     						location.latitude, location.longitude,
     						distance);
-    				mLastReportedActivity.total_distance += distance[0];
+    				mRecord.total_distance += distance[0];
     			}
     			lastLocation = location;
     		}
     		
     		FileManager.FilenameSummary summary = new FileManager.FilenameSummary();
     		summary.putLong(FileManager.KEY_START_TIME, (long)mTotalStats.getStartTimeSeconds());
-    		summary.putLong(FileManager.KEY_DISTANCE, (long)mLastReportedActivity.total_distance);
-    		summary.putLong(FileManager.KEY_DURATION, (long)mLastReportedActivity.duration);
+    		summary.putLong(FileManager.KEY_DISTANCE, (long)mRecord.total_distance);
+    		summary.putLong(FileManager.KEY_DURATION, (long)mRecord.duration);
     		try {
-    			FileManager.writeFile(mRecordDir, summary.getBasename(), mLastReportedActivity);
+    			FileManager.writeFile(mRecordDir, summary.getBasename(), mRecord);
     		} catch (Exception e) {
     			// TODO: sync I/O
     			Toast.makeText(this, "Failed to write: " + summary.getBasename() + ": " + e.toString(),
     					Toast.LENGTH_LONG).show();
     		}
+    		mRecord = null;
     	}
     }	
     

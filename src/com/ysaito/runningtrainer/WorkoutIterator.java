@@ -31,7 +31,7 @@ public class WorkoutIterator {
 			mStack.add(new Entry(w));
 			addEntry(w.children[0]);
 		} else {
-			if (w.type != Workout.TYPE_INTERVAL) Util.assertFail(null, "Invalid workout" + w.toString());
+			if (w.type != Workout.TYPE_INTERVAL) Util.crash(null, "Invalid workout" + w.toString());
 			mStack.add(new Entry(w));
 		}
 	}
@@ -41,7 +41,7 @@ public class WorkoutIterator {
 		
 		// The bottommost entry should be always an interval.
 		if (Util.ASSERT_ENABLED && w.type != Workout.TYPE_INTERVAL) 
-			Util.assertFail(null, "Invalid workout" + w.toString());
+			Util.crash(null, "Invalid workout" + w.toString());
 		return mStack.get(mStack.size() - 1).workout;
 	}
 	
@@ -57,7 +57,7 @@ public class WorkoutIterator {
 		for (int i = 0; i < parent.workout.children.length; ++i) {
 			if (parent.workout.children[i] == child.workout) return i;
 		}
-		Util.assertFail(null, "Child not found");
+		Util.crash(null, "Child not found");
 		return -1;
 	}
 	

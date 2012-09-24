@@ -204,6 +204,8 @@ public class RecordListFragment extends ListFragment {
 					new FileManager.ResultListener() {
 						public void onFinish(Exception e) { 
 							// TODO: handle errors
+							if (e != null) Util.error(getActivity(), "Failed to delete " + summary.getBasename() + ": " + e.toString());
+							startListing();
 						}
 			});
 			return true;

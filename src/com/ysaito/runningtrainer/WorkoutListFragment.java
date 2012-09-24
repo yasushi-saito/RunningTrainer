@@ -16,7 +16,6 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 /**
  * Activity that lists available game logs.
@@ -119,7 +118,7 @@ public class WorkoutListFragment extends ListFragment {
 			Workout workout = new Workout();
 			workout.id = System.currentTimeMillis() / 1000;
 			workout.name = "Unnamed Workout";
-			workout.type = Workout.TYPE_INTERVAL;
+			workout.type = Workout.TYPE_REPEATS;
 			workout.repeats = 1;
 			workout.children = new Workout[0];
 			startWorkoutEditor(workout);
@@ -128,7 +127,7 @@ public class WorkoutListFragment extends ListFragment {
 					new FileManager.ReadListener<Workout>() {
 				public void onFinish(Exception e, Workout workout) { 
 					if (workout == null) {
-						Toast.makeText(mActivity,  "Failed to read file : " + f.getBasename() + ": " + e.toString(), Toast.LENGTH_LONG).show();
+						Util.error(mActivity,  "Failed to read file : " + f.getBasename() + ": " + e.toString());
 						return;
 					}
 					startWorkoutEditor(workout);
@@ -159,7 +158,8 @@ public class WorkoutListFragment extends ListFragment {
 					new String[]{summary.getBasename()},
 					new FileManager.ResultListener() {
 						public void onFinish(Exception e) { 
-							// TODO: handle errors
+							Util.error(mActivity, "Failed to delete " + summary.getBasename() + ": " + e.toString());
+							startListing();
 						}
 			});
 			return true;

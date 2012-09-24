@@ -526,7 +526,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 	private Repeats mRoot = new Repeats(1);
 
-	Element fromWorkout(Workout workout) {
+	private Element fromWorkout(Workout workout) {
 		if (workout.type == Workout.TYPE_REPEATS) {
 			Repeats r = new Repeats(workout.repeats);
 			if (workout.children != null) {  // Repeats, not Root
@@ -536,6 +536,8 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			}
 			return r;
 		} else {
+			if (Util.ASSERT_ENABLED && workout.type != Workout.TYPE_INTERVAL)
+				Util.crash(getContext(), "Wrong workout: " + workout.toString());
 			Interval i = new Interval();
 			i.mDistance = workout.distance;
 			i.mDuration = workout.duration;
@@ -811,6 +813,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	}
 
 	public void setWorkout(Workout workout) {
+		Log.d(TAG, "Set workout: " + workout.toString());
 		mSelectedElement = null;
 		mRoot = (Repeats)fromWorkout(workout);
 		invalidate();

@@ -35,7 +35,9 @@ public class GpsTrackingService extends Service {
 
     	if (mSingleton != null) {
     		// Call the listener immediately to give the initial stats
-    		listener.onGpsUpdate(mSingleton.mRecord, mSingleton.mPath, mSingleton.mTotalStats, mSingleton.mUserLapStats, mSingleton.mAutoLapStats);
+    		final Workout currentInterval = (mSingleton.mWorkoutIterator != null && !mSingleton.mWorkoutIterator.done() ? 
+    				mSingleton.mWorkoutIterator.getWorkout() : null);
+    		listener.onGpsUpdate(mSingleton.mPath, mSingleton.mTotalStats, mSingleton.mUserLapStats, mSingleton.mAutoLapStats, currentInterval);
     	}
     }
     public static void unregisterListener(RecordingActivity listener) {
@@ -181,8 +183,12 @@ public class GpsTrackingService extends Service {
     
     private void notifyListeners() {
     	updateStats();
+    	
+    	final Workout currentInterval = (mSingleton.mWorkoutIterator != null && !mSingleton.mWorkoutIterator.done() ? 
+    			mSingleton.mWorkoutIterator.getWorkout() : null);
+    	
     	for (RecordingActivity listener : mListeners) {
-    		listener.onGpsUpdate(mRecord, mPath, mTotalStats, mUserLapStats, mAutoLapStats);
+    		listener.onGpsUpdate(mPath, mTotalStats, mUserLapStats, mAutoLapStats, currentInterval);
     	}
     }
 	
@@ -190,7 +196,7 @@ public class GpsTrackingService extends Service {
 	private LocationListener mLocationListener;
 	private LocationManager mLocationManager;
 
-	private HealthGraphClient.JsonActivity mRecord;
+	// List of gps points recorded so far.
 	private ArrayList<HealthGraphClient.JsonWGS84> mPath;
 	
 	// Stats since the beginning of the activity. */
@@ -205,7 +211,7 @@ public class GpsTrackingService extends Service {
 	
 	private static int mInstanceSeq = 0;
 	private int mId;
-	private Workout mWorkout;
+	private WorkoutIterator mWorkoutIterator;
 	
 	@Override public String toString() {
 		return "GpsService[" + mId + "]";
@@ -214,18 +220,15 @@ public class GpsTrackingService extends Service {
 	@Override
 	public void onCreate() {
 		Settings.Initialize(getApplicationContext());
-		mWorkout = null;
-		if (mNewestSpecifiedWorkout != null) mWorkout = new Workout(mNewestSpecifiedWorkout);
+		if (mNewestSpecifiedWorkout != null) {
+			mWorkoutIterator = new WorkoutIterator(new Workout(mNewestSpecifiedWorkout));
+		}
 		
 		mId = mInstanceSeq++;
 		Toast.makeText(this, toString() + ": Created", Toast.LENGTH_LONG).show();
 		Log.d(TAG, "onCreate");
 		
 		mPath = new ArrayList<HealthGraphClient.JsonWGS84>();
-		mRecord = new HealthGraphClient.JsonActivity();
-		mRecord.type = "Running";  // TODO: allow changing
-		mRecord.start_time = HealthGraphClient.generateStartTimeString(System.currentTimeMillis() / 1000.0);
-		mRecord.notes = "Recorded by RunningTrainer";
 		mTotalStats = new LapStats();
 		
 		// Define a listener that responds to location updates
