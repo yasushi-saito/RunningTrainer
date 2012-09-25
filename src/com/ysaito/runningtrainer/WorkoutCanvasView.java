@@ -23,10 +23,9 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.RadioButton;
-import android.widget.Toast;
 
 public class WorkoutCanvasView extends View implements View.OnTouchListener {
-	static public final String TAG = "WorkoutCanvasView";
+	static private final String TAG = "WorkoutCanvasView";
 
 	public static class IntervalDialog extends DialogFragment {
 		private View mDistanceBox, mDurationBox;

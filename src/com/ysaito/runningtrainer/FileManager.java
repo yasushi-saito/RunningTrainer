@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Environment;
 import android.util.Log;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -30,11 +31,7 @@ public class FileManager {
 	public static final String KEY_WORKOUT_NAME = "n";	
 	
 	private static File getDirUnderRoot(Context context, String subdir) {
-		File externalDir = new File("/sdcard/com.ysaito.runningtrainer");
-		if (externalDir == null) {
-        	Util.error(context, "SD card is not found on this device. No record will be kept");
-        	return null;
-		}
+		File externalDir = new File(Environment.getExternalStorageDirectory(), "com.ysaito.runningtrainer");
 		File dir = new File(externalDir, subdir);
 		if (!dir.exists()) {
 			if (!dir.mkdirs()) {

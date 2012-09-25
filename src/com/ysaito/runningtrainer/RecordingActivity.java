@@ -11,7 +11,11 @@ import com.google.android.maps.Projection;
 import com.ysaito.runningtrainer.FileManager.ParsedFilename;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -20,6 +24,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.widget.ArrayAdapter;
@@ -28,7 +33,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class RecordingActivity extends MapActivity {
+public class RecordingActivity extends MapActivity implements GpsTrackingService.StatusListener {
     static final String TAG = "Recording";
 
     static public class MyOverlay extends Overlay {
@@ -126,67 +131,45 @@ public class RecordingActivity extends MapActivity {
     		
     		// newerStats is the newer of {user,auto}LapStats.
     		LapStats newerLapStats = userLapStats;
-    		if (autoLapStats != null &&
-    				(autoLapStats == null || autoLapStats.getStartTimeSeconds() < autoLapStats.getStartTimeSeconds())) {
+    		if (newerLapStats.getStartTimeSeconds() < autoLapStats.getStartTimeSeconds()) {
     			newerLapStats = autoLapStats;
     		}
     		if (mDisplayType.equals("none")) {
     			;
     		} else if (mDisplayType.equals("total_distance")) {
     			title = "Total " + Util.distanceUnitString();
-    			if (totalStats != null) {
-    				value = Util.distanceToString(totalStats.getDistance());
-    			}
+    			value = Util.distanceToString(totalStats.getDistance());
     		} else if (mDisplayType.equals("total_duration")) {
     			title = "Total time";
-    			if (totalStats != null) {
-    				value = Util.durationToString(totalStats.getDurationSeconds());
-    			}
+    			value = Util.durationToString(totalStats.getDurationSeconds());
     		} else if (mDisplayType.equals("total_pace")) {
     			title = "Avg pace";
-    			if (totalStats != null) {
-    				value = Util.paceToString(totalStats.getPace());
-    			}
+    			value = Util.paceToString(totalStats.getPace());
     		} else if (mDisplayType.equals("current_pace")) {
     			title = "Cur pace";
-    			if (totalStats != null) {
-    				value = Util.paceToString(totalStats.getCurrentPace());
-    			}
+    			value = Util.paceToString(totalStats.getCurrentPace());
     		} else if (mDisplayType.equals("lap_distance")) {
     			title = "Lap " + Util.distanceUnitString();
-    			if (newerLapStats != null) {
-    				value = Util.distanceToString(newerLapStats.getDistance());
-    			}
+    			value = Util.distanceToString(newerLapStats.getDistance());
     		} else if (mDisplayType.equals("lap_duration")) {
     			title = "Lap time";
-    			if (newerLapStats != null) {
-    				value = Util.durationToString(newerLapStats.getDurationSeconds());
-    			}
+    			value = Util.durationToString(newerLapStats.getDurationSeconds());
     		} else if (mDisplayType.equals("lap_pace")) {
     			title = "Lap pace";
-    			if (newerLapStats != null) {
-    				value = Util.paceToString(newerLapStats.getPace());
-    			}
+    			value = Util.paceToString(newerLapStats.getPace());
     		} else if (mDisplayType.equals("auto_lap_distance")) {
     			title = "Autolap " + Util.distanceUnitString();
-    			if (autoLapStats != null) {
-    				value = Util.distanceToString(autoLapStats.getDistance());
-    			}
+    			value = Util.distanceToString(autoLapStats.getDistance());
     		} else if (mDisplayType.equals("auto_lap_duration")) {
     			title = "Autolap time";
-    			if (autoLapStats != null) {
-    				value = Util.durationToString(autoLapStats.getDurationSeconds());
-    			}
+    			value = Util.durationToString(autoLapStats.getDurationSeconds());
     		} else if (mDisplayType.equals("auto_lap_pace")) {
     			title = "Autolap pace";
-    			if (autoLapStats != null) {
-    				value = Util.paceToString(autoLapStats.getPace());
-    			}
+    			value = Util.paceToString(autoLapStats.getPace());
     		} else {
     			value = "Unknown display type: " + mDisplayType;
     			title = "???";
     		}
-
     		mValueView.setText(value);
     		mTitleView.setText(title);
     	}
@@ -216,6 +199,11 @@ public class RecordingActivity extends MapActivity {
     private LapStats mTotalStats = null;
     ArrayList<HealthGraphClient.JsonWGS84> mLastReportedPath = null;
     
+
+	public void onGpsError(String message) {
+		showDialog(message);
+	}
+
     public void onGpsUpdate(
     		ArrayList<HealthGraphClient.JsonWGS84> path,
     		LapStats totalStats,
@@ -237,6 +225,8 @@ public class RecordingActivity extends MapActivity {
 					currentInterval.fastTargetPace, 
 					currentInterval.slowTargetPace, b);
     		mWorkoutTitle.setText(b.toString());
+    	} else {
+    		mWorkoutTitle.setText("No workout set");
     	}
     }
 
@@ -274,6 +264,48 @@ public class RecordingActivity extends MapActivity {
 			}
 		});
     }
+
+    void showDialog(String message) {
+        DialogFragment newFragment = MyAlertDialogFragment.newInstance(message);
+        newFragment.show(getFragmentManager(), "dialog");
+    }
+
+    public void doPositiveClick() {
+        // Do stuff here.
+        Log.i("FragmentAlertDialog", "Positive click!");
+    }
+    
+    public void doNegativeClick() {
+        // Do stuff here.
+        Log.i("FragmentAlertDialog", "Negative click!");
+    }
+
+    public static class MyAlertDialogFragment extends DialogFragment {
+        public static MyAlertDialogFragment newInstance(String message) {
+            MyAlertDialogFragment frag = new MyAlertDialogFragment();
+            Bundle args = new Bundle();
+            args.putString("message", message);
+            frag.setArguments(args);
+            return frag;
+        }
+        
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+        	final String message = getArguments().getString("message");
+            return new AlertDialog.Builder(getActivity())
+            		.setIcon(android.R.drawable.ic_dialog_alert)
+            		.setTitle("Error")
+                    .setMessage(message)
+                    .setPositiveButton("Dismiss",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                            }
+                        }
+                    )
+                    .create();
+        }
+    }
+
     
     @Override public void onResume() {
     	super.onResume();
@@ -293,8 +325,15 @@ public class RecordingActivity extends MapActivity {
 			public void onStatusChanged(String provider, int status, Bundle extras) {
 			}        
         };
+        
         // Register the listener with the Location Manager to receive location updates
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+        if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+        		!mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+        	Util.error(mThisActivity, "GPS not enabled");
+        	showDialog("Please enable GPS in Settings / Location services.");
+        } else {
+        	mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+        }
 
         mStatsViews = new StatsView[6];
         mStatsViews[0] = new StatsView(this, R.id.view0, R.id.view0_title, Settings.viewTypes[0]);
@@ -303,8 +342,10 @@ public class RecordingActivity extends MapActivity {
         mStatsViews[3] = new StatsView(this, R.id.view3, R.id.view3_title, Settings.viewTypes[3]);        
         mStatsViews[4] = new StatsView(this, R.id.view4, R.id.view4_title, Settings.viewTypes[4]);        
         mStatsViews[5] = new StatsView(this, R.id.view5, R.id.view5_title, Settings.viewTypes[5]);
+        
+        final LapStats emptyLapStats = new LapStats(); 
         for (int i = 0; i < mStatsViews.length; ++i) {
-        	mStatsViews[i].update(null,  null, null);
+        	mStatsViews[i].update(emptyLapStats, emptyLapStats, emptyLapStats);
         }
 
     	startListWorkouts();
@@ -389,7 +430,6 @@ public class RecordingActivity extends MapActivity {
     			mLapButton.setEnabled(true);
     			mStartStopButton.setText(R.string.pause); 
     			mWorkoutListSpinner.setVisibility(View.GONE);
-    			mWorkoutTitle.setText("Workout: foobarfoobarfoobar");
     			if (Util.ASSERT_ENABLED && mRecordingState != TRANSITIONING)
     				Util.crash(mThisActivity, "Wrong state: " + mRecordingState);
     			if (lastState == RESET) {
@@ -481,6 +521,4 @@ public class RecordingActivity extends MapActivity {
         getMenuInflater().inflate(R.menu.activity_main, menu);
         return true;
     }
-
-
 }

@@ -14,11 +14,11 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.os.Bundle;
-import android.util.Log;
 import android.widget.TextView;
 
 public class RecordReplayActivity extends MapActivity {
-    static final String TAG = "Recording";
+    @SuppressWarnings("unused")
+	private static final String TAG = "Recording";
 
     static public class MyOverlay extends Overlay {
         private ArrayList<GeoPoint> mPoints;

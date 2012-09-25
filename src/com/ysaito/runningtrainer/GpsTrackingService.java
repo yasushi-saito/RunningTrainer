@@ -18,19 +18,30 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
-import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.widget.Toast;
 
 public class GpsTrackingService extends Service {
+	private static String TAG = "Gps";
+	
+    public interface StatusListener {
+    	public void onGpsUpdate(
+    			ArrayList<HealthGraphClient.JsonWGS84> path,
+    			LapStats totalStats,
+    			LapStats userLapStats,
+    			LapStats autoLapStats,
+    			Workout currentInterval);
+    	public void onGpsError(String message);
+    }
+    
     /*
      * Communication channel between RecordingActivity and GpsTrackingService. Since both objects always
      * reside in one process and are run by the main thread, we just function calls to send GPS updates
      * the GpsTrackingService from RecordingActivity.
      */
-    private static final ArrayList<RecordingActivity> mListeners = new ArrayList<RecordingActivity>();
-    
-    public static void registerListener(RecordingActivity listener) {
+    private static final ArrayList<StatusListener> mListeners = new ArrayList<StatusListener>();
+
+    public static void registerListener(StatusListener listener) {
     	mListeners.add(listener);
 
     	if (mSingleton != null) {
@@ -72,8 +83,8 @@ public class GpsTrackingService extends Service {
     	speak("Paused", null);
     	mState = STOPPED;  
     	mTotalStats.onPause();
-    	if (mUserLapStats != null) mUserLapStats.onPause();
-    	if (mAutoLapStats != null) mAutoLapStats.onPause();
+    	mUserLapStats.onPause();
+    	mAutoLapStats.onPause();
     	updateTimer();
     }
     
@@ -81,8 +92,8 @@ public class GpsTrackingService extends Service {
     	speak("Resumed", null);
     	mState = RUNNING;
     	mTotalStats.onResume();
-    	if (mUserLapStats != null) mUserLapStats.onResume();
-    	if (mAutoLapStats != null) mAutoLapStats.onResume();
+    	mUserLapStats.onResume();
+    	mAutoLapStats.onResume();
     	updateTimer();
     }
     
@@ -118,10 +129,10 @@ public class GpsTrackingService extends Service {
     private void speakStats() {
     	// newerStats is the newer of {user,auto}LapStats.
     	LapStats newerLapStats = mUserLapStats;
-    	if (mAutoLapStats != null &&
-    			(mAutoLapStats == null || mAutoLapStats.getStartTimeSeconds() < mAutoLapStats.getStartTimeSeconds())) {
+    	if (newerLapStats.getStartTimeSeconds() < mAutoLapStats.getStartTimeSeconds()) {
     		newerLapStats = mAutoLapStats;
     	}
+    	
     	if (Settings.speakTotalDistance)
     		speak("Total distance " + Util.distanceToSpeechText(mTotalStats.getDistance()), null);
     	if (Settings.speakTotalDuration)
@@ -180,19 +191,22 @@ public class GpsTrackingService extends Service {
     	}
     	if (needSpeak) speakStats();
     }
+
+    private void notifyError(String message) {
+    	for (StatusListener listener : mListeners) {
+    		listener.onGpsError(message);
+    	}
+    }
     
     private void notifyListeners() {
     	updateStats();
-    	
-    	final Workout currentInterval = (mSingleton.mWorkoutIterator != null && !mSingleton.mWorkoutIterator.done() ? 
-    			mSingleton.mWorkoutIterator.getWorkout() : null);
-    	
-    	for (RecordingActivity listener : mListeners) {
+    	final Workout currentInterval = (mWorkoutIterator != null && !mWorkoutIterator.done()) ? 
+    			mWorkoutIterator.getWorkout() :	null;
+    	for (StatusListener listener : mListeners) {
     		listener.onGpsUpdate(mPath, mTotalStats, mUserLapStats, mAutoLapStats, currentInterval);
     	}
     }
 	
-	private static String TAG = "Gps";
 	private LocationListener mLocationListener;
 	private LocationManager mLocationManager;
 
@@ -230,6 +244,8 @@ public class GpsTrackingService extends Service {
 		
 		mPath = new ArrayList<HealthGraphClient.JsonWGS84>();
 		mTotalStats = new LapStats();
+		mUserLapStats = new LapStats();
+		mAutoLapStats = new LapStats();
 		
 		// Define a listener that responds to location updates
 		mLocationListener = new LocationListener() {
@@ -262,7 +278,7 @@ public class GpsTrackingService extends Service {
 		
 		// Register the listener with the Location Manager to receive location updates
 		mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
-
+		
 		mTimer = null;
 		updateTimer();
         mTts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
@@ -285,13 +301,17 @@ public class GpsTrackingService extends Service {
     private TextToSpeech mTts;
 	private OnUtteranceCompletedListener mTtsListener;
 	private Timer mTimer;
-	
+
+	private int mUtteranceId = 0;
+	private HashMap<String, SpeakDoneListener> mSpeakDoneListeners = new HashMap<String, SpeakDoneListener>();
+
 	private interface SpeakDoneListener {
 		public void onDone();
 	}
-	private int mUtteranceId = 0;
-	private HashMap<String, SpeakDoneListener> mSpeakDoneListeners = new HashMap<String, SpeakDoneListener>();
-	
+	/**
+	 * Speak "text". If @p listener != null, invoke listener.onDone() after utterance is made.
+	 *
+	 */
 	private void speak(String text, SpeakDoneListener listener) {
 		if (listener == null) {
 			mTts.speak(text, TextToSpeech.QUEUE_ADD, null);
@@ -338,8 +358,13 @@ public class GpsTrackingService extends Service {
 	@Override
 	public void onStart(Intent intent, int startid) {
 		Toast.makeText(this, toString() + ": Started", Toast.LENGTH_LONG).show();
-		mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
-		mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
+		if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+				!mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+			notifyError("Please enable GPS in Settings / Location services.");
+		} else {
+			mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+			mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
+		}
 	}
 
 	private void onGpsLocationUpdate(long now, Location newLocation) {
@@ -357,8 +382,8 @@ public class GpsTrackingService extends Service {
 			}
 			mPath.add(wgs);
 			mTotalStats.onGpsUpdate(wgs);
-			if (mUserLapStats != null) mUserLapStats.onGpsUpdate(wgs);
-			if (mAutoLapStats != null) mAutoLapStats.onGpsUpdate(wgs);
+			mUserLapStats.onGpsUpdate(wgs);
+			mAutoLapStats.onGpsUpdate(wgs);
 			notifyListeners();
 		}
 	}
@@ -375,8 +400,8 @@ public class GpsTrackingService extends Service {
 				wgs.type = "gps";
 				mPath.add(wgs);
 				mTotalStats.onGpsUpdate(wgs);
-				if (mUserLapStats != null) mUserLapStats.onGpsUpdate(wgs);
-				if (mAutoLapStats != null) mAutoLapStats.onGpsUpdate(wgs);
+				mUserLapStats.onGpsUpdate(wgs);
+				mAutoLapStats.onGpsUpdate(wgs);
 				notifyListeners();
 			}
 		}

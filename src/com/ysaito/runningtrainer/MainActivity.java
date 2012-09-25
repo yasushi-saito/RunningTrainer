@@ -30,7 +30,6 @@ import android.app.FragmentTransaction;
 import android.util.Log;
 import android.view.Menu;
 import android.view.Window;
-import android.widget.Toast;
 
 public class MainActivity extends Activity {
 	static final String TAG = "Main";

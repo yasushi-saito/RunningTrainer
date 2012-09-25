@@ -6,7 +6,6 @@ import java.util.Locale;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.util.Log;
 
 /**
  * In-memory copy of user preferences and locale-related settings.
@@ -85,15 +84,14 @@ public class Settings {
 		mContext = context;
 	}
 	
+	@SuppressWarnings("unused")
 	private static String TAG = "Settings";
 
 	private static void onChange(String key) {
-		Log.d(TAG, "Read change: " + key);
 		if (key.equals("unit")) {
 			unit = METRIC;
 			final String value = mPrefs.getString(key, "US");
 			if (value.equals("US")) unit = US;
-			Log.d(TAG, "Set unit to: " + unit);
 		} else if (key.startsWith("display")) {
 			int index = Integer.parseInt(key.substring(7));
 			if (Util.ASSERT_ENABLED && (index < 0 || index >= 6)) {
