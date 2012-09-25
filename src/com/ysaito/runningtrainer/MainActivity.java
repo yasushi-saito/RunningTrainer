@@ -87,8 +87,7 @@ public class MainActivity extends Activity {
         appendTab("Setting", findOrCreateFragment("com.ysaito.runningtrainer.SettingsFragment"));
 
         if (getExternalFilesDir(null) == null) {
-        	Toast toast = Toast.makeText(this, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG);
-        	toast.show();
+        	Util.error(this, "SD card is not found on this device. No record will be kept");
         }
         
         final HealthGraphClient hgClient = HealthGraphClient.getSingleton();
@@ -165,7 +164,6 @@ public class MainActivity extends Activity {
         }
 
         public void onTabReselected(Tab tab, FragmentTransaction ft) {
-            Toast.makeText(mActivity, "Reselected!", Toast.LENGTH_SHORT).show();
         }
     }
 

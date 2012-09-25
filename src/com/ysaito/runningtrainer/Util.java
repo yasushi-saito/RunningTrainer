@@ -64,6 +64,10 @@ public class Util {
 		xx = xx + "";
 	}
 
+	static void info(Context context, String message) {
+		
+	}
+	
 	static void error(Context context, String message) {
 		Toast.makeText(context, message, Toast.LENGTH_LONG).show();
 		Log.d(TAG, "Error: " + message);

@@ -20,7 +20,6 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 /**
  * Activity that lists available game logs.
@@ -127,8 +126,8 @@ public class RecordListFragment extends ListFragment {
 		FileManager.readFileAsync(mRecordDir, f.getBasename(), HealthGraphClient.JsonActivity.class,
 				new FileManager.ReadListener<HealthGraphClient.JsonActivity>() {
 			public void onFinish(Exception e, HealthGraphClient.JsonActivity record) { 
-				if (record == null) {
-					Toast.makeText(mActivity,  "Failed to read file : " + f.getBasename() + ": " + e.toString(), Toast.LENGTH_LONG).show();
+				if (e != null) {
+					Util.error(mActivity,  "Failed to read file : " + f.getBasename() + ": " + e);
 					return;
 				}
 				RecordReplayFragment fragment = (RecordReplayFragment)mActivity.findOrCreateFragment(
@@ -173,7 +172,7 @@ public class RecordListFragment extends ListFragment {
 					new FileManager.ReadListener<HealthGraphClient.JsonActivity>() {
 						public void onFinish(Exception e, HealthGraphClient.JsonActivity activity) {
 							if (e != null) {
-								Toast.makeText(getActivity(), "Failed to read " + summary.getBasename() + ": " + e.toString(), Toast.LENGTH_LONG).show();
+								Util.error(getActivity(), "Failed to read " + summary.getBasename() + ": " + e);
 								return;
 							}
 							HealthGraphClient hgClient = HealthGraphClient.getSingleton();
@@ -183,11 +182,11 @@ public class RecordListFragment extends ListFragment {
 									new HealthGraphClient.PutNewFitnessActivityListener() {
 										public void onFinish(Exception e, String runkeeperPath) {
 											if (e != null) {
-												Toast.makeText(getActivity(), "Failed to send activity: " + e.toString(), Toast.LENGTH_LONG).show();
+												Util.error(getActivity(), "Failed to send activity: " + e);
 											} else if (runkeeperPath == null) {
-												Toast.makeText(getActivity(), "Failed to send activity (reason unknown)", Toast.LENGTH_LONG).show();
+												Util.error(getActivity(), "Failed to send activity (reason unknown)");
 											} else {
-												Toast.makeText(getActivity(), "Sent activity to runkeeper: " + runkeeperPath, Toast.LENGTH_SHORT).show();
+												Util.info(getActivity(), "Sent activity to runkeeper: " + runkeeperPath);
 												getActivity().setProgressBarIndeterminateVisibility(false);
 												markAsSaved(summary, runkeeperPath);
 												startListing(); 

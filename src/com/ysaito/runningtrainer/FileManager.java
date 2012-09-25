@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
@@ -14,7 +13,6 @@ import java.util.regex.Pattern;
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -34,13 +32,13 @@ public class FileManager {
 	private static File getDirUnderRoot(Context context, String subdir) {
 		File externalDir = new File("/sdcard/com.ysaito.runningtrainer");
 		if (externalDir == null) {
-        	Toast.makeText(context, "SD card is not found on this device. No record will be kept", Toast.LENGTH_LONG).show();
+        	Util.error(context, "SD card is not found on this device. No record will be kept");
         	return null;
 		}
 		File dir = new File(externalDir, subdir);
 		if (!dir.exists()) {
 			if (!dir.mkdirs()) {
-				Toast.makeText(context, dir.getPath() + ": failed to create directory", Toast.LENGTH_LONG).show();
+				Util.error(context, dir.getPath() + ": failed to create directory");
 				return null;
 			}
 		}
@@ -197,7 +195,7 @@ public class FileManager {
 			}
 			return f;
 		} catch (Exception e) {
-			Log.e(TAG, basename + ": Failed to parse the basenam");
+			Log.e(TAG, basename + ": Failed to parse filename");
 			return null;
 		}
 	}
@@ -228,7 +226,7 @@ public class FileManager {
 	}
 
 	/**
-	 * List and parse filenames under @p dir in the background. Run @p listener when done.
+	 * List and parse filenames under @p dir in background. Run @p listener when done.
 	 */
 	public static void listFilesAsync(File dir, ListFilesListener listener) {
 		ListThread thread = new ListThread(dir, listener);
@@ -236,7 +234,7 @@ public class FileManager {
 	}
 	
 	/**
-	 * Delete files @p basenames in @p dir in the background. Call @p listener on completion
+	 * Delete files @p basenames in @p dir in background. Call @p listener on completion
 	 */
 	public static void deleteFilesAsync(File dir, String[] basenames, ResultListener listener) {
 		DeleteFilesThread thread = new DeleteFilesThread(dir, basenames, listener);
@@ -325,8 +323,20 @@ public class FileManager {
 		}
 		
 		@Override protected Void doInBackground(Void... unused) {
+			StringBuilder error = null;
 			for (String basename : mBasenames) {
-				deleteFile(mDir, basename);
+				if (!new File(mDir, basename).delete()) {
+					if (error == null) {
+						error = new StringBuilder();
+						error.append("Failed to delete: ");
+					} else {
+						error.append(", ");
+					}
+					error.append(basename);
+				}
+			}
+			if (error != null) {
+				mException = new Exception(error.toString());
 			}
 			return null;
 		}
@@ -334,11 +344,6 @@ public class FileManager {
 		@Override protected void onPostExecute(Void unused) {
 			mListener.onFinish(mException);
 		}
-	}
-
-	private static void deleteFile(File dir, String basename) {
-		Log.d(TAG, "Delete: " + basename);
-		new File(dir, basename).delete(); // TODO: handle errors
 	}
 
 	private static class ListThread extends AsyncTask<Void, Void, ArrayList<ParsedFilename>> {

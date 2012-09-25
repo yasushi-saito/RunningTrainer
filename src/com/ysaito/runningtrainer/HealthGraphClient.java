@@ -24,7 +24,6 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 import net.smartam.leeloo.client.OAuthClient;
 import net.smartam.leeloo.client.URLConnectionClient;
 import net.smartam.leeloo.client.request.OAuthClientRequest;
@@ -215,7 +214,7 @@ public class HealthGraphClient {
     		mToken = token;
     		if (token == null) {
     			mAccessTokenState = TOKEN_ERROR;
-    			Toast.makeText(context,  "Failed to sign into runkeeper", Toast.LENGTH_LONG).show();
+    			Util.error(context,  "Failed to sign into runkeeper");
     		} else {
     			mAccessTokenState = TOKEN_OK;
     			SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
@@ -226,7 +225,7 @@ public class HealthGraphClient {
     			} else {
     				Log.d(TAG, "Save access token " + token);
     			}
-    			Toast.makeText(context,  "Created new signin token into runkeeper", Toast.LENGTH_SHORT).show();
+    			Util.info(context,  "Created new signin token into runkeeper");
     		}
     		this.notifyAll();
     	}
@@ -483,7 +482,7 @@ public class HealthGraphClient {
     		if (mToken != null) {
     			Log.d(TAG, "Found cached token: " + mToken);
     			mAccessTokenState = TOKEN_OK;
-    			Toast.makeText(context,  "Signed into runkeeper", Toast.LENGTH_SHORT).show();
+    			Util.info(context,  "Signed into runkeeper");
     		}
     		if (mAccessTokenState != TOKEN_OK) {
     			mAccessTokenState = TOKEN_AUTHENTICATING;
