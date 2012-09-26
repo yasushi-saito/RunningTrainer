@@ -2,12 +2,14 @@ package com.ysaito.runningtrainer;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Stack;
 
 import android.app.ListFragment;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -26,6 +28,14 @@ public class WorkoutListFragment extends ListFragment {
 	private MainActivity mActivity;
 	private MyAdapter mAdapter;
 
+	private class UndoEntry {
+		public UndoEntry(String f, Workout w) { filename = f; workout = w; }
+		public final String filename;
+		public final Workout workout;
+	}
+	private Stack<UndoEntry> mUndos = new Stack<UndoEntry>();
+	
+	
 	static final String NEW_WORKOUT = "+ New Workout";
 	private static class MyAdapter extends ArrayAdapter<FileManager.ParsedFilename> {
 		public MyAdapter(Context activity) {
@@ -53,6 +63,18 @@ public class WorkoutListFragment extends ListFragment {
 			return view;
 		}
 	};
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setHasOptionsMenu(true);
+	}
+	
+	@Override
+    public void onCreateOptionsMenu (Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.workout_list_options_menu, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
 	
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
@@ -137,13 +159,41 @@ public class WorkoutListFragment extends ListFragment {
 	}
 	
 	@Override
+	public void onPrepareOptionsMenu (Menu menu) {
+		super.onPrepareOptionsMenu(menu);
+		menu.findItem(R.id.workout_list_undo).setEnabled(!mUndos.empty());
+	}	
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.workout_list_undo:
+			if (mUndos.empty()) break;
+			final UndoEntry undo = mUndos.pop();
+			FileManager.writeFileAsync(
+					mWorkoutDir, undo.filename, undo.workout, new FileManager.ResultListener() {
+						public void onFinish(Exception e) {
+							if (e != null) {
+								Util.error(mActivity, "Failed to restore file: " + undo.filename);
+							} else {
+								startListing();
+							}
+						}
+					});
+			break;
+		}
+		return true;
+	}
+	
+	
+	@Override
 	public void onCreateContextMenu(
 			ContextMenu menu,
 			View v,
 			ContextMenuInfo menuInfo) {
 		super.onCreateContextMenu(menu, v, menuInfo);
 		final MenuInflater inflater = getActivity().getMenuInflater();
-		inflater.inflate(R.menu.record_list_context_menu, menu);
+		inflater.inflate(R.menu.workout_list_context_menu, menu);
 	}
 
 	@Override
@@ -152,17 +202,31 @@ public class WorkoutListFragment extends ListFragment {
 		final FileManager.ParsedFilename summary = mAdapter.getItem(info.position);
 
 		switch (item.getItemId()) {
-		case R.id.record_list_delete:
-			FileManager.deleteFilesAsync(
-					mWorkoutDir, 
-					new String[]{summary.getBasename()},
-					new FileManager.ResultListener() {
-						public void onFinish(Exception e) { 
-							if (e != null)
-								Util.error(mActivity, "Failed to delete " + summary.getBasename() + ": " + e.toString());
-							startListing();
+		case R.id.workout_list_delete:
+			// Read the workout file so that we can save it it in mUndos.
+			FileManager.readFileAsync(
+					mWorkoutDir, summary.getBasename(), Workout.class,
+					new FileManager.ReadListener<Workout>() {
+						public void onFinish(final Exception e, final Workout workout) {
+							FileManager.deleteFilesAsync(
+									mWorkoutDir, 
+									new String[]{summary.getBasename()},
+									new FileManager.ResultListener() {
+										public void onFinish(Exception e) { 
+											if (e != null) {
+												Util.error(mActivity, "Failed to delete " + summary.getBasename() + ": " + e.toString());
+											} else {
+												if (workout != null) {
+													// workout==null if the file was corrupt or something. It's ok not create an undo entry in such case
+													UndoEntry undo = new UndoEntry(summary.getBasename(), workout);
+													mUndos.push(undo);
+												}
+												startListing();
+											}
+										}
+									});
 						}
-			});
+					});
 			return true;
 		}
 		return super.onContextItemSelected(item);

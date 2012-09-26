@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Dialog for editing an Interval workout entry -->
 <LinearLayout
   xmlns:android="http://schemas.android.com/apk/res/android"
   android:orientation="vertical"
@@ -23,72 +24,66 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Lap button"/>
-  </RadioGroup>
+</RadioGroup>
 
-  <LinearLayout
-      android:id="@+id/box_distance"      
-      android:layout_height="wrap_content"
-      android:layout_width="fill_parent"
-      android:orientation="horizontal" >
-  <TextView
-      android:layout_height="wrap_content"
-      android:layout_width="wrap_content"
-      android:text="Mile:" />
-  <EditText android:id="@+id/edit_distance"
-           android:layout_height="wrap_content"
-           android:layout_width="fill_parent"
-           android:inputType="numberDecimal"
-           android:text="1.00"/>
-  </LinearLayout>
-  
-  <LinearLayout
-      android:id="@+id/box_duration"      
-      android:layout_height="wrap_content"
-      android:layout_width="fill_parent"
-      android:orientation="horizontal" >
-  <TextView
-      android:layout_height="wrap_content"
-      android:layout_width="wrap_content"
-      android:text="Duration:" />
-  <EditText android:id="@+id/edit_duration"
-           android:layout_height="wrap_content"
-           android:layout_width="fill_parent"
-           android:inputType="time"
-           android:text="00:05:00"/>
-  </LinearLayout>
+<TableLayout
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content" >
 
-  <LinearLayout
-      android:layout_height="wrap_content"
-      android:layout_width="fill_parent"
-      android:orientation="horizontal" >
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Pace (fast end):" />
+    <TableRow
+        android:id="@+id/box_distance">
+	    <TextView
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="Mile:" />
 
-    <EditText
-        android:id="@+id/edit_fast_pace"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:inputType="time"
-        android:text="00:07:00" />
-  </LinearLayout>
-  
-  <LinearLayout
-      android:layout_height="wrap_content"
-      android:layout_width="fill_parent"
-      android:orientation="horizontal" >
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Pace (slow end):" />
+	    <EditText
+	        android:id="@+id/edit_distance"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:inputType="numberDecimal"
+	        android:text="1.00" />
+    </TableRow>
 
-    <EditText
-        android:id="@+id/edit_slow_pace"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:inputType="time"
-        android:text="00:08:00" />
-  </LinearLayout>
-  
+    <TableRow
+        android:id="@+id/box_duration">
+  		<TextView
+  		    android:layout_width="wrap_content"
+  		    android:layout_height="wrap_content"
+  		    android:text="Duration:" />
+
+		<EditText
+		    android:id="@+id/edit_duration"
+		    android:layout_width="fill_parent"
+		    android:layout_height="wrap_content"
+		    android:inputType="time"
+		    android:text="00:05:00" />
+	</TableRow>
+	<TableRow>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pace (fast end):" />
+	    <EditText
+	        android:id="@+id/edit_fast_pace"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:inputType="time"
+	        android:text="00:07:00" />
+	</TableRow>
+	<TableRow>
+	    <TextView
+	        android:layout_width="wrap_content"
+	        android:layout_height="wrap_content"
+	        android:text="Pace (slow end):" />
+
+	    <EditText
+	        android:id="@+id/edit_slow_pace"
+	        android:layout_width="fill_parent"
+	        android:layout_height="wrap_content"
+	        android:inputType="time"
+	        android:text="00:08:00" />
+	</TableRow>
+  </TableLayout>
+      
 </LinearLayout>

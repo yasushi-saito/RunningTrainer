@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.GregorianCalendar;
+import java.util.Stack;
 
 import com.ysaito.runningtrainer.FileManager.ParsedFilename;
 
@@ -31,7 +32,14 @@ public class RecordListFragment extends ListFragment {
 	private File mRecordDir;
 	private MainActivity mActivity;
 	private MyAdapter mAdapter;
-
+	
+	private class UndoEntry {
+		public UndoEntry(FileManager.ParsedFilename f, HealthGraphClient.JsonActivity r) { record = r; filename = f; }
+		public final FileManager.ParsedFilename filename;
+		public final HealthGraphClient.JsonActivity record;
+	}
+	private Stack<UndoEntry> mUndos = new Stack<UndoEntry>();
+	
 	private static class MyAdapter extends ArrayAdapter<FileManager.ParsedFilename> {
 		public MyAdapter(Context activity) {
 			super(activity, android.R.layout.simple_list_item_1);
@@ -195,6 +203,12 @@ public class RecordListFragment extends ListFragment {
 	};
 	
 	@Override
+	public void onPrepareOptionsMenu (Menu menu) {
+		super.onPrepareOptionsMenu(menu);
+		menu.findItem(R.id.record_list_undo).setEnabled(!mUndos.empty());
+	}	
+	
+	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.record_list_sort_by_date:
@@ -202,6 +216,20 @@ public class RecordListFragment extends ListFragment {
 			break;
 		case R.id.record_list_sort_by_distance:
 			mAdapter.sort(COMPARE_BY_DISTANCE);
+			break;
+		case R.id.record_list_undo:
+			if (mUndos.empty()) break;
+			final UndoEntry undo = mUndos.pop();
+			FileManager.writeFileAsync(
+					mRecordDir, undo.filename.getBasename(), undo.record, new FileManager.ResultListener() {
+						public void onFinish(Exception e) {
+							if (e != null) {
+								Util.error(mActivity, "Failed to restore file: " + undo.filename.getBasename());
+							} else {
+								startListing();
+							}
+						}
+					});
 			break;
 		}
 		return true;
@@ -244,16 +272,30 @@ public class RecordListFragment extends ListFragment {
 					});
 			return true;
 		case R.id.record_list_delete:
-			FileManager.deleteFilesAsync(
-					mRecordDir, 
-					new String[]{summary.getBasename()},
-					new FileManager.ResultListener() {
-						public void onFinish(Exception e) { 
-							// TODO: handle errors
-							if (e != null) Util.error(getActivity(), "Failed to delete " + summary.getBasename() + ": " + e.toString());
-							startListing();
-						}
-			});
+			// Read the file contents so that we can save it it in mUndos.
+			FileManager.readFileAsync(
+					mRecordDir, summary.getBasename(), HealthGraphClient.JsonActivity.class,
+					new FileManager.ReadListener<HealthGraphClient.JsonActivity>() {
+						public void onFinish(final Exception e, final HealthGraphClient.JsonActivity activity) {
+							FileManager.deleteFilesAsync(
+									mRecordDir, 
+									new String[]{summary.getBasename()},
+									new FileManager.ResultListener() {
+										public void onFinish(Exception e) { 
+											if (e != null) {
+												Util.error(getActivity(), "Failed to delete " + summary.getBasename() + ": " + e.toString());
+											} else {
+												if (activity != null) {
+													// activity==null if the file was corrupt or something. It's ok not create an undo entry in such case
+													UndoEntry undo = new UndoEntry(summary, activity);
+													mUndos.push(undo);
+												}
+												startListing();
+											}
+										}
+									});
+							}
+					});
 			return true;
 		}
 		return super.onContextItemSelected(item);

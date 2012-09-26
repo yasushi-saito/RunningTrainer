@@ -2,7 +2,6 @@ package com.ysaito.runningtrainer;
 
 /**
  * TODO: smooth GPS readouts and reduce sampling rate
- * TODO: align IntervalDialog text boxes
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * TODO: automatic syncing of records on reconnect and/or token authorization
  * TODO: delete all records
@@ -12,7 +11,6 @@ package com.ysaito.runningtrainer;
  * TODO: sync all. 
  * TODO: show some indicator when runkeeper communication is happening
  * TODO: notification to show distance, duration, etc.
- * TODO: undo of delete record
  * TODO: reliably check if TTS voice data has been downloaded.
  * TODO: satellite view
  */

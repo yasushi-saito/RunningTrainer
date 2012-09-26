@@ -104,8 +104,8 @@ public class WorkoutEditorFragment extends Fragment {
 					String[] array = toDelete.toArray(new String[0]);
 					FileManager.deleteFilesAsync(mWorkoutDir, array, new FileManager.ResultListener() {
 						public void onFinish(Exception e) {
+							if (e != null) Util.error(getActivity(), "Failed to delete old files: " + e.toString());
 							showWorkoutListFragment();
-							// TODO: handle errors
 						}
 					});
 				} else {
