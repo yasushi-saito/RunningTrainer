@@ -1,5 +1,7 @@
 package com.ysaito.runningtrainer;
 
+import android.renderscript.ProgramFragmentFixedFunction.Builder;
+
 public class Workout {
 	static public final double NO_FAST_TARGET_PACE = 0.0;
 	static public final double NO_SLOW_TARGET_PACE = 9999.0;
@@ -9,6 +11,32 @@ public class Workout {
 	}
 	static public boolean hasSlowTargetPace(double pace) {
 		return pace < NO_SLOW_TARGET_PACE;
+	}
+
+	public static String workoutToSpeechText(Workout workout) {
+		StringBuilder b = new StringBuilder("Workout for ");
+		if (workout.distance >= 0) {
+			b.append(Util.distanceToSpeechText(workout.distance));
+		} else if (workout.duration >= 0) {
+			b.append(Util.durationToSpeechText(workout.duration));
+		} else {
+			b.append("Until Lap");
+		}
+		b.append(" ");
+		if (!hasFastTargetPace(workout.fastTargetPace) && !hasSlowTargetPace(workout.slowTargetPace)) {
+			b.append("No pace target");
+		} else {
+			b.append("Pace ");
+			if (hasFastTargetPace(workout.fastTargetPace)) {
+				b.append("from ");
+				b.append(Util.paceToString(workout.fastTargetPace));
+			}
+			if (hasSlowTargetPace(workout.slowTargetPace)) {
+				b.append(" to ");
+				b.append(Util.paceToString(workout.slowTargetPace));
+			}
+		}
+		return b.toString();
 	}
 	
 	/**
@@ -28,16 +56,16 @@ public class Workout {
 			builder.append("Until Lap");
 		}
 		builder.append(" @ ");
-		if (fastPace <= 0 && slowPace <= 0) {
+		if (!hasFastTargetPace(fastPace) && !hasSlowTargetPace(slowPace)) {
 			builder.append("No target");
 		} else {
-			if (fastPace > 0) {
+			if (hasFastTargetPace(fastPace)) {
 				builder.append(Util.paceToString(fastPace));
 			} else {
 				builder.append("-");
 			}
 			builder.append(" to ");
-			if (slowPace > 0) {
+			if (hasSlowTargetPace(slowPace)) {
 				builder.append(Util.paceToString(slowPace));
 			} else {
 				builder.append("-");

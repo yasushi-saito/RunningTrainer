@@ -210,6 +210,8 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     		LapStats userLapStats,
     		LapStats autoLapStats,
     		Workout currentInterval) {
+    	if (mRecordingState == RESET || mRecordingState == TRANSITIONING) return;
+    	
     	mLastReportedPath = path;
     	mMapOverlay.updatePath(path);
     	mTotalStats = totalStats;

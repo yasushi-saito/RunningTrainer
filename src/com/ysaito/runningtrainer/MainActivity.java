@@ -1,13 +1,11 @@
 package com.ysaito.runningtrainer;
 
 /**
- * TODO: sort record list
  * TODO: smooth GPS readouts and reduce sampling rate
  * TODO: align IntervalDialog text boxes
- * TODO: workouts. 
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * TODO: automatic syncing of records on reconnect and/or token authorization
- * TODO: delete all recordsand
+ * TODO: delete all records
  * TODO: show status in notification tray
  * TODO: show runkeeper sync status somewhere
  * TODO: detect when the user pauses during running

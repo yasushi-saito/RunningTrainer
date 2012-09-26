@@ -3,6 +3,7 @@ package com.ysaito.runningtrainer;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Comparator;
 import java.util.GregorianCalendar;
 
 import com.ysaito.runningtrainer.FileManager.ParsedFilename;
@@ -12,6 +13,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -38,6 +40,7 @@ public class RecordListFragment extends ListFragment {
 		public void reset(ArrayList<FileManager.ParsedFilename> newRecords) {
 			clear();
 			addAll(newRecords);
+			sort(COMPARE_BY_START_TIME);
 			notifyDataSetChanged();
 		}
 
@@ -71,6 +74,17 @@ public class RecordListFragment extends ListFragment {
 	};
 	
 	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setHasOptionsMenu(true);
+	}
+	
+	@Override
+    public void onCreateOptionsMenu (Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.record_list_options_menu, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+	
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
 		mActivity = (MainActivity)getActivity();
@@ -158,6 +172,39 @@ public class RecordListFragment extends ListFragment {
 				orgFile.renameTo(new File(mRecordDir, f.getBasename()));
 			}
 		}
+	}
+
+	private static final Comparator<FileManager.ParsedFilename> COMPARE_BY_START_TIME = new Comparator<FileManager.ParsedFilename>() {
+		public int compare(FileManager.ParsedFilename f1, FileManager.ParsedFilename f2) {
+			final long date1 = f1.getLong(FileManager.KEY_START_TIME, -1);
+			final long date2 = f2.getLong(FileManager.KEY_START_TIME, -1);
+			if (date1 == date2) return 0;
+			if (date1 > date2) return -1;
+			return 1;
+		}
+	};
+
+	private static final Comparator<FileManager.ParsedFilename> COMPARE_BY_DISTANCE = new Comparator<FileManager.ParsedFilename>() {
+		public int compare(FileManager.ParsedFilename f1, FileManager.ParsedFilename f2) {
+			final long distance1 = f1.getLong(FileManager.KEY_DISTANCE, -1);
+			final long distance2 = f2.getLong(FileManager.KEY_DISTANCE, -1);
+			if (distance1 == distance2) return 0;
+			if (distance1 > distance2) return -1;
+			return 1;
+		}
+	};
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.record_list_sort_by_date:
+			mAdapter.sort(COMPARE_BY_START_TIME);
+			break;
+		case R.id.record_list_sort_by_distance:
+			mAdapter.sort(COMPARE_BY_DISTANCE);
+			break;
+		}
+		return true;
 	}
 	
 	@Override

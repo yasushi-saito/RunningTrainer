@@ -43,11 +43,9 @@ public class GpsTrackingService extends Service {
 
     public static void registerListener(StatusListener listener) {
     	mListeners.add(listener);
-
     	if (mSingleton != null) {
     		// Call the listener immediately to give the initial stats
-    		final Workout currentInterval = (mSingleton.mWorkoutIterator != null && !mSingleton.mWorkoutIterator.done() ? 
-    				mSingleton.mWorkoutIterator.getWorkout() : null);
+    		final Workout currentInterval = mSingleton.getCurrentWorkoutInterval();
     		listener.onGpsUpdate(mSingleton.mPath, mSingleton.mTotalStats, mSingleton.mUserLapStats, mSingleton.mAutoLapStats, currentInterval);
     	}
     }
@@ -73,13 +71,26 @@ public class GpsTrackingService extends Service {
     private int mState = RUNNING;
 
     public static GpsTrackingService getSingleton() { return mSingleton; }
-    
-    public void onLapButtonPress() {
+
+    private final void startNewLap() {
+    	if (mWorkoutIterator != null && !mWorkoutIterator.done()) {
+    		mWorkoutIterator.next();
+    		final Workout newWorkout = getCurrentWorkoutInterval();
+    		if (newWorkout == null) {
+    			speak("Workout ended", null);
+    		} else {
+    			speak(Workout.workoutToSpeechText(newWorkout), null);
+    		}
+    	}
     	mUserLapStats = new LapStats();
-    	speak("New lap", null);
     }
     
-    public void onPauseButtonPress() {
+    public final void onLapButtonPress() {
+    	speak("New lap", null);
+    	startNewLap();
+    }
+    
+    public final void onPauseButtonPress() {
     	speak("Paused", null);
     	mState = STOPPED;  
     	mTotalStats.onPause();
@@ -88,7 +99,7 @@ public class GpsTrackingService extends Service {
     	updateTimer();
     }
     
-    public void onResumeButtonPress() {
+    public final void onResumeButtonPress() {
     	speak("Resumed", null);
     	mState = RUNNING;
     	mTotalStats.onResume();
@@ -141,29 +152,63 @@ public class GpsTrackingService extends Service {
     		speak("Current pace " + Util.paceToSpeechText(mTotalStats.getCurrentPace()), null);
     	if (Settings.speakAveragePace)
     		speak("Average pace " + Util.paceToSpeechText(mTotalStats.getPace()), null);
-    	if (newerLapStats != null) {
-    		if (Settings.speakLapDistance)
-    			speak("Lap distance " + Util.distanceToSpeechText(newerLapStats.getDistance()), null);
-    		if (Settings.speakLapDuration)
-    			speak("Lap time " + Util.durationToSpeechText(newerLapStats.getDurationSeconds()), null);
-    		if (Settings.speakLapPace)
-    			speak("Lap pace " + Util.paceToSpeechText(newerLapStats.getPace()), null);
-    	}
-    	if (mAutoLapStats != null) {
-    		if (Settings.speakAutoLapDistance)
-    			speak("Auto lap distance " + Util.distanceToSpeechText(mAutoLapStats.getDistance()), null);
-    		if (Settings.speakAutoLapDuration)
-    			speak("Auto lap time " + Util.durationToSpeechText(mAutoLapStats.getDurationSeconds()), null);
-    		if (Settings.speakAutoLapPace)
-    			speak("Auto lap pace " + Util.paceToSpeechText(mAutoLapStats.getPace()), null);
-    	}
+    	if (Settings.speakLapDistance)
+    		speak("Lap distance " + Util.distanceToSpeechText(newerLapStats.getDistance()), null);
+    	if (Settings.speakLapDuration)
+    		speak("Lap time " + Util.durationToSpeechText(newerLapStats.getDurationSeconds()), null);
+    	if (Settings.speakLapPace)
+    		speak("Lap pace " + Util.paceToSpeechText(newerLapStats.getPace()), null);
+    	if (Settings.speakAutoLapDistance)
+    		speak("Auto lap distance " + Util.distanceToSpeechText(mAutoLapStats.getDistance()), null);
+    	if (Settings.speakAutoLapDuration)
+    		speak("Auto lap time " + Util.durationToSpeechText(mAutoLapStats.getDurationSeconds()), null);
+    	if (Settings.speakAutoLapPace)
+    		speak("Auto lap pace " + Util.paceToSpeechText(mAutoLapStats.getPace()), null);
     }
     
     private long mLastReportedTotalDistance = 0;
     private long mLastReportedTotalDuration = 0;
     private long mLastReportedAutoLapDistance = 0;
 
+    private String mLastPaceAlertText = "";
+    private double mLastPaceAlertTime = 0.0;
+    
     private void updateStats() {
+    	final Workout currentWorkout = getCurrentWorkoutInterval();
+    	if (currentWorkout != null) {
+    		boolean newLap = false;
+    		if (currentWorkout.distance > 0.0 &&
+    				mUserLapStats.getDistance() >= currentWorkout.distance) {
+    			newLap = true;
+    		}
+    		if (currentWorkout.duration > 0.0 &&
+    				mUserLapStats.getDurationSeconds() >= currentWorkout.duration) {
+    			newLap = true;
+    		}
+    		if (newLap) {
+    			startNewLap();
+    		} else {
+    			final double pace = mUserLapStats.getPace();
+    			String text = null;
+    			if (pace == 0.0) {
+    				// No movement. Special case and shut up.
+    			} else if (pace > currentWorkout.slowTargetPace) {
+    				text = "Faster";
+    			} else if (pace < currentWorkout.fastTargetPace) {
+    				text = "Slower";
+    			}
+    			if (text != null) {
+    				double nowSeconds = System.currentTimeMillis() / 1000.0;
+    				if (!text.equals(mLastPaceAlertText) || 
+    						mLastPaceAlertTime + 5.0 < nowSeconds) {
+    					speak(text, null);
+    					mLastPaceAlertText = text;
+    					mLastPaceAlertTime = nowSeconds;
+    				}
+    			}
+    		}
+    	}
+    	
     	if (Settings.autoLapDistanceInterval > 0) {
     		final int interval = (int)Math.max(50, Settings.autoLapDistanceInterval);
     		final long newDistance = (long)mTotalStats.getDistance();
@@ -197,11 +242,15 @@ public class GpsTrackingService extends Service {
     		listener.onGpsError(message);
     	}
     }
+
+    private final Workout getCurrentWorkoutInterval() {
+    	return (mWorkoutIterator != null && !mWorkoutIterator.done()) ? 
+    			mWorkoutIterator.getWorkout() :	null;
+    }
     
     private void notifyListeners() {
     	updateStats();
-    	final Workout currentInterval = (mWorkoutIterator != null && !mWorkoutIterator.done()) ? 
-    			mWorkoutIterator.getWorkout() :	null;
+    	final Workout currentInterval = getCurrentWorkoutInterval();
     	for (StatusListener listener : mListeners) {
     		listener.onGpsUpdate(mPath, mTotalStats, mUserLapStats, mAutoLapStats, currentInterval);
     	}
@@ -243,6 +292,14 @@ public class GpsTrackingService extends Service {
 		Log.d(TAG, "onCreate");
 		
 		mPath = new ArrayList<HealthGraphClient.JsonWGS84>();
+		HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();  
+		wgs.latitude = 100.0;
+		wgs.longitude = 100.0;
+		wgs.altitude = 0;
+		wgs.timestamp = 0.0;
+		wgs.type = "start";
+		mPath.add(wgs);
+		
 		mTotalStats = new LapStats();
 		mUserLapStats = new LapStats();
 		mAutoLapStats = new LapStats();
