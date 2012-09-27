@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Stack;
 
+import com.ysaito.runningtrainer.FileManager.ParsedFilename;
+
 import android.app.ListFragment;
 import android.content.Context;
 import android.os.Bundle;
@@ -113,8 +115,12 @@ public class WorkoutListFragment extends ListFragment {
 	
 	private void startListing() {
 		getActivity().setProgressBarIndeterminateVisibility(true);
-		FileManager.listFilesAsync(mWorkoutDir, new FileManager.ListFilesListener() {
-			public void onFinish(Exception e, ArrayList<FileManager.ParsedFilename> files) {
+		
+		FileManager.runAsync(new FileManager.AsyncRunner<ArrayList<FileManager.ParsedFilename>>() {
+			public ArrayList<FileManager.ParsedFilename> doInThread() throws Exception {
+				return FileManager.listFiles(mWorkoutDir);
+			}
+			public void onFinish(Exception error, ArrayList<ParsedFilename> files) {
 				getActivity().setProgressBarIndeterminateVisibility(false);
 				if (files == null) {
 					files = new ArrayList<FileManager.ParsedFilename>();
@@ -145,11 +151,13 @@ public class WorkoutListFragment extends ListFragment {
 			workout.children = new Workout[0];
 			startWorkoutEditor(workout);
 		} else {
-			FileManager.readFileAsync(mWorkoutDir, f.getBasename(), Workout.class,
-					new FileManager.ReadListener<Workout>() {
-				public void onFinish(Exception e, Workout workout) { 
-					if (workout == null) {
-						Util.error(mActivity,  "Failed to read file : " + f.getBasename() + ": " + e.toString());
+			FileManager.runAsync(new FileManager.AsyncRunner<Workout>() {
+				public Workout doInThread() throws Exception {
+					return FileManager.readFile(mWorkoutDir, f.getBasename(), Workout.class);
+				}
+				public void onFinish(Exception error, Workout workout) {
+					if (error != null) {
+						Util.error(mActivity,  "Failed to read file : " + f.getBasename() + ": " + error);
 						return;
 					}
 					startWorkoutEditor(workout);
@@ -170,16 +178,19 @@ public class WorkoutListFragment extends ListFragment {
 		case R.id.workout_list_undo:
 			if (mUndos.empty()) break;
 			final UndoEntry undo = mUndos.pop();
-			FileManager.writeFileAsync(
-					mWorkoutDir, undo.filename, undo.workout, new FileManager.ResultListener() {
-						public void onFinish(Exception e) {
-							if (e != null) {
-								Util.error(mActivity, "Failed to restore file: " + undo.filename);
-							} else {
-								startListing();
-							}
-						}
-					});
+			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
+				public Void doInThread() throws Exception {
+					FileManager.writeFile(mWorkoutDir, undo.filename, undo.workout);
+					return null;
+				}
+				public void onFinish(Exception error, Void value) {
+					if (error != null) {
+						Util.error(mActivity, "Failed to restore file: " + undo.filename + ": " + error);
+					} else {
+						startListing();
+					}
+				}
+			});
 			break;
 		}
 		return true;
@@ -204,29 +215,25 @@ public class WorkoutListFragment extends ListFragment {
 		switch (item.getItemId()) {
 		case R.id.workout_list_delete:
 			// Read the workout file so that we can save it it in mUndos.
-			FileManager.readFileAsync(
-					mWorkoutDir, summary.getBasename(), Workout.class,
-					new FileManager.ReadListener<Workout>() {
-						public void onFinish(final Exception e, final Workout workout) {
-							FileManager.deleteFilesAsync(
-									mWorkoutDir, 
-									new String[]{summary.getBasename()},
-									new FileManager.ResultListener() {
-										public void onFinish(Exception e) { 
-											if (e != null) {
-												Util.error(mActivity, "Failed to delete " + summary.getBasename() + ": " + e.toString());
-											} else {
-												if (workout != null) {
-													// workout==null if the file was corrupt or something. It's ok not create an undo entry in such case
-													UndoEntry undo = new UndoEntry(summary.getBasename(), workout);
-													mUndos.push(undo);
-												}
-												startListing();
-											}
-										}
-									});
+			FileManager.runAsync(new FileManager.AsyncRunner<Workout>() {
+				public Workout doInThread() throws Exception {
+					Workout workout = FileManager.readFile(mWorkoutDir, summary.getBasename(), Workout.class);
+					FileManager.deleteFile(mWorkoutDir, summary.getBasename());
+					return workout;
+				}
+				public void onFinish(Exception e, Workout workout) {
+					if (e != null) {
+						Util.error(mActivity, "Failed to delete " + summary.getBasename() + ": " + e);
+					} else {
+						if (workout != null) {
+							// workout==null if the file was corrupt or something. It's ok not create an undo entry in such case
+							UndoEntry undo = new UndoEntry(summary.getBasename(), workout);
+							mUndos.push(undo);
 						}
-					});
+						startListing();
+					}
+				}
+			});
 			return true;
 		}
 		return super.onContextItemSelected(item);

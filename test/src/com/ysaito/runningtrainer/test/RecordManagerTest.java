@@ -18,7 +18,7 @@ public class RecordManagerTest extends InstrumentationTestCase {
 		summary.putString("bar", "str");
 		summary.putString("x", "k");		
 		String basename = summary.getBasename();
-		FileManager.ParsedFilename f = FileManager.parseBasename(basename);
+		FileManager.ParsedFilename f = FileManager.ParsedFilename.parse(basename);
 		assertEquals(12345, f.getLong("foo", -1));
 		assertEquals("str", f.getString("bar", ""));
 		assertEquals("k", f.getString("x", ""));
