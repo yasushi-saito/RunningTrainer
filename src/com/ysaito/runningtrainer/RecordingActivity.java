@@ -248,23 +248,26 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     
     private void startListWorkouts() {
     	final File dir = FileManager.getWorkoutDir(this);
-    	FileManager.listFilesAsync(dir, new FileManager.ListFilesListener() {
-			public void onFinish(Exception e, ArrayList<ParsedFilename> files) {
-				if (e != null) {
-					Toast.makeText(mThisActivity, "Failed to list " + dir + ": " + e, Toast.LENGTH_LONG).show();
-				} else {
-					mWorkoutListAdapter.clear();
-					mWorkoutFiles.clear();
-					mWorkoutListAdapter.add("None");
-					mWorkoutFiles.add(null);
-					for (ParsedFilename f : files) {
-						mWorkoutListAdapter.add(f.getString(FileManager.KEY_WORKOUT_NAME, "unknown"));
-						mWorkoutFiles.add(f.getBasename());
-					}
-					mWorkoutListAdapter.notifyDataSetChanged();
-				}
-			}
-		});
+    	FileManager.runAsync(new FileManager.AsyncRunner<ArrayList<FileManager.ParsedFilename>>() {
+    		public ArrayList<FileManager.ParsedFilename> doInThread() throws Exception {
+    			return FileManager.listFiles(dir);
+    		}
+    		public void onFinish(Exception e, ArrayList<ParsedFilename> files) {
+    			if (e != null) {
+    				Toast.makeText(mThisActivity, "Failed to list " + dir + ": " + e, Toast.LENGTH_LONG).show();
+    			} else {
+    				mWorkoutListAdapter.clear();
+    				mWorkoutFiles.clear();
+    				mWorkoutListAdapter.add("None");
+    				mWorkoutFiles.add(null);
+    				for (ParsedFilename f : files) {
+    					mWorkoutListAdapter.add(f.getString(FileManager.KEY_WORKOUT_NAME, "unknown"));
+    					mWorkoutFiles.add(f.getBasename());
+    				}
+    				mWorkoutListAdapter.notifyDataSetChanged();
+    			}
+    		}
+    	});
     }
 
     void showDialog(String message) {

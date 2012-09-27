@@ -90,27 +90,21 @@ public class WorkoutEditorFragment extends Fragment {
 	}
 
 	private void deleteOldFilesForWorkout(final long workoutId, final String newBasename) {
-		FileManager.listFilesAsync(mWorkoutDir, new FileManager.ListFilesListener() {
-			public void onFinish(Exception e, ArrayList<ParsedFilename> files) {
+		FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
+			public Void doInThread() throws Exception {
 				// Delete the old file(s) for the same workout
-				ArrayList<String> toDelete = new ArrayList<String>();
+				ArrayList<ParsedFilename> files = FileManager.listFiles(mWorkoutDir);
 				for (FileManager.ParsedFilename f : files) {
 					if (f.getLong(FileManager.KEY_WORKOUT_ID, -1) == workoutId &&
 							!f.getBasename().equals(newBasename)) {
-						toDelete.add(f.getBasename());
+						FileManager.deleteFile(mWorkoutDir, f.getBasename());
 					}
 				}
-				if (toDelete.size() > 0) {
-					String[] array = toDelete.toArray(new String[0]);
-					FileManager.deleteFilesAsync(mWorkoutDir, array, new FileManager.ResultListener() {
-						public void onFinish(Exception e) {
-							if (e != null) Util.error(getActivity(), "Failed to delete old files: " + e.toString());
-							showWorkoutListFragment();
-						}
-					});
-				} else {
-					showWorkoutListFragment();							
-				}
+				return null;
+			}
+			public void onFinish(Exception error, Void unused) {
+				if (error != null) Util.error(getActivity(), "Failed to delete old files: " + error);
+				showWorkoutListFragment();
 			}
 		});
 	}

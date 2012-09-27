@@ -268,10 +268,10 @@ public class FileManager {
 	/**
 	 * List and parse filenames under @p dir in background. Run @p listener when done.
 	 */
-	public static void listFilesAsync(File dir, ListFilesListener listener) {
+	/*public static void listFilesAsync(File dir, ListFilesListener listener) {
 		ListThread thread = new ListThread(dir, listener);
 		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-	}
+	}*/
 	
 	/**
 	 * Delete files @p basenames in @p dir in background. Call @p listener on completion
