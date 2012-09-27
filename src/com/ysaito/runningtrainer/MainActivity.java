@@ -13,6 +13,7 @@ package com.ysaito.runningtrainer;
  * TODO: notification to show distance, duration, etc.
  * TODO: reliably check if TTS voice data has been downloaded.
  * TODO: satellite view
+ * TODO: undo of workout edits.
  */
 import java.util.HashMap;
 
