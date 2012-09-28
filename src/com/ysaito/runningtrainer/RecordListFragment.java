@@ -12,7 +12,6 @@ import com.ysaito.runningtrainer.HealthGraphClient.JsonActivity;
 
 import android.app.ListFragment;
 import android.content.Context;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
@@ -32,15 +31,17 @@ import android.widget.TextView;
  *
  */
 public class RecordListFragment extends ListFragment {
+	@SuppressWarnings("unused")
 	private static final String TAG = "RecordListFragment";
+	
 	private File mRecordDir;
 	private MainActivity mActivity;
 	private MyAdapter mAdapter;
 	
 	private class UndoEntry {
-		public UndoEntry(FileManager.ParsedFilename f, HealthGraphClient.JsonActivity r) { record = r; filename = f; }
-		public final FileManager.ParsedFilename filename;
-		public final HealthGraphClient.JsonActivity record;
+		public void add(String filename, HealthGraphClient.JsonActivity r) { records.add(r); filenames.add(filename); }
+		public final ArrayList<String> filenames = new ArrayList<String>();
+		public final ArrayList<HealthGraphClient.JsonActivity> records = new ArrayList<HealthGraphClient.JsonActivity>();
 	}
 	private Stack<UndoEntry> mUndos = new Stack<UndoEntry>();
 	
@@ -237,6 +238,33 @@ public class RecordListFragment extends ListFragment {
 			mAdapter.sort(COMPARE_BY_DISTANCE);
 			break;
 		case R.id.record_list_delete_all: {
+			// Extract the filenames so that they can be read from a different thread
+			final FileManager.ParsedFilename[] filenames = new FileManager.ParsedFilename[mAdapter.getCount()];
+			for (int i = 0; i < mAdapter.getCount(); ++i) {
+				filenames[i] = mAdapter.getItem(i);
+			}
+			
+			FileManager.runAsync(new FileManager.AsyncRunner<UndoEntry>() {
+				public UndoEntry doInThread() throws Exception {
+					UndoEntry newUndos = new UndoEntry();
+					for (FileManager.ParsedFilename f : filenames) {
+						String basename = f.getBasename();
+						HealthGraphClient.JsonActivity record = FileManager.readFile(mRecordDir, f.getBasename(), HealthGraphClient.JsonActivity.class);
+						FileManager.deleteFile(mRecordDir, basename);
+						newUndos.add(basename, record);
+					}
+					return newUndos;
+				}
+				public void onFinish(Exception error, UndoEntry newUndos) {
+					if (error != null) {
+						Util.error(mActivity, "Failed to delete files: " + error);
+					} else {		
+						mUndos.add(newUndos);
+						startListing();
+					}
+				}
+			});
+			break;
 		}
 			
 		case R.id.record_list_undo:
@@ -244,12 +272,14 @@ public class RecordListFragment extends ListFragment {
 			final UndoEntry undo = mUndos.pop();
 			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
 				public Void doInThread() throws Exception {
-					FileManager.writeFile(mRecordDir, undo.filename.getBasename(), undo.record);
+					for (int i = 0; i < undo.filenames.size(); ++i) {
+						FileManager.writeFile(mRecordDir, undo.filenames.get(i), undo.records.get(i));
+					}
 					return null;
 				}
 				public void onFinish(Exception error, Void unused) {
 					if (error != null) {
-						Util.error(mActivity, "Failed to restore file: " + undo.filename.getBasename() + ": " + error);
+						Util.error(mActivity, "Failed to restore file: " + error);
 					} else {		
 						startListing();
 					}
@@ -312,7 +342,8 @@ public class RecordListFragment extends ListFragment {
 					} else {
 						if (value != null) {
 							// activity==null if the file was corrupt or something. It's ok not create an undo entry in such case
-							UndoEntry undo = new UndoEntry(summary, value);
+							UndoEntry undo = new UndoEntry();
+							undo.add(summary.getBasename(), value);
 							mUndos.push(undo);
 						}
 						startListing();

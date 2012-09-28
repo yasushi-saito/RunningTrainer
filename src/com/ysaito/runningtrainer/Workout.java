@@ -1,7 +1,5 @@
 package com.ysaito.runningtrainer;
 
-import android.renderscript.ProgramFragmentFixedFunction.Builder;
-
 public class Workout {
 	static public final double NO_FAST_TARGET_PACE = 0.0;
 	static public final double NO_SLOW_TARGET_PACE = 9999.0;

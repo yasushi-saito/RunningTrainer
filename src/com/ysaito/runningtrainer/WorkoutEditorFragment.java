@@ -50,19 +50,29 @@ public class WorkoutEditorFragment extends Fragment {
         		newWorkout.name = mWorkoutNameEditor.getText().toString();
         		newWorkout.id = workoutId;
 
-        		final ParsedFilename f = new ParsedFilename();
-        		f.putLong(FileManager.KEY_WORKOUT_ID, newWorkout.id);
-        		f.putString(FileManager.KEY_WORKOUT_NAME, FileManager.sanitizeString(newWorkout.name));
-        		final String newBasename = f.getBasename();
+        		final ParsedFilename newF = new ParsedFilename();
+        		newF.putLong(FileManager.KEY_WORKOUT_ID, newWorkout.id);
+        		newF.putString(FileManager.KEY_WORKOUT_NAME, FileManager.sanitizeString(newWorkout.name));
+        		final String newBasename = newF.getBasename();
 
-        		FileManager.writeFileAsync(mWorkoutDir, f.getBasename(), newWorkout, new FileManager.ResultListener() {
-        			public void onFinish(Exception e) {
-        				if (e != null) {
-        					Util.error(getActivity(), "Failed to save workout: " + e);
-        					return;
-        				}
-        				deleteOldFilesForWorkout(workoutId, newBasename);
-        			}
+        		FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
+					public Void doInThread() throws Exception {
+						FileManager.writeFile(mWorkoutDir, newBasename, newWorkout);
+						
+						// Delete the old file(s) for the same workout
+						ArrayList<ParsedFilename> files = FileManager.listFiles(mWorkoutDir);
+						for (FileManager.ParsedFilename other : files) {
+							if (other.getLong(FileManager.KEY_WORKOUT_ID, -1) == workoutId &&
+									!other.getBasename().equals(newBasename)) {
+								FileManager.deleteFile(mWorkoutDir, other.getBasename());
+							}
+						}
+						return null;
+					}
+					public void onFinish(Exception error, Void unused) {
+						if (error != null) Util.error(getActivity(), "Failed to delete old files: " + error);
+						showWorkoutListFragment();
+					}
         		});
         	}
         });
@@ -89,26 +99,6 @@ public class WorkoutEditorFragment extends Fragment {
         return view;
 	}
 
-	private void deleteOldFilesForWorkout(final long workoutId, final String newBasename) {
-		FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
-			public Void doInThread() throws Exception {
-				// Delete the old file(s) for the same workout
-				ArrayList<ParsedFilename> files = FileManager.listFiles(mWorkoutDir);
-				for (FileManager.ParsedFilename f : files) {
-					if (f.getLong(FileManager.KEY_WORKOUT_ID, -1) == workoutId &&
-							!f.getBasename().equals(newBasename)) {
-						FileManager.deleteFile(mWorkoutDir, f.getBasename());
-					}
-				}
-				return null;
-			}
-			public void onFinish(Exception error, Void unused) {
-				if (error != null) Util.error(getActivity(), "Failed to delete old files: " + error);
-				showWorkoutListFragment();
-			}
-		});
-	}
-	
 	public final void showWorkoutListFragment() {
 		MainActivity activity = (MainActivity)getActivity();
 		activity.setFragmentForTab("Workout",

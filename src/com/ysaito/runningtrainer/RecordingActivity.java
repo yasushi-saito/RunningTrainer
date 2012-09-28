@@ -428,10 +428,19 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	final int pos = mWorkoutListSpinner.getSelectedItemPosition();
     	final String workoutFilename = (pos >= 0  && pos < mWorkoutFiles.size() ? mWorkoutFiles.get(pos) : null);
     	final int lastState = mRecordingState;
+    	final File dir = FileManager.getWorkoutDir(this);
     	mRecordingState = TRANSITIONING;
     	
-    	FileManager.readFileAsync(FileManager.getWorkoutDir(this), workoutFilename, Workout.class, new FileManager.ReadListener<Workout>() {
-    		public void onFinish(Exception e, Workout workout) {
+    	FileManager.runAsync(new FileManager.AsyncRunner<Workout>() {
+			public Workout doInThread() throws Exception {
+				return FileManager.readFile(dir, workoutFilename, Workout.class);
+			}
+
+			public void onFinish(Exception error, Workout workout/*maybe null*/) {
+				if (error != null) {
+					Util.error(mThisActivity, "Failed to read workout: " + error);
+					// Fallthrough
+				}
     			mLapButton.setEnabled(true);
     			mStartStopButton.setText(R.string.pause); 
     			mWorkoutListSpinner.setVisibility(View.GONE);
@@ -456,7 +465,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     				Util.crash(mThisActivity, "Wrong state: " + lastState);
     			}
     			mRecordingState = RUNNING;
-    		}
+			}
     	});
     }
 
@@ -501,12 +510,18 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     		summary.putLong(FileManager.KEY_START_TIME, (long)mTotalStats.getStartTimeSeconds());
     		summary.putLong(FileManager.KEY_DISTANCE, (long)mRecord.total_distance);
     		summary.putLong(FileManager.KEY_DURATION, (long)mRecord.duration);
-    		FileManager.writeFileAsync(mRecordDir, summary.getBasename(), mRecord, new FileManager.ResultListener() {
-				public void onFinish(Exception e) {
-					if (e != null) Util.error(mThisActivity, "Failed to write: " + summary.getBasename() + ": " + e);
-				}
-			});
+    		final HealthGraphClient.JsonActivity newRecord = mRecord;
     		mRecord = null;
+    		
+    		FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
+				public Void doInThread() throws Exception {
+					FileManager.writeFile(mRecordDir, summary.getBasename(), newRecord);
+					return null;
+				}
+				public void onFinish(Exception error, Void value) {
+					if (error != null) Util.error(mThisActivity, "Failed to write: " + summary.getBasename() + ": " + error);
+				}
+    		});
     	}
     }	
     

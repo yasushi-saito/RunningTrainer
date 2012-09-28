@@ -223,9 +223,7 @@ public class FileManager {
 		final RunAsyncResult<T> result = new RunAsyncResult<T>();
 		
 		AsyncTask<Void, Void, Exception> task = new AsyncTask<Void, Void, Exception>() {
-			@Override
-			protected Exception doInBackground(Void... params) {
-				// TODO Auto-generated method stub
+			@Override protected Exception doInBackground(Void... params) {
 				try {
 					result.object = listener.doInThread();
 					return null;
@@ -238,83 +236,6 @@ public class FileManager {
 			}
 		};
 		task.execute((Void[])null);
-	}
-	
-	public static void writeFileAsync(File dir, String basename, Object jsonObject, ResultListener listener) {
-		WriteFileThread thread = new WriteFileThread(dir, basename, jsonObject, listener);
-		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-	}
-	
-	public interface ReadListener<T> {
-		public void onFinish(Exception e, T obj);
-	}
-	
-	public static <T> void readFileAsync(File dir, String basename, Class<T> classObject, ReadListener<T> listener) {
-		ReadFileThread<T> thread = new ReadFileThread<T>(dir, basename, classObject, listener);
-		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-	}
-	
-	public interface ResultListener {
-		void onFinish(Exception e);
-	}
-
-	public interface ListFilesListener {
-		/**
-		 * Called when listFilesAsync finishes. Exactly one of @p e or @p files is non-null.
-		 */
-		void onFinish(Exception e, ArrayList<ParsedFilename> files);
-	}
-
-	/**
-	 * List and parse filenames under @p dir in background. Run @p listener when done.
-	 */
-	/*public static void listFilesAsync(File dir, ListFilesListener listener) {
-		ListThread thread = new ListThread(dir, listener);
-		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-	}*/
-	
-	/**
-	 * Delete files @p basenames in @p dir in background. Call @p listener on completion
-	 */
-	public static void deleteFilesAsync(File dir, String[] basenames, ResultListener listener) {
-		DeleteFilesThread thread = new DeleteFilesThread(dir, basenames, listener);
-		thread.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, (Void[])null);
-	}
-	
-	private static class WriteFileThread extends AsyncTask<Void, Void, Void> {
-		private final File mDir;
-		private final String mBasename;
-		private final Object mJsonObject;
-		private final ResultListener mListener;
-		private Exception mException = null;
-		
-		public WriteFileThread(
-				File dir,
-				String basename,
-				Object jsonObject,
-				ResultListener listener) { 
-			mDir = dir; 
-			mBasename = basename;
-			mJsonObject = jsonObject;
-			mListener = listener; 
-		}
-		
-		@Override protected Void doInBackground(Void... unused) {
-			try {
-				Gson gson = new GsonBuilder().create();
-				File destFile = new File(mDir, mBasename);
-				FileWriter out = new FileWriter(destFile);
-				gson.toJson(mJsonObject, out);
-				out.close();
-			} catch (Exception e) {
-				mException = e;
-			}
-			return null;
-		}
-		
-		@Override protected void onPostExecute(Void unused) {
-			mListener.onFinish(mException);
-		}
 	}
 
 	public static void writeFile(File dir, String basename, Object object) throws Exception {
@@ -337,95 +258,6 @@ public class FileManager {
 		}
 	}
 	
-	private static class ReadFileThread<T> extends AsyncTask<Void, Void, T> {
-		private final File mDir;
-		private final String mBasename;
-		private final Class<T> mClassObject;
-		private final ReadListener<T> mListener;
-		private Exception mException = null;
-		
-		public ReadFileThread(File dir, String basename, Class<T> classObject, ReadListener<T> listener) {
-			mDir = dir;
-			mBasename = basename;
-			mClassObject = classObject;
-			mListener = listener;
-		}
-		
-		@Override protected T doInBackground(Void... unused) {
-			try {
-				return FileManager.readFile(mDir, mBasename, mClassObject);
-			} catch (Exception e) {
-				mException = e;
-				return null;
-			}
-		}
-		
-		@Override protected void onPostExecute(T record) {
-			mListener.onFinish(mException, record);
-		}
-	}
-	
-	private static class DeleteFilesThread extends AsyncTask<Void, Void, Void> {
-		private final File mDir;
-		private final String[] mBasenames;
-		private final ResultListener mListener;
-		private Exception mException = null;
-		
-		public DeleteFilesThread(
-				File dir,
-				String[] basenames,
-				ResultListener listener) { 
-			mDir = dir; 
-			mBasenames = basenames;
-			mListener = listener; 
-		}
-		
-		@Override protected Void doInBackground(Void... unused) {
-			StringBuilder error = null;
-			for (String basename : mBasenames) {
-				if (!new File(mDir, basename).delete()) {
-					if (error == null) {
-						error = new StringBuilder();
-						error.append("Failed to delete: ");
-					} else {
-						error.append(", ");
-					}
-					error.append(basename);
-				}
-			}
-			if (error != null) {
-				mException = new Exception(error.toString());
-			}
-			return null;
-		}
-		
-		@Override protected void onPostExecute(Void unused) {
-			mListener.onFinish(mException);
-		}
-	}
-
-	private static class ListThread extends AsyncTask<Void, Void, ArrayList<ParsedFilename>> {
-		private final File mDir;
-		private final ListFilesListener mListener;
-		private Exception mException = null;
-		ListThread(File dir, ListFilesListener listener) { mDir = dir; mListener = listener; }
-		
-		@Override
-		protected ArrayList<ParsedFilename> doInBackground(Void... unused) {
-			try {
-				return listFiles(mDir);
-			} catch (Exception e) {
-				mException = e;
-				return null;
-			}
-		}
-
-		@Override
-		protected void onPostExecute(ArrayList<ParsedFilename> records) {
-			mListener.onFinish(mException, records);
-		}
-	}
-
 	public static ArrayList<ParsedFilename> listFiles(File dir) {
 		ArrayList<ParsedFilename> list = new ArrayList<ParsedFilename>();
 		for (String basename : dir.list()) {
@@ -436,6 +268,4 @@ public class FileManager {
 		}
 	    return list;
 	}
-	
-	
 }
