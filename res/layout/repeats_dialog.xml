@@ -18,8 +18,8 @@
       android:text="Repeats:" />
    <kankan.wheel.widget.WheelView
             android:id="@+id/repeats"
-            android:layout_width="100dp"
-            android:layout_height="70dp"
+            android:layout_width="140dp"
+            android:layout_height="100dp"
             android:layout_gravity="center_vertical"
             android:layout_marginLeft="10dp"/>
   </LinearLayout>

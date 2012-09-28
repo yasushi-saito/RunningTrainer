@@ -30,12 +30,75 @@ import android.widget.RadioButton;
 public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	static private final String TAG = "WorkoutCanvasView";
 
+	private final static String[] WHEEL_PACE_STRINGS = new String[] {
+		"0:00", 
+		"2:00",	"2:05", "2:10", "2:15", "2:20", "2:25", "2:30", "2:35", "2:40", "2:45", "2:50", "2:55", 
+		"3:00",	"3:05", "3:10", "3:15", "3:20", "3:25", "3:30", "3:35", "3:40", "3:45", "3:50", "3:55", 
+		"4:00",	"4:05", "4:10", "4:15", "4:20", "4:25", "4:30", "4:35", "4:40", "4:45", "4:50", "4:55", 
+		"5:00",	"5:05", "5:10", "5:15", "5:20", "5:25", "5:30", "5:35", "5:40", "5:45", "5:50", "5:55", 
+		"6:00",	"6:05", "6:10", "6:15", "6:20", "6:25", "6:30", "6:35", "6:40", "6:45", "6:50", "6:55", 
+		"7:00",	"7:05", "7:10", "7:15", "7:20", "7:25", "7:30", "7:35", "7:40", "7:45", "7:50", "7:55", 
+		"8:00",	"8:05", "8:10", "8:15", "8:20", "8:25", "8:30", "8:35", "8:40", "8:45", "8:50", "8:55", 
+		"9:00",	"9:05", "9:10", "9:15", "9:20", "9:25", "9:30", "9:35", "9:40", "9:45", "9:50", "9:55", 
+		"10:00", "10:05", "10:10", "10:15", "10:20", "10:25", "10:30", "10:35", "10:40", "10:45", "10:50", "10:55", 
+		"11:00", "11:05", "11:10", "11:15", "11:20", "11:25", "11:30", "11:35", "11:40", "11:45", "11:50", "11:55", 
+		"12:00", "12:05", "12:10", "12:15", "12:20", "12:25", "12:30", "12:35", "12:40", "12:45", "12:50", "12:55", 
+		"13:00", "13:05", "13:10", "13:15", "13:20", "13:25", "13:30", "13:35", "13:40", "13:45", "13:50", "13:55", 
+		"14:00", "14:05", "14:10", "14:15", "14:20", "14:25", "14:30", "14:35", "14:40", "14:45", "14:50", "14:55", 
+		"15:00", "15:30", "16:00", "16:30", "17:00", "18:00", "18:30", "19:00", "19:30", "20:00", 
+		"20:30", "21:00", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "24:00", "24:30",
+		"25:00", "25:30", "26:00", "26:30", "27:00", "28:00", "98:30", "29:00", "29:30", "30:00", 
+		"40:00", "45:00", "50:00", 
+		"∞"
+	};
+	private final static String[] WHEEL_DURATION_STRINGS = new String[] {
+		"0:05", "0:10", "0:15", "0:20", "0:25", "0:30", "0:35", "0:40", "0:45", "0:50", "0:55", 
+		"1:00",	"1:05", "1:10", "1:15", "1:20", "1:25", "1:30", "1:35", "1:40", "1:45", "1:50", "1:55", 
+		"2:00",	"2:10", "2:15", "2:30", "2:45", 
+		"3:00",	"3:10", "3:15", "3:30", "3:45", 
+		"4:00",	"4:10", "4:15", "4:30", "4:45", 
+		"5:00",	"5:10", "5:15", "5:30", "5:45", 
+		"6:00",	"6:10", "6:15", "6:30", "6:45", 
+		"7:00",	"7:10", "7:15", "7:30", "7:45", 
+		"8:00",	"8:10", "8:15", "8:30", "8:45", 
+		"9:00",	"9:10", "9:15", "9:30", "9:45", 
+		"10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+		"15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30",
+		"20:00", "20:30", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "24:00", "24:30",
+		"25:00", "25:30", "26:00", "26:30", "27:00", "27:30", "28:00", "28:30", "29:00", "29:30",
+		"30:00", "35:00", "40:00", "45:00", "50:00", "55:00", 
+		"1:00:00", "1:15:00", "1:30:00", "1:45:00",					
+		"2:00:00", "2:15:00", "2:30:00", "2:45:00",							
+		"3:00:00", "3:15:00", "3:30:00", "3:45:00",							
+		"4:00:00", "4:15:00", "4:30:00", "4:45:00",							
+		"5:00:00", "5:15:00", "5:30:00", "5:45:00",							
+		"6:00:00", "6:15:00", "6:30:00", "6:45:00",							
+		"7:00:00", "7:15:00", "7:30:00", "7:45:00",							
+		"∞"
+	};
+	private final static String[] WHEEL_DISTANCE_STRINGS = new String[]{
+		"0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9",
+		"1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9",
+		"2.0", "2.5", "3.0", "3.5", "4.0", "4.5", "5.0", "5.5", "6.0", "6.5",
+		"7.0", "7.5", "8.0", "8.5", "9.0", "9.5",
+		"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+		"20", "21", "22", "23", "24", "25", "26", "27", "28", "29",
+		"30", "31", "32", "33", "34", "35", "36", "37", "38", "39",
+		"40", "41", "42", "43", "44", "45", "46", "47", "48", "49",
+		"50", "51", "52", "53", "54", "55", "56", "57", "58", "59",
+		"60", "61", "62", "63", "64", "65", "66", "67", "68", "69",
+		"70", "71", "72", "73", "74", "75", "76", "77", "78", "79",
+		"80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
+		"90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
+		"∞"
+	};
+			
 	public static class IntervalDialog extends DialogFragment {
 		private View mDistanceBox, mDurationBox;
-		private EditText mDistanceEditor;
-		private EditText mDurationEditor;		
-		private EditText mFastPaceEditor;
-		private EditText mSlowPaceEditor;		
+		private WheelView mDistanceWheel;
+		private WheelView mDurationWheel;		
+		private WheelView mFastPaceWheel;
+		private WheelView mSlowPaceWheel;		
 		private final View mParentView;
 		private final Interval mElem;
 		
@@ -50,8 +113,13 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 	        mDistanceBox = v.findViewById(R.id.box_distance);
 	        mDurationBox = v.findViewById(R.id.box_duration);
-	        mDistanceEditor = (EditText)v.findViewById(R.id.edit_distance);
-	        mDurationEditor = (EditText)v.findViewById(R.id.edit_duration);
+	        mDistanceWheel = (WheelView)v.findViewById(R.id.wheel_distance);
+	        mDistanceWheel.setViewAdapter(
+	        		new ArrayWheelAdapter<String>(getActivity(), WHEEL_DISTANCE_STRINGS));
+	        
+	        mDurationWheel = (WheelView)v.findViewById(R.id.wheel_duration);
+	        mDurationWheel.setViewAdapter(
+	        		new ArrayWheelAdapter<String>(getActivity(), WHEEL_DURATION_STRINGS));
 	        
 	        RadioButton distanceButton = (RadioButton)v.findViewById(R.id.radio_distance);
 	        
@@ -71,31 +139,35 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 	        if (mElem.getDistance() > 0) {
 	        	distanceButton.setChecked(true);
-	        	mDistanceEditor.setText(Util.distanceToString(mElem.getDistance()));
+	        	// mDistanceWheel.setText(Util.distanceToString(mElem.getDistance()));
 	        	onDistanceButtonPress();
 	        } else if (mElem.getDuration() > 0) {
 	        	durationButton.setChecked(true);
-	        	mDurationEditor.setText(Util.durationToString(mElem.getDuration()));
+	        	// mDurationWheel.setText(Util.durationToString(mElem.getDuration()));
 	        	onDurationButtonPress();
 	        } else {
 	        	lapButton.setChecked(true);
 	        	onLapButtonPress();
 	        }
 
-	        mFastPaceEditor = (EditText)v.findViewById(R.id.edit_fast_pace);
+	        mFastPaceWheel = (WheelView)v.findViewById(R.id.wheel_fast_pace);
+	        mFastPaceWheel.setViewAdapter(new ArrayWheelAdapter<String>(getActivity(), WHEEL_PACE_STRINGS));
+	        
 	        final double fast = mElem.getFastTargetPace();
 	        if (Workout.hasFastTargetPace(fast)) {
-	        	mFastPaceEditor.setText(Util.paceToString(fast));
+	        	// mFastPaceEditor.setText(Util.paceToString(fast));
 	        } else {
-	        	mFastPaceEditor.setText("");
+	        	// mFastPaceEditor.setText("");
 	        }
+
+	        mSlowPaceWheel = (WheelView)v.findViewById(R.id.wheel_slow_pace);
+	        mSlowPaceWheel.setViewAdapter(new ArrayWheelAdapter<String>(getActivity(), WHEEL_PACE_STRINGS));
 	        
-	        mSlowPaceEditor = (EditText)v.findViewById(R.id.edit_slow_pace);
 	        final double slow = mElem.getSlowTargetPace();
 	        if (Workout.hasSlowTargetPace(slow)) {
-	        	mSlowPaceEditor.setText(Util.paceToString(slow));
+	        	// mSlowPaceEditor.setText(Util.paceToString(slow));
 	        } else {
-	        	mSlowPaceEditor.setText("");
+	        	// mSlowPaceEditor.setText("");
 	        }
 	        
 	    	AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
@@ -103,16 +175,37 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	                .setPositiveButton(android.R.string.ok,
 	                    new DialogInterface.OnClickListener() {
 	                        public void onClick(DialogInterface dialog, int whichButton) {
-	                        	String durationStr = (mDurationBox.getVisibility() == View.VISIBLE) ? 
-	                        			mDurationEditor.getText().toString() : "";
-	                        	String distanceStr = (mDistanceBox.getVisibility() == View.VISIBLE) ? 
-	                        			mDistanceEditor.getText().toString() : "";
+	                        	String durationStr = "";
+	                        	if (mDurationBox.getVisibility() == View.VISIBLE) {
+	                        		int selection = mDurationWheel.getCurrentItem();
+	                        		if (selection >= 0 && selection < WHEEL_DURATION_STRINGS.length) {
+	                        			durationStr = WHEEL_DURATION_STRINGS[selection];
+	                        		}
+	                        	}
+	                        	String distanceStr = "";
+	                        	if (mDistanceBox.getVisibility() == View.VISIBLE) {
+	                        		int selection = mDistanceWheel.getCurrentItem();
+	                        		if (selection >= 0 && selection < WHEEL_DISTANCE_STRINGS.length) {
+	                        			distanceStr = WHEEL_DISTANCE_STRINGS[selection];
+	                        		}
+	                        	}
+	                        	String fastPaceStr = ""; // TODO: set default
+	                        	int selection = mFastPaceWheel.getCurrentItem();
+	                        	if (selection >= 0 && selection < WHEEL_PACE_STRINGS.length) {
+	                        		fastPaceStr = WHEEL_PACE_STRINGS[selection];
+	                        	}
+	                        	String slowPaceStr = ""; // TODO: set default
+	                        	selection = mSlowPaceWheel.getCurrentItem();
+	                        	if (selection >= 0 && selection < WHEEL_PACE_STRINGS.length) {
+	                        		slowPaceStr = WHEEL_PACE_STRINGS[selection];
+	                        	}
+	                        	
                        			try {
                        				mElem.update(
 	                        			durationStr,
 	                        			distanceStr,
-	                        			mFastPaceEditor.getText().toString(),
-	                        			mSlowPaceEditor.getText().toString());
+	                        			fastPaceStr,
+	                        			slowPaceStr);
 	                        		mParentView.invalidate();
                        			} catch (Exception e) {
 	                        		Util.error(getActivity(), "Failed to update interval: " + e);
@@ -128,15 +221,6 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	                    }
 	                );
 	    	builder.setView(v);
-	    	
-	        final WheelView city = (WheelView)v.findViewById(R.id.city);
-	        ArrayWheelAdapter<String> adapter =
-	                new ArrayWheelAdapter<String>(getActivity(), new String[]{"Foo", "Bar", "Baz"});
-	        adapter.setTextSize(18);
-	        city.setViewAdapter(adapter);
-	        city.setCurrentItem(0);
-	        city.setVisibleItems(2);
-
 	        return builder.create();
 	    }
 	    
@@ -173,7 +257,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	        for (int i = 0; i < 39; ++i) {
 	        	repeatsString[i] = String.format("%d", i + 1);
 	        }
-	        repeatsString[39] = "Forever";
+	        repeatsString[39] = "∞";
 	        final ArrayWheelAdapter<String> adapter = new ArrayWheelAdapter<String>(getActivity(), repeatsString);
 	        adapter.setTextSize(18);
 	        mNumRepeatsEditor.setViewAdapter(adapter);
@@ -457,7 +541,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		 * Throws an exception on invalid params.
 		 */
 		public void update(String repeatsStr) throws Exception {
-			if (repeatsStr.equals("Forever")) {
+			if (repeatsStr.equals("∞")) {
 				mRepeats = Workout.REPEAT_FOREVER;
 			} else {
 				int n = Integer.parseInt(repeatsStr);

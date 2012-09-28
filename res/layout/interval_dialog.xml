@@ -37,12 +37,12 @@
 	        android:layout_height="wrap_content"
 	        android:text="Mile:" />
 
-	    <EditText
-	        android:id="@+id/edit_distance"
-	        android:layout_width="fill_parent"
-	        android:layout_height="wrap_content"
-	        android:inputType="numberDecimal"
-	        android:text="1.00" />
+        <kankan.wheel.widget.WheelView
+	        android:id="@+id/wheel_distance"
+            android:layout_width="140dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="10dp"/>
     </TableRow>
 
     <TableRow
@@ -52,43 +52,34 @@
   		    android:layout_height="wrap_content"
   		    android:text="Duration:" />
 
-		<EditText
-		    android:id="@+id/edit_duration"
-		    android:layout_width="fill_parent"
-		    android:layout_height="wrap_content"
-		    android:inputType="time"
-		    android:text="00:05:00" />
+        <kankan.wheel.widget.WheelView
+	        android:id="@+id/wheel_duration"
+            android:layout_width="140dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="10dp"/>
 	</TableRow>
 	<TableRow>
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Pace (fast end):" />
-	    <EditText
-	        android:id="@+id/edit_fast_pace"
-	        android:layout_width="fill_parent"
-	        android:layout_height="wrap_content"
-	        android:inputType="time"
-	        android:text="00:07:00" />
+        <kankan.wheel.widget.WheelView
+	        android:id="@+id/wheel_fast_pace"
+            android:layout_width="140dp"
+            android:layout_height="100dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="10dp"/>
 	</TableRow>
 	<TableRow>
 	    <TextView
 	        android:layout_width="wrap_content"
 	        android:layout_height="wrap_content"
 	        android:text="Pace (slow end):" />
-
-	    <EditText
-	        android:id="@+id/edit_slow_pace"
-	        android:layout_width="fill_parent"
-	        android:layout_height="wrap_content"
-	        android:inputType="time"
-	        android:text="00:08:00" />
-	</TableRow>
-	<TableRow>
         <kankan.wheel.widget.WheelView
-            android:id="@+id/city"
-            android:layout_width="wrap_content"
-            android:layout_height="70dp"
+	        android:id="@+id/wheel_slow_pace"
+            android:layout_width="140dp"
+            android:layout_height="100dp"
             android:layout_gravity="center_vertical"
             android:layout_marginLeft="10dp"/>
 	</TableRow>
