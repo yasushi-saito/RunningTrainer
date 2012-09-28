@@ -84,6 +84,14 @@
 	        android:inputType="time"
 	        android:text="00:08:00" />
 	</TableRow>
+	<TableRow>
+        <kankan.wheel.widget.WheelView
+            android:id="@+id/city"
+            android:layout_width="wrap_content"
+            android:layout_height="70dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="10dp"/>
+	</TableRow>
   </TableLayout>
       
 </LinearLayout>

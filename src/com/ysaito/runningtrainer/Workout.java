@@ -1,6 +1,7 @@
 package com.ysaito.runningtrainer;
 
 public class Workout {
+	static public final int REPEAT_FOREVER = 9999;
 	static public final double NO_FAST_TARGET_PACE = 0.0;
 	static public final double NO_SLOW_TARGET_PACE = 9999.0;
 	

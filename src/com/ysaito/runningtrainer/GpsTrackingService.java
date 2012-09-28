@@ -28,8 +28,7 @@ public class GpsTrackingService extends Service {
     	public void onGpsUpdate(
     			ArrayList<HealthGraphClient.JsonWGS84> path,
     			LapStats totalStats,
-    			LapStats userLapStats,
-    			LapStats autoLapStats,
+    			LapStats lapStats,
     			Workout currentInterval);
     	public void onGpsError(String message);
     }
@@ -46,7 +45,7 @@ public class GpsTrackingService extends Service {
     	if (mSingleton != null) {
     		// Call the listener immediately to give the initial stats
     		final Workout currentInterval = mSingleton.getCurrentWorkoutInterval();
-    		listener.onGpsUpdate(mSingleton.mPath, mSingleton.mTotalStats, mSingleton.mUserLapStats, mSingleton.mAutoLapStats, currentInterval);
+    		listener.onGpsUpdate(mSingleton.mPath, mSingleton.mTotalStats, mSingleton.mLapStats, currentInterval);
     	}
     }
     public static void unregisterListener(RecordingActivity listener) {
@@ -82,7 +81,9 @@ public class GpsTrackingService extends Service {
     			speak(Workout.workoutToSpeechText(newWorkout), null);
     		}
     	}
-    	mUserLapStats = new LapStats();
+    	final long curDistance = (long)mTotalStats.getDistance();
+    	mLapStartDistance = curDistance;
+    	mLapStats = new LapStats();
     }
     
     public final void onLapButtonPress() {
@@ -94,8 +95,7 @@ public class GpsTrackingService extends Service {
     	speak("Paused", null);
     	mState = STOPPED;  
     	mTotalStats.onPause();
-    	mUserLapStats.onPause();
-    	mAutoLapStats.onPause();
+    	mLapStats.onPause();
     	updateTimer();
     }
     
@@ -103,8 +103,7 @@ public class GpsTrackingService extends Service {
     	speak("Resumed", null);
     	mState = RUNNING;
     	mTotalStats.onResume();
-    	mUserLapStats.onResume();
-    	mAutoLapStats.onResume();
+    	mLapStats.onResume();
     	updateTimer();
     }
     
@@ -138,12 +137,6 @@ public class GpsTrackingService extends Service {
     }
     
     private void speakStats() {
-    	// newerStats is the newer of {user,auto}LapStats.
-    	LapStats newerLapStats = mUserLapStats;
-    	if (newerLapStats.getStartTimeSeconds() < mAutoLapStats.getStartTimeSeconds()) {
-    		newerLapStats = mAutoLapStats;
-    	}
-    	
     	if (Settings.speakTotalDistance)
     		speak("Total distance " + Util.distanceToSpeechText(mTotalStats.getDistance()), null);
     	if (Settings.speakTotalDuration)
@@ -153,22 +146,19 @@ public class GpsTrackingService extends Service {
     	if (Settings.speakAveragePace)
     		speak("Average pace " + Util.paceToSpeechText(mTotalStats.getPace()), null);
     	if (Settings.speakLapDistance)
-    		speak("Lap distance " + Util.distanceToSpeechText(newerLapStats.getDistance()), null);
+    		speak("Lap distance " + Util.distanceToSpeechText(mLapStats.getDistance()), null);
     	if (Settings.speakLapDuration)
-    		speak("Lap time " + Util.durationToSpeechText(newerLapStats.getDurationSeconds()), null);
+    		speak("Lap time " + Util.durationToSpeechText(mLapStats.getDurationSeconds()), null);
     	if (Settings.speakLapPace)
-    		speak("Lap pace " + Util.paceToSpeechText(newerLapStats.getPace()), null);
-    	if (Settings.speakAutoLapDistance)
-    		speak("Auto lap distance " + Util.distanceToSpeechText(mAutoLapStats.getDistance()), null);
-    	if (Settings.speakAutoLapDuration)
-    		speak("Auto lap time " + Util.durationToSpeechText(mAutoLapStats.getDurationSeconds()), null);
-    	if (Settings.speakAutoLapPace)
-    		speak("Auto lap pace " + Util.paceToSpeechText(mAutoLapStats.getPace()), null);
+    		speak("Lap pace " + Util.paceToSpeechText(mLapStats.getPace()), null);
     }
     
     private long mLastReportedTotalDistance = 0;
     private long mLastReportedTotalDuration = 0;
-    private long mLastReportedAutoLapDistance = 0;
+    
+    // The total distance value when the mLapStats was reset.
+    // Used to perform auto lapping.
+    private long mLapStartDistance = 0;
 
     private String mLastPaceAlertText = "";
     private double mLastPaceAlertTime = 0.0;
@@ -178,17 +168,17 @@ public class GpsTrackingService extends Service {
     	if (currentWorkout != null) {
     		boolean newLap = false;
     		if (currentWorkout.distance > 0.0 &&
-    				mUserLapStats.getDistance() >= currentWorkout.distance) {
+    				mLapStats.getDistance() >= currentWorkout.distance) {
     			newLap = true;
     		}
     		if (currentWorkout.duration > 0.0 &&
-    				mUserLapStats.getDurationSeconds() >= currentWorkout.duration) {
+    				mLapStats.getDurationSeconds() >= currentWorkout.duration) {
     			newLap = true;
     		}
     		if (newLap) {
     			startNewLap();
     		} else {
-    			final double pace = mUserLapStats.getPace();
+    			final double pace = mLapStats.getPace();
     			String text = null;
     			if (pace == 0.0) {
     				// No movement. Special case and shut up.
@@ -209,12 +199,13 @@ public class GpsTrackingService extends Service {
     		}
     	}
     	
-    	if (Settings.autoLapDistanceInterval > 0) {
-    		final int interval = (int)Math.max(50, Settings.autoLapDistanceInterval);
+    	// Autolap is disabled when a workout is active
+    	if (Settings.autoLapDistanceInterval > 0 && mWorkoutIterator == null) {
+    		final int interval = (int)Settings.autoLapDistanceInterval;
     		final long newDistance = (long)mTotalStats.getDistance();
-    		if ((mLastReportedAutoLapDistance / interval) != (newDistance / interval)) {
-    			mLastReportedAutoLapDistance = newDistance;
-    			mAutoLapStats = new LapStats();
+    		if ((mLapStartDistance / interval) != (newDistance / interval)) {
+    			mLapStartDistance = newDistance;
+    			mLapStats = new LapStats();
     		}
     	}
     	boolean needSpeak = false;
@@ -252,7 +243,7 @@ public class GpsTrackingService extends Service {
     	updateStats();
     	final Workout currentInterval = getCurrentWorkoutInterval();
     	for (StatusListener listener : mListeners) {
-    		listener.onGpsUpdate(mPath, mTotalStats, mUserLapStats, mAutoLapStats, currentInterval);
+    		listener.onGpsUpdate(mPath, mTotalStats, mLapStats, currentInterval);
     	}
     }
 	
@@ -265,11 +256,8 @@ public class GpsTrackingService extends Service {
 	// Stats since the beginning of the activity. */
 	private LapStats mTotalStats = null;
 	
-    // Stats since the start of the last manual lap
-    private LapStats mUserLapStats = null;
-    
-    // Stats since the start of the last auto lap, i.e., the one that renews every 1mile or 1km.
-    private LapStats mAutoLapStats = null;
+    // Stats since the start of the last lap
+    private LapStats mLapStats = null;
     
 	
 	private static int mInstanceSeq = 0;
@@ -301,8 +289,7 @@ public class GpsTrackingService extends Service {
 		mPath.add(wgs);
 		
 		mTotalStats = new LapStats();
-		mUserLapStats = new LapStats();
-		mAutoLapStats = new LapStats();
+		mLapStats = new LapStats();
 		
 		// Define a listener that responds to location updates
 		mLocationListener = new LocationListener() {
@@ -439,8 +426,7 @@ public class GpsTrackingService extends Service {
 			}
 			mPath.add(wgs);
 			mTotalStats.onGpsUpdate(wgs);
-			mUserLapStats.onGpsUpdate(wgs);
-			mAutoLapStats.onGpsUpdate(wgs);
+			mLapStats.onGpsUpdate(wgs);
 			notifyListeners();
 		}
 	}
@@ -457,8 +443,7 @@ public class GpsTrackingService extends Service {
 				wgs.type = "gps";
 				mPath.add(wgs);
 				mTotalStats.onGpsUpdate(wgs);
-				mUserLapStats.onGpsUpdate(wgs);
-				mAutoLapStats.onGpsUpdate(wgs);
+				mLapStats.onGpsUpdate(wgs);
 				notifyListeners();
 			}
 		}

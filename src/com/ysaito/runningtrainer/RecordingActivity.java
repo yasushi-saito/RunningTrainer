@@ -125,15 +125,10 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     		mDisplayType = displayType;
     	}
     	
-    	public void update(LapStats totalStats, LapStats userLapStats, LapStats autoLapStats) {
+    	public void update(LapStats totalStats, LapStats lapStats) {
     		String value = "         ";
     		String title = "YY";
     		
-    		// newerStats is the newer of {user,auto}LapStats.
-    		LapStats newerLapStats = userLapStats;
-    		if (newerLapStats.getStartTimeSeconds() < autoLapStats.getStartTimeSeconds()) {
-    			newerLapStats = autoLapStats;
-    		}
     		if (mDisplayType.equals("none")) {
     			;
     		} else if (mDisplayType.equals("total_distance")) {
@@ -150,22 +145,13 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     			value = Util.paceToString(totalStats.getCurrentPace());
     		} else if (mDisplayType.equals("lap_distance")) {
     			title = "Lap " + Util.distanceUnitString();
-    			value = Util.distanceToString(newerLapStats.getDistance());
+    			value = Util.distanceToString(lapStats.getDistance());
     		} else if (mDisplayType.equals("lap_duration")) {
     			title = "Lap time";
-    			value = Util.durationToString(newerLapStats.getDurationSeconds());
+    			value = Util.durationToString(lapStats.getDurationSeconds());
     		} else if (mDisplayType.equals("lap_pace")) {
     			title = "Lap pace";
-    			value = Util.paceToString(newerLapStats.getPace());
-    		} else if (mDisplayType.equals("auto_lap_distance")) {
-    			title = "Autolap " + Util.distanceUnitString();
-    			value = Util.distanceToString(autoLapStats.getDistance());
-    		} else if (mDisplayType.equals("auto_lap_duration")) {
-    			title = "Autolap time";
-    			value = Util.durationToString(autoLapStats.getDurationSeconds());
-    		} else if (mDisplayType.equals("auto_lap_pace")) {
-    			title = "Autolap pace";
-    			value = Util.paceToString(autoLapStats.getPace());
+    			value = Util.paceToString(lapStats.getPace());
     		} else {
     			value = "Unknown display type: " + mDisplayType;
     			title = "???";
@@ -207,8 +193,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     public void onGpsUpdate(
     		ArrayList<HealthGraphClient.JsonWGS84> path,
     		LapStats totalStats,
-    		LapStats userLapStats,
-    		LapStats autoLapStats,
+    		LapStats lapStats,
     		Workout currentInterval) {
     	if (mRecordingState == RESET || mRecordingState == TRANSITIONING) return;
     	
@@ -217,7 +202,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	mTotalStats = totalStats;
     	mMapView.invalidate();
     	for (int i = 0; i < mStatsViews.length; ++i) {
-    		mStatsViews[i].update(totalStats, userLapStats, autoLapStats);
+    		mStatsViews[i].update(totalStats, lapStats);
     	}
     	if (currentInterval != null) {
     		StringBuilder b = new StringBuilder(); 
@@ -350,7 +335,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
         
         final LapStats emptyLapStats = new LapStats(); 
         for (int i = 0; i < mStatsViews.length; ++i) {
-        	mStatsViews[i].update(emptyLapStats, emptyLapStats, emptyLapStats);
+        	mStatsViews[i].update(emptyLapStats, emptyLapStats);
         }
 
     	startListWorkouts();

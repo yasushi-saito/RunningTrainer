@@ -1,6 +1,9 @@
 package com.ysaito.runningtrainer;
 import java.util.ArrayList;
 
+import kankan.wheel.widget.WheelView;
+import kankan.wheel.widget.adapters.ArrayWheelAdapter;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -125,6 +128,15 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	                    }
 	                );
 	    	builder.setView(v);
+	    	
+	        final WheelView city = (WheelView)v.findViewById(R.id.city);
+	        ArrayWheelAdapter<String> adapter =
+	                new ArrayWheelAdapter<String>(getActivity(), new String[]{"Foo", "Bar", "Baz"});
+	        adapter.setTextSize(18);
+	        city.setViewAdapter(adapter);
+	        city.setCurrentItem(0);
+	        city.setVisibleItems(2);
+
 	        return builder.create();
 	    }
 	    
@@ -143,7 +155,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	}
 
 	public static class RepeatsDialog extends DialogFragment {
-		private EditText mNumRepeatsEditor;
+		private WheelView mNumRepeatsEditor;
 		private final View mParentView;
 		private final Repeats mElem;
 		
@@ -156,8 +168,15 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	    public Dialog onCreateDialog(Bundle savedInstanceState) {
 	    	View v = getActivity().getLayoutInflater().inflate(R.layout.repeats_dialog, null);
 
-	        mNumRepeatsEditor = (EditText)v.findViewById(R.id.edit_num_repeats);
-	        mNumRepeatsEditor.setText(Integer.toString(mElem.getRepeats()));
+	        mNumRepeatsEditor = (WheelView)v.findViewById(R.id.repeats);
+	        String[] repeatsString = new String[40];
+	        for (int i = 0; i < 39; ++i) {
+	        	repeatsString[i] = String.format("%d", i + 1);
+	        }
+	        repeatsString[39] = "Forever";
+	        final ArrayWheelAdapter<String> adapter = new ArrayWheelAdapter<String>(getActivity(), repeatsString);
+	        adapter.setTextSize(18);
+	        mNumRepeatsEditor.setViewAdapter(adapter);
 	        
 	    	AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
 	                .setTitle("Edit Repeats")
@@ -165,7 +184,11 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	                    new DialogInterface.OnClickListener() {
 	                        public void onClick(DialogInterface dialog, int whichButton) {
 	                        	try {
-	                        		mElem.update(mNumRepeatsEditor.getText().toString());
+	                        		final int selection = mNumRepeatsEditor.getCurrentItem();
+	                        		if (selection >= 0 && selection < adapter.getItemsCount()) {
+	                        			String value = adapter.getItemText(selection).toString();
+	                        			mElem.update(value);
+	                        		}
 	                        		mParentView.invalidate();
 	                        	} catch (Exception e) {
 	                        		Util.error(getActivity(), "Failed to update repeats: " + e);
@@ -434,11 +457,15 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		 * Throws an exception on invalid params.
 		 */
 		public void update(String repeatsStr) throws Exception {
-			int n = Integer.parseInt(repeatsStr);
-			if (n <= 0) {
-				throw new Exception(repeatsStr + ": Negative repeats not allowed");
+			if (repeatsStr.equals("Forever")) {
+				mRepeats = Workout.REPEAT_FOREVER;
+			} else {
+				int n = Integer.parseInt(repeatsStr);
+				if (n <= 0) {
+					throw new Exception(repeatsStr + ": Negative repeats not allowed");
+				}
+				mRepeats = n;
 			}
-			mRepeats = n;
 		}
 		
 		@Override public String toString() { 

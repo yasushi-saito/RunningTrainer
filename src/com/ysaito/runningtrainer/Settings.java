@@ -31,9 +31,6 @@ public class Settings {
 	static public boolean speakLapDistance;
 	static public boolean speakLapDuration;
 	static public boolean speakLapPace;	
-	static public boolean speakAutoLapDistance;
-	static public boolean speakAutoLapDuration;
-	static public boolean speakAutoLapPace;	
 	
 	private static SharedPreferences mPrefs;
 	private static SharedPreferences.OnSharedPreferenceChangeListener mListener;
@@ -74,9 +71,6 @@ public class Settings {
 			onChange("speak_lap_distance");
 			onChange("speak_lap_duration");
 			onChange("speak_lap_pace");
-			onChange("speak_auto_lap_distance");
-			onChange("speak_auto_lap_duration");
-			onChange("speak_auto_lap_pace");
 		}
 		
 		// Keep the latest context. It's used only to display Toasts on fatal errors.
@@ -119,12 +113,6 @@ public class Settings {
 			speakLapDuration = mPrefs.getBoolean(key, false);
 		} else if (key.equals("speak_lap_pace")) {
 			speakLapPace = mPrefs.getBoolean(key, false);
-		} else if (key.equals("speak_auto_lap_distance")) {
-			speakAutoLapDistance = mPrefs.getBoolean(key, false);
-		} else if (key.equals("speak_auto_lap_duration")) {
-			speakAutoLapDuration = mPrefs.getBoolean(key, false);
-		} else if (key.equals("speak_auto_lap_pace")) {
-			speakAutoLapPace = mPrefs.getBoolean(key, false);
 		} else {
 			if (Util.ASSERT_ENABLED) Util.crash(mContext, "Unsupported key: " + key);
 		}
@@ -132,36 +120,4 @@ public class Settings {
 			listener.onChange();
 		}
 	}
-	
-/*
-	public static Settings getSettings(Context context) {
-		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-		Settings settings = new Settings();
-		
-		settings.unit = METRIC;
-		final String unit = prefs.getString("unit", "US");
-		if (unit.equals("US")) settings.unit = US;
-		
-		settings.viewTypes = new String[6];
-		for (int i = 0; i < settings.viewTypes.length; ++i) {
-			settings.viewTypes[i] = prefs.getString("display" + i, "none");
-		}
-
-		settings.autoLapDistanceInterval = Double.parseDouble(prefs.getString("autolap_distance_interval", "0"));
-		settings.speakTimeInterval = Double.parseDouble(prefs.getString("speak_time_interval", "0"));
-		settings.speakDistanceInterval = Double.parseDouble(prefs.getString("speak_distance_interval", "0"));
-		settings.speakTotalDistance = prefs.getBoolean("speak_total_distance", false);
-		settings.speakTotalDuration = prefs.getBoolean("speak_total_duration", false);
-		settings.speakAveragePace = prefs.getBoolean("speak_average_pace", false);
-		settings.speakCurrentPace = prefs.getBoolean("speak_current_pace", false);
-		settings.speakLapDistance = prefs.getBoolean("speak_lap_distance", false);
-		settings.speakLapDuration = prefs.getBoolean("speak_lap_duration", false);
-		settings.speakLapPace = prefs.getBoolean("speak_lap_pace", false);
-		settings.speakAutoLapDistance = prefs.getBoolean("speak_auto_lap_distance", false);
-		settings.speakAutoLapDuration = prefs.getBoolean("speak_auto_lap_duration", false);
-		settings.speakAutoLapPace = prefs.getBoolean("speak_auto_lap_pace", false);
-		// TODO: fill the locale
-		return settings;
-	}*/
-
 }

@@ -13,11 +13,14 @@
   <TextView
       android:layout_height="wrap_content"
       android:layout_width="wrap_content"
+      android:paddingTop="20dp"
+      android:textSize="15sp"
       android:text="Repeats:" />
-  <EditText android:id="@+id/edit_num_repeats"
-           android:layout_height="wrap_content"
-           android:layout_width="fill_parent"
-           android:inputType="number"
-           android:text="10"/>
+   <kankan.wheel.widget.WheelView
+            android:id="@+id/repeats"
+            android:layout_width="100dp"
+            android:layout_height="70dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginLeft="10dp"/>
   </LinearLayout>
 </LinearLayout>

@@ -109,18 +109,6 @@
         android:key="speak_lap_pace"
         android:title="Lap pace "
         android:defaultValue="false" />
-      <CheckBoxPreference
-        android:key="speak_auto_lap_distance"
-        android:title="Auto lap distance"
-        android:defaultValue="false" />
-      <CheckBoxPreference
-        android:key="speak_auto_lap_duration"
-        android:title="Auto lap duration"
-        android:defaultValue="false" />
-      <CheckBoxPreference
-        android:key="speak_auto_lap_pace"
-        android:title="Auto lap pace "
-        android:defaultValue="false" />
   </PreferenceCategory>
       
 </PreferenceScreen>

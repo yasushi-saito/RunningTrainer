@@ -13,9 +13,6 @@
     <item>Lap distance</item>
     <item>Lap elapsed</item>
     <item>Lap pace</item>
-    <item>Auto lap distance</item>
-    <item>Auto lap elapsed</item>
-    <item>Auto lap pace</item>
     <item>None</item>
   </string-array>
 
@@ -27,9 +24,6 @@
     <item>lap_distance</item>
     <item>lap_duration</item>
     <item>lap_pace</item>
-    <item>auto_lap_distance</item>
-    <item>auto_lap_duration</item>
-    <item>auto_lap_pace</item>
     <item>none</item>
   </string-array>
 
