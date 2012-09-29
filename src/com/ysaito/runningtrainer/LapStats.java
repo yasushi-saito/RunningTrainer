@@ -84,7 +84,6 @@ class LapStats {
 		final double duration = getDurationSeconds();
 		final double distance = getDistance();
 		if (distance <= 0.0) return 0.0;
-		Log.d(TAG, "PACE=" + duration + "/" + distance);
 		return duration / distance;
 	}
     	

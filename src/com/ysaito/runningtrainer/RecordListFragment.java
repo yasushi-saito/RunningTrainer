@@ -131,15 +131,22 @@ public class RecordListFragment extends ListFragment {
 		super.onStart();
 		startListing();
 	}
+
+	private void startBusyThrob() {
+		getActivity().setProgressBarIndeterminateVisibility(true);
+	}
+	private void stopBusyThrob() {
+		getActivity().setProgressBarIndeterminateVisibility(false);
+	}
 	
 	private void startListing() {
-		getActivity().setProgressBarIndeterminateVisibility(true);
+		startBusyThrob();
 		FileManager.runAsync(new FileManager.AsyncRunner<ArrayList<ParsedFilename>>() {
 			public ArrayList<ParsedFilename> doInThread() throws Exception {
 				return FileManager.listFiles(mRecordDir);
 			}
 			public void onFinish(Exception error, ArrayList<ParsedFilename> files) {
-				getActivity().setProgressBarIndeterminateVisibility(false);
+				stopBusyThrob();
 				if (files != null) {
 					mAdapter.reset(files);
 				}
@@ -243,7 +250,7 @@ public class RecordListFragment extends ListFragment {
 			for (int i = 0; i < mAdapter.getCount(); ++i) {
 				filenames[i] = mAdapter.getItem(i);
 			}
-			
+			startBusyThrob();
 			FileManager.runAsync(new FileManager.AsyncRunner<UndoEntry>() {
 				public UndoEntry doInThread() throws Exception {
 					UndoEntry newUndos = new UndoEntry();
@@ -256,6 +263,7 @@ public class RecordListFragment extends ListFragment {
 					return newUndos;
 				}
 				public void onFinish(Exception error, UndoEntry newUndos) {
+					stopBusyThrob();
 					if (error != null) {
 						Util.error(mActivity, "Failed to delete files: " + error);
 					} else {		
@@ -270,6 +278,7 @@ public class RecordListFragment extends ListFragment {
 		case R.id.record_list_undo:
 			if (mUndos.empty()) break;
 			final UndoEntry undo = mUndos.pop();
+			startBusyThrob();
 			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
 				public Void doInThread() throws Exception {
 					for (int i = 0; i < undo.filenames.size(); ++i) {
@@ -278,6 +287,7 @@ public class RecordListFragment extends ListFragment {
 					return null;
 				}
 				public void onFinish(Exception error, Void unused) {
+					stopBusyThrob();
 					if (error != null) {
 						Util.error(mActivity, "Failed to restore file: " + error);
 					} else {		
@@ -297,6 +307,7 @@ public class RecordListFragment extends ListFragment {
 
 		switch (item.getItemId()) {
 		case R.id.record_list_resend: 
+			startBusyThrob();
 			FileManager.runAsync(new FileManager.AsyncRunner<HealthGraphClient.JsonActivity>() {
 				public HealthGraphClient.JsonActivity doInThread() throws Exception {
 					return FileManager.readFile(mRecordDir, summary.getBasename(), HealthGraphClient.JsonActivity.class);
@@ -304,21 +315,21 @@ public class RecordListFragment extends ListFragment {
 				public void onFinish(Exception error, HealthGraphClient.JsonActivity record) {
 					if (error != null) {
 						Util.error(getActivity(), "Failed to read " + summary.getBasename() + ": " + error);
+						stopBusyThrob();
 						return;
-					}
+					} 
 					HealthGraphClient hgClient = HealthGraphClient.getSingleton();
-					getActivity().setProgressBarIndeterminateVisibility(true);
 					hgClient.putNewFitnessActivity(
 							record,
 							new HealthGraphClient.PutNewFitnessActivityListener() {
 								public void onFinish(Exception e, String runkeeperPath) {
+									stopBusyThrob();
 									if (e != null) {
 										Util.error(getActivity(), "Failed to send activity: " + e);
 									} else if (runkeeperPath == null) {
 										Util.error(getActivity(), "Failed to send activity (reason unknown)");
 									} else {
 										Util.info(getActivity(), "Sent activity to runkeeper: " + runkeeperPath);
-										getActivity().setProgressBarIndeterminateVisibility(false);
 										markAsSaved(summary, runkeeperPath);
 										startListing(); 
 									}
@@ -329,6 +340,7 @@ public class RecordListFragment extends ListFragment {
 			return true;
 		case R.id.record_list_delete: 
 			// Read the file contents so that we can save it it in mUndos.
+			startBusyThrob();
 			FileManager.runAsync(new FileManager.AsyncRunner<HealthGraphClient.JsonActivity>() {
 				public JsonActivity doInThread() throws Exception {
 					HealthGraphClient.JsonActivity record = FileManager.readFile(mRecordDir, summary.getBasename(), HealthGraphClient.JsonActivity.class);
@@ -337,6 +349,7 @@ public class RecordListFragment extends ListFragment {
 				}
 
 				public void onFinish(Exception error, JsonActivity value) {
+					stopBusyThrob();
 					if (error != null) {
 						Util.error(mActivity, "Failed to restore file: " + summary.getBasename() + ": " + error);
 					} else {

@@ -21,16 +21,26 @@ public class Settings {
 	static public int unit = METRIC;
 	static public Locale locale = Locale.US;
 	static public String viewTypes[] = new String[]{"none", "none", "none", "none", "none", "none"};
+	
+	public static class SpeechTypes {
+		public boolean totalDistance;
+		public boolean totalDuration;	
+		public boolean averagePace;		
+		public boolean currentPace;
+		public boolean lapDistance;
+		public boolean lapDuration;
+		public boolean lapPace;	
+		public void unionFrom(final SpeechTypes other) {
+			
+		}
+	}
 	static public double autoLapDistanceInterval; // in meters. <= 0 if disabled
 	static public double speakDistanceInterval;  // in meters. <=0 if disabled
 	static public double speakTimeInterval;  // in seconds. <=0 if disabled
-	static public boolean speakTotalDistance;
-	static public boolean speakTotalDuration;	
-	static public boolean speakAveragePace;		
-	static public boolean speakCurrentPace;
-	static public boolean speakLapDistance;
-	static public boolean speakLapDuration;
-	static public boolean speakLapPace;	
+	static public boolean speakOnLap;   // speak at the end of a lap  
+	static public SpeechTypes speakDistanceTypes = new SpeechTypes();
+	static public SpeechTypes speakTimeTypes = new SpeechTypes();	
+	static public SpeechTypes speakOnLapTypes = new SpeechTypes();		
 	
 	private static SharedPreferences mPrefs;
 	private static SharedPreferences.OnSharedPreferenceChangeListener mListener;
@@ -62,15 +72,31 @@ public class Settings {
 			onChange("unit");
 			for (int i = 0; i < 6; ++i) onChange("display" + i);
 			onChange("autolap_distance_interval");
-			onChange("speak_time_interval");
 			onChange("speak_distance_interval");
-			onChange("speak_total_distance");
-			onChange("speak_total_duration");
-			onChange("speak_average_pace");
-			onChange("speak_current_pace");
-			onChange("speak_lap_distance");
-			onChange("speak_lap_duration");
-			onChange("speak_lap_pace");
+			onChange("speak_distance_total_distance");
+			onChange("speak_distance_total_duration");
+			onChange("speak_distance_average_pace");
+			onChange("speak_distance_current_pace");
+			onChange("speak_distance_lap_distance");
+			onChange("speak_distance_lap_duration");
+			onChange("speak_distance_lap_pace");
+
+			onChange("speak_time_interval");
+			onChange("speak_time_total_distance");
+			onChange("speak_time_total_duration");
+			onChange("speak_time_average_pace");
+			onChange("speak_time_current_pace");
+			onChange("speak_time_lap_distance");
+			onChange("speak_time_lap_duration");
+			onChange("speak_time_lap_pace");
+
+			onChange("speak_onlap_total_distance");
+			onChange("speak_onlap_total_duration");
+			onChange("speak_onlap_average_pace");
+			onChange("speak_onlap_current_pace");
+			onChange("speak_onlap_lap_distance");
+			onChange("speak_onlap_lap_duration");
+			onChange("speak_onlap_lap_pace");
 		}
 		
 		// Keep the latest context. It's used only to display Toasts on fatal errors.
@@ -99,20 +125,48 @@ public class Settings {
 			speakTimeInterval = Double.parseDouble(mPrefs.getString(key, "0"));
 		} else if (key.equals("speak_distance_interval")) {
 			speakDistanceInterval = Double.parseDouble(mPrefs.getString(key, "0"));
-		} else if (key.equals("speak_total_distance")) {
-			speakTotalDistance = mPrefs.getBoolean(key, false);
-		} else if (key.equals("speak_total_duration")) {
-			speakTotalDuration = mPrefs.getBoolean(key, false);
-		} else if (key.equals("speak_average_pace")) {
-			speakAveragePace = mPrefs.getBoolean(key, false);
-		} else if (key.equals("speak_current_pace")) {
-			speakCurrentPace = mPrefs.getBoolean(key, false);
-		} else if (key.equals("speak_lap_distance")) {
-			speakLapDistance = mPrefs.getBoolean(key, false);
-		} else if (key.equals("speak_lap_duration")) {
-			speakLapDuration = mPrefs.getBoolean(key, false);
-		} else if (key.equals("speak_lap_pace")) {
-			speakLapPace = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_distance_total_distance")) {
+			speakDistanceTypes.totalDistance = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_distance_total_duration")) {
+			speakDistanceTypes.totalDuration = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_distance_average_pace")) {
+			speakDistanceTypes.averagePace = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_distance_current_pace")) {
+			speakDistanceTypes.currentPace = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_distance_lap_distance")) {
+			speakDistanceTypes.lapDistance = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_distance_lap_duration")) {
+			speakDistanceTypes.lapDuration = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_distance_lap_pace")) {
+			speakDistanceTypes.lapPace = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_time_total_distance")) {
+			speakTimeTypes.totalDistance = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_time_total_duration")) {
+			speakTimeTypes.totalDuration = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_time_average_pace")) {
+			speakTimeTypes.averagePace = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_time_current_pace")) {
+			speakTimeTypes.currentPace = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_time_lap_distance")) {
+			speakTimeTypes.lapDistance = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_time_lap_duration")) {
+			speakTimeTypes.lapDuration = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_time_lap_pace")) {
+			speakTimeTypes.lapPace = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_onlap_total_distance")) {
+			speakOnLapTypes.totalDistance = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_onlap_total_duration")) {
+			speakOnLapTypes.totalDuration = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_onlap_average_pace")) {
+			speakOnLapTypes.averagePace = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_onlap_current_pace")) {
+			speakOnLapTypes.currentPace = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_onlap_lap_distance")) {
+			speakOnLapTypes.lapDistance = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_onlap_lap_duration")) {
+			speakOnLapTypes.lapDuration = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_onlap_lap_pace")) {
+			speakOnLapTypes.lapPace = mPrefs.getBoolean(key, false);
 		} else {
 			if (Util.ASSERT_ENABLED) Util.crash(mContext, "Unsupported key: " + key);
 		}

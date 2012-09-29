@@ -9,13 +9,17 @@ import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
 import com.ysaito.runningtrainer.FileManager.ParsedFilename;
+import com.ysaito.runningtrainer.HealthGraphClient.JsonActivity;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -24,6 +28,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -36,10 +41,57 @@ import android.widget.Toast;
 public class RecordingActivity extends MapActivity implements GpsTrackingService.StatusListener {
     static final String TAG = "Recording";
 
+    private GpsTrackingService mGpsService;
+    private boolean mIsBound = false;
+    
+    private ServiceConnection mGpsServiceConnection = new ServiceConnection() {
+    	public void onServiceConnected(ComponentName className, IBinder service) {
+    		Util.info(mThisActivity, "CONNECTED0!");
+    		mGpsService = ((GpsTrackingService.Binder)service).getService();
+    		if (mIsBound) {
+    			mGpsService.registerListener(mThisActivity);
+    		}
+    		Util.info(mThisActivity, "CONNECTED!");
+    	}
+
+    	public void onServiceDisconnected(ComponentName name) {
+    		Log.d(TAG, "DISCANNECTED!");
+    		Util.info(mThisActivity, "DISCONN");
+    		mGpsService = null;
+    	}
+    };
+
+    void startGpsService() {
+    	if (!mIsBound) {
+    		// Establish a connection with the service.  We use an explicit
+    		// class name because we want a specific service implementation that
+    		// we know will be running in our own process (and thus won't be
+    		// supporting component replacement by other applications).
+    		Intent intent = new Intent(this, GpsTrackingService.class);
+    		getApplicationContext().startService(intent);
+    		getApplicationContext().bindService(intent,
+    				mGpsServiceConnection, 
+    				Context.BIND_AUTO_CREATE);
+    		mIsBound = true;
+    		Log.d(TAG, "START GPS!");
+    	}
+    }
+
+    void detachGpsService() {
+    	if (mIsBound) {
+    		if (mGpsService != null) mGpsService.unregisterListener(this);
+    		// Detach our existing connection.
+    		getApplicationContext().unbindService(mGpsServiceConnection);
+    		mGpsService = null;
+    		mIsBound = false;
+    	}
+    }
+    
     static public class MyOverlay extends Overlay {
         private ArrayList<GeoPoint> mPoints;
         private double mCurrentAccuracy; // the latest report on GPS accuracy (meters)
         private GeoPoint mCurrentLocation;
+        private  double mStartTime = -1.0;
         
         public MyOverlay() {
             mPoints = new ArrayList<GeoPoint>();
@@ -50,7 +102,11 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     		mCurrentLocation = null;
     	}
 
-        public void updatePath(ArrayList<HealthGraphClient.JsonWGS84> path) {
+        public void updatePath(double startTime, ArrayList<HealthGraphClient.JsonWGS84> path) {
+        	if (startTime != mStartTime) {
+        		mStartTime = startTime;
+        		mPoints.clear();
+        	}
         	while (mPoints.size() < path.size()) {
         		HealthGraphClient.JsonWGS84 point = path.get(mPoints.size());
         		GeoPoint p = new GeoPoint((int)(point.latitude * 1e6), (int)(point.longitude * 1e6));
@@ -161,7 +217,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	}
     }
 
-    private Activity mThisActivity;
+    private RecordingActivity mThisActivity;
     private File mRecordDir;
     private MyOverlay mMapOverlay;
     private MapView mMapView;
@@ -173,15 +229,8 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     private Button mStartStopButton;
     private Button mLapButton;    
 
-    private static final int RESET = GpsTrackingService.RESET;                  // Initial state
-    private static final int RUNNING = GpsTrackingService.RUNNING;              // Running state.
-    private static final int STOPPED = GpsTrackingService.STOPPED;              // Paused state. The GPS activity is live, but the stats won't count
-    private static final int TRANSITIONING = GpsTrackingService.TRANSITIONING;  // Doing async I/O. No state transition allowed until the I/O finishes
-    private int mRecordingState = RESET;
+    private boolean mTransitioning = false;
 
-    // Current activity. Non-null only when mRecordingState != RESET.
-    private HealthGraphClient.JsonActivity mRecord;
-    
     private LapStats mTotalStats = null;
     ArrayList<HealthGraphClient.JsonWGS84> mLastReportedPath = null;
     
@@ -191,30 +240,44 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
 	}
 
     public void onGpsUpdate(
-    		ArrayList<HealthGraphClient.JsonWGS84> path,
-    		LapStats totalStats,
-    		LapStats lapStats,
-    		Workout currentInterval) {
-    	if (mRecordingState == RESET || mRecordingState == TRANSITIONING) return;
-    	
-    	mLastReportedPath = path;
-    	mMapOverlay.updatePath(path);
-    	mTotalStats = totalStats;
-    	mMapView.invalidate();
-    	for (int i = 0; i < mStatsViews.length; ++i) {
-    		mStatsViews[i].update(totalStats, lapStats);
-    	}
-    	if (currentInterval != null) {
-    		StringBuilder b = new StringBuilder(); 
-			Workout.addIntervalToDisplayStringTo(
-					currentInterval.duration, 
-					currentInterval.distance, 
-					currentInterval.fastTargetPace, 
-					currentInterval.slowTargetPace, b);
-    		mWorkoutTitle.setText(b.toString());
+    		int newState,
+    		GpsTrackingService.ActivityStatus status) {
+    	if (newState == GpsTrackingService.RESET) {
+    		mStartStopButton.setText(R.string.start);
+    		mLapButton.setEnabled(false);
+    		mWorkoutListSpinner.setVisibility(View.GONE);
+    		mWorkoutListSpinner.setVisibility(View.VISIBLE);
+    		mWorkoutTitle.setText("Workout: ");
     	} else {
-    		mWorkoutTitle.setText("No workout set");
-    	}
+    		if (newState == GpsTrackingService.RUNNING) {
+    			mStartStopButton.setText(R.string.pause); 
+    			mLapButton.setEnabled(true);
+    		} else {
+    			mStartStopButton.setText(R.string.resume);
+    			mLapButton.setEnabled(false);
+    		}
+    		mWorkoutListSpinner.setVisibility(View.GONE);
+    	}        
+        if (status != null) {
+        	mLastReportedPath = status.path;
+        	mMapOverlay.updatePath(status.startTime, status.path);
+        	mTotalStats = status.totalStats;
+        	mMapView.invalidate();
+        	for (int i = 0; i < mStatsViews.length; ++i) {
+        		mStatsViews[i].update(status.totalStats, status.lapStats);
+        	}
+        	if (status.currentInterval != null) {
+        		StringBuilder b = new StringBuilder(); 
+        		Workout.addIntervalToDisplayStringTo(
+        				status.currentInterval.duration, 
+        				status.currentInterval.distance, 
+        				status.currentInterval.fastTargetPace, 
+        				status.currentInterval.slowTargetPace, b);
+        		mWorkoutTitle.setText(b.toString());
+        	} else {
+        		mWorkoutTitle.setText("No workout set");
+        	}
+        }
     }
 
     private LocationManager mLocationManager;
@@ -222,7 +285,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
 
     @Override public void onPause() {
     	super.onPause();
-    	GpsTrackingService.unregisterListener(this);
+    	detachGpsService();
         mLocationManager.removeUpdates(mLocationListener);
     }
 
@@ -299,7 +362,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     
     @Override public void onResume() {
     	super.onResume();
-
+    	Log.d(TAG, "RESUME");
         // Define a listener that responds to location updates
         mLocationListener = new LocationListener() {
     		public void onLocationChanged(Location location) {
@@ -339,18 +402,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
         }
 
     	startListWorkouts();
-        mRecordingState = GpsTrackingService.getServiceState();
-        Log.d(TAG, "STATE=" + mRecordingState);
-        if (mRecordingState == RUNNING) {
-        	mStartStopButton.setText(R.string.pause); 
-        } else if (mRecordingState == RESET) {
-        	mStartStopButton.setText(R.string.start);
-        } else {
-        	mStartStopButton.setText(R.string.resume);
-        }
-        
-        // RegisterListener may call the listener method
-        GpsTrackingService.registerListener(this);
+        startGpsService();
     }
     
     @Override
@@ -376,19 +428,16 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	mLapButton.setEnabled(false);  // the lap button is disabled unless the activity is running
         mLapButton.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
-        		GpsTrackingService service = GpsTrackingService.getSingleton();  
-        		if (service != null) service.onLapButtonPress();
+        		if (mGpsService != null) {
+        			mGpsService.onLapButtonPress();
+        		}
         	}
         });
         
         mStartStopButton = (Button)findViewById(R.id.start_stop_button);
         mStartStopButton.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
-        		if (mRecordingState == RESET || mRecordingState == STOPPED) {
-        			onStartButtonPress();
-        		} else {
-        			onStopButtonPress();
-        		}
+        		onStartStopButtonPress();
         	}
         });
         
@@ -403,131 +452,113 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     @Override
     public void onDestroy() {
     	super.onDestroy();
-    	if (Util.ASSERT_ENABLED && GpsTrackingService.isListenerRegistered(this)) {
-    		Util.crash(this, "onPause not called??");
+    	detachGpsService();
+    	if (Util.ASSERT_ENABLED) {
+    		if (mGpsService != null && mGpsService.isListenerRegistered(this)) {
+    			Util.crash(this, "onPause not called??");
+    		}
     	}
     }
 
-    void onStartButtonPress() {
-    	if (mRecordingState == TRANSITIONING) return;
+    private String mLastSelectedWorkoutFilename = null;
+    private Workout mLastSelectedWorkout = null;
+    
+    void onStartStopButtonPress() {
+    	if (mTransitioning) return;
     	
     	final int pos = mWorkoutListSpinner.getSelectedItemPosition();
     	final String workoutFilename = (pos >= 0  && pos < mWorkoutFiles.size() ? mWorkoutFiles.get(pos) : null);
-    	final int lastState = mRecordingState;
-    	final File dir = FileManager.getWorkoutDir(this);
-    	mRecordingState = TRANSITIONING;
-    	
-    	FileManager.runAsync(new FileManager.AsyncRunner<Workout>() {
-			public Workout doInThread() throws Exception {
-				if (workoutFilename != null) {
-					return FileManager.readFile(dir, workoutFilename, Workout.class);
-				} else {
-					return null;
-				}
-			}
 
-			/**
-			 * 
-			 * @param error
-			 * @param workout Is always null if the workoutFilename is null.
-			 */
-			public void onFinish(Exception error, Workout workout) {
-				if (error != null) {
-					Util.error(mThisActivity, "Failed to read workout: " + error);
-					// Fallthrough
-				}
-    			mLapButton.setEnabled(true);
-    			mStartStopButton.setText(R.string.pause); 
-    			mWorkoutListSpinner.setVisibility(View.GONE);
-    			if (Util.ASSERT_ENABLED && mRecordingState != TRANSITIONING)
-    				Util.crash(mThisActivity, "Wrong state: " + mRecordingState);
-    			if (lastState == RESET) {
-    				// Starting a new activity
-    				mMapOverlay.clearPath();
-    				mMapView.invalidate();
-    				
-    				mRecord = new HealthGraphClient.JsonActivity();
-    				mRecord.type = "Running";  // TODO: allow changing
-    				mRecord.start_time = HealthGraphClient.generateStartTimeString(System.currentTimeMillis() / 1000.0);
-    				mRecord.notes = "Recorded by RunningTrainer";
-    				
-    				GpsTrackingService.startGpsServiceIfNecessary(mThisActivity, workout);
-    			} else if (lastState == STOPPED) {
-    				// Resuming an activity
-    				GpsTrackingService service = GpsTrackingService.getSingleton();  
-    				if (service != null) service.onResumeButtonPress();
-    			} else {
-    				Util.crash(mThisActivity, "Wrong state: " + lastState);
+    	if (workoutFilename == null ||
+    			(mLastSelectedWorkoutFilename != null && mLastSelectedWorkoutFilename.equals(workoutFilename))) {
+    		mGpsService.onStartStopButtonPress(mLastSelectedWorkout);
+    	} else {
+    		final File dir = FileManager.getWorkoutDir(this);
+    		mTransitioning = true;
+    		FileManager.runAsync(new FileManager.AsyncRunner<Workout>() {
+    			public Workout doInThread() throws Exception {
+    				return FileManager.readFile(dir, workoutFilename, Workout.class);
     			}
-    			mRecordingState = RUNNING;
-			}
-    	});
+    			public void onFinish(Exception error, Workout workout) {
+    				if (!mTransitioning) Util.crash(mThisActivity, "blah");
+    				mTransitioning = false;
+    				if (error != null) {
+    					Util.error(mThisActivity, "Failed to read workout: " + error);
+    					// Fallthrough
+    				} else {
+    					mLastSelectedWorkoutFilename = workoutFilename;
+    					mLastSelectedWorkout = workout;
+    				}
+    				
+    				mGpsService.onStartStopButtonPress(workout);
+    			}
+			});
+    	}
     }
 
     private void onResetButtonPress() {
-    	if (mRecordingState == TRANSITIONING) return;
+    	if (mTransitioning) return;
     	
     	mLapButton.setEnabled(false);
     	mStartStopButton.setText(R.string.start); 
-    	mRecordingState = RESET;
     	mLapButton.setEnabled(false);
     	mWorkoutListSpinner.setVisibility(View.VISIBLE);
     	mWorkoutTitle.setText("Workout: ");
     	
-    	GpsTrackingService.stopGpsServiceIfNecessary(this);
-    	if (mTotalStats != null && mRecord != null && mLastReportedPath != null && mLastReportedPath.size() >= 1) {
-    		HealthGraphClient.JsonWGS84 last = mLastReportedPath.get(mLastReportedPath.size() - 1);
-    		HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
-    		wgs.latitude = last.latitude;
-    		wgs.longitude = last.longitude;
-    		wgs.altitude = last.altitude;
-    		wgs.type = "end";
-    		wgs.timestamp = mTotalStats.getDurationSeconds();
-    		mLastReportedPath.add(wgs);
-    		mRecord.path = new HealthGraphClient.JsonWGS84[mLastReportedPath.size()];
-    		for (int i = 0; i < mLastReportedPath.size(); ++i) mRecord.path[i] = mLastReportedPath.get(i);
+    	if (mGpsService != null) {
+    		GpsTrackingService.ActivityStatus status = mGpsService.resetActivityAndStop();
     		
-    		mRecord.duration = wgs.timestamp;
-    		HealthGraphClient.JsonWGS84 lastLocation = null;
+    		if (status != null && status.path.size() >= 1) {
+    			final HealthGraphClient.JsonActivity record = new HealthGraphClient.JsonActivity(); 
+    			record.type = "Running";  // TODO: allow changing
+    			record.start_time = HealthGraphClient.generateStartTimeString(status.startTime);
+    			record.notes = "Recorded by RunningTrainer";
+
+    			HealthGraphClient.JsonWGS84 last = status.path.get(status.path.size() - 1);
+    			HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
+    			wgs.latitude = last.latitude;
+    			wgs.longitude = last.longitude;
+    			wgs.altitude = last.altitude;
+    			wgs.type = "end";
+    			wgs.timestamp = mTotalStats.getDurationSeconds();
+    			status.path.add(wgs);
+    			record.path = new HealthGraphClient.JsonWGS84[status.path.size()];
+    			for (int i = 0; i < status.path.size(); ++i) record.path[i] = status.path.get(i);
     		
-    		float[] distance = new float[1];
-    		for (HealthGraphClient.JsonWGS84 location : mRecord.path) {
-    			if (lastLocation != null) {
-    				Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
-    						location.latitude, location.longitude,
-    						distance);
-    				mRecord.total_distance += distance[0];
+    			record.duration = wgs.timestamp;
+    			HealthGraphClient.JsonWGS84 lastLocation = null;
+    		
+    			float[] distance = new float[1];
+    			for (HealthGraphClient.JsonWGS84 location : record.path) {
+    				if (lastLocation != null) {
+    					Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+    							location.latitude, location.longitude,
+    							distance);
+    					record.total_distance += distance[0];
+    				}
+    				lastLocation = location;
     			}
-    			lastLocation = location;
+    		
+    			final FileManager.ParsedFilename summary = new FileManager.ParsedFilename();
+    			summary.putLong(FileManager.KEY_START_TIME, (long)mTotalStats.getStartTimeSeconds());
+    			summary.putLong(FileManager.KEY_DISTANCE, (long)record.total_distance);
+    			summary.putLong(FileManager.KEY_DURATION, (long)record.duration);
+    		
+    			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
+    				public Void doInThread() throws Exception {
+    					FileManager.writeFile(mRecordDir, summary.getBasename(), record);
+    					return null;
+    				}
+    				public void onFinish(Exception error, Void value) {
+    					if (error != null) Util.error(mThisActivity, "Failed to write: " + summary.getBasename() + ": " + error);
+    				}
+    			});
     		}
-    		
-    		final FileManager.ParsedFilename summary = new FileManager.ParsedFilename();
-    		summary.putLong(FileManager.KEY_START_TIME, (long)mTotalStats.getStartTimeSeconds());
-    		summary.putLong(FileManager.KEY_DISTANCE, (long)mRecord.total_distance);
-    		summary.putLong(FileManager.KEY_DURATION, (long)mRecord.duration);
-    		final HealthGraphClient.JsonActivity newRecord = mRecord;
-    		mRecord = null;
-    		
-    		FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
-				public Void doInThread() throws Exception {
-					FileManager.writeFile(mRecordDir, summary.getBasename(), newRecord);
-					return null;
-				}
-				public void onFinish(Exception error, Void value) {
-					if (error != null) Util.error(mThisActivity, "Failed to write: " + summary.getBasename() + ": " + error);
-				}
-    		});
     	}
+    	detachGpsService();
+    	startGpsService();
     }	
     
-    private void onStopButtonPress() {
-    	mLapButton.setEnabled(false);
-    	mStartStopButton.setText(R.string.resume); 
-    	mRecordingState = STOPPED;
-    	GpsTrackingService service = GpsTrackingService.getSingleton();  
-    	if (service != null) service.onPauseButtonPress();
-    }
-
     @Override
     public boolean isRouteDisplayed() { return false; }
 

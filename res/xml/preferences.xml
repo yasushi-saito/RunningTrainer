@@ -1,25 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen
-  xmlns:android="http://schemas.android.com/apk/res/android">
-  <PreferenceCategory
-    android:key="pref_key_autolap_settings"
-    android:title="Miscellaneous" >
-      <ListPreference
-          android:defaultValue="US"
-          android:entries="@array/unit"
-          android:entryValues="@array/unit"
-          android:key="unit"
-          android:title="@string/unit_of_measurement" />
-     <ListPreference
-         android:defaultValue="0"
-         android:entries="@array/distance_intervals"
-         android:entryValues="@array/distance_interval_values"
-         android:key="autolap_distance_interval"
-         android:title="Autolap distance interval" />
-  </PreferenceCategory>
-  <PreferenceCategory
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+  <ListPreference
+      android:defaultValue="US"
+      android:entries="@array/unit"
+      android:entryValues="@array/unit"
+      android:key="unit"
+      android:title="@string/unit_of_measurement" />
+   <ListPreference
+       android:defaultValue="0"
+       android:entries="@array/distance_intervals"
+       android:entryValues="@array/distance_interval_values"
+       android:key="autolap_distance_interval"
+       android:title="Autolap distance interval" />
+
+  <PreferenceScreen
     android:key="pref_key_display_settings"
-    android:title="Display" >
+    android:title="Display settings" >
     <ListPreference
         android:defaultValue="total_distance"
         android:entries="@array/display_type"
@@ -62,53 +59,111 @@
         android:key="display5"
         android:title="Display 6" />
     />
-  </PreferenceCategory>
-  <PreferenceCategory
-    android:key="pref_key_voice_settings"
-    android:title="Voice Readout" >
+  </PreferenceScreen>
+  <PreferenceScreen
+      android:key="pref_key_time_triggered_readout"
+      android:title="Voice readout: time-triggered" >
       <ListPreference
-        android:entries="@array/time_intervals"
-        android:entryValues="@array/time_interval_values"
-        android:key="speak_time_interval"
-        android:title="Time interval" />
+          android:entries="@array/time_intervals"
+          android:entryValues="@array/time_interval_values"
+          android:key="speak_time_interval"
+          android:title="Time interval" />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_time_total_distance"
+          android:title="Total distance" />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_time_total_duration"
+          android:title="Total duration" />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_time_average_pace"
+          android:title="Average pace " />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_time_current_pace"
+          android:title="Current pace " />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_time_lap_pace"
+          android:title="Lap pace " />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_time_lap_distance"
+          android:title="Lap distance" />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_time_lap_duration"
+          android:title="Lap duration" />
+
+  </PreferenceScreen>
+  <PreferenceScreen
+      android:key="pref_key_distance_triggered_readout"
+      android:title="Voice readout: distance-triggered" >
       <ListPreference
-        android:entries="@array/distance_intervals"
-        android:entryValues="@array/distance_interval_values"
-        android:key="speak_distance_interval"
-        android:title="Distance interval" />
+          android:entries="@array/distance_intervals"
+          android:entryValues="@array/distance_interval_values"
+          android:key="speak_distance_interval"
+          android:title="Distance interval" />
 
       <CheckBoxPreference
-        android:key="speak_total_distance"
-        android:title="Total distance"
-        android:defaultValue="false" />
+          android:defaultValue="false"
+          android:key="speak_distance_total_distance"
+          android:title="Total distance" />
       <CheckBoxPreference
-        android:key="speak_total_duration"
-        android:title="Total duration"
-        android:defaultValue="false" />
+          android:defaultValue="false"
+          android:key="speak_distance_total_duration"
+          android:title="Total duration" />
       <CheckBoxPreference
-        android:key="speak_average_pace"
-        android:title="Average pace "
-        android:defaultValue="false" />
+          android:defaultValue="false"
+          android:key="speak_distance_average_pace"
+          android:title="Average pace " />
       <CheckBoxPreference
-        android:key="speak_current_pace"
-        android:title="Current pace "
-        android:defaultValue="false" />
+          android:defaultValue="false"
+          android:key="speak_distance_current_pace"
+          android:title="Current pace " />
       <CheckBoxPreference
-        android:key="speak_lap_pace"
-        android:title="Lap pace "
-        android:defaultValue="false" />
+          android:defaultValue="false"
+          android:key="speak_distance_lap_pace"
+          android:title="Lap pace " />
       <CheckBoxPreference
-        android:key="speak_lap_distance"
-        android:title="Lap distance"
-        android:defaultValue="false" />
+          android:defaultValue="false"
+          android:key="speak_distance_lap_distance"
+          android:title="Lap distance" />
       <CheckBoxPreference
-        android:key="speak_lap_duration"
-        android:title="Lap duration"
-        android:defaultValue="false" />
-      <CheckBoxPreference
-        android:key="speak_lap_pace"
-        android:title="Lap pace "
-        android:defaultValue="false" />
-  </PreferenceCategory>
-      
+          android:defaultValue="false"
+          android:key="speak_distance_lap_duration"
+          android:title="Lap duration" />
+     
+   </PreferenceScreen>  
+   <PreferenceScreen
+       android:key="pref_key_lap_triggered_readout"
+       android:title="Voice readout: at end of each lap" >
+       <CheckBoxPreference
+           android:defaultValue="false"
+           android:key="speak_onlap_total_distance"
+           android:title="Total distance" />
+       <CheckBoxPreference
+           android:defaultValue="false"
+           android:key="speak_onlap_total_duration"
+           android:title="Total duration" />
+       <CheckBoxPreference
+           android:defaultValue="false"
+           android:key="speak_onlap_average_pace"
+           android:title="Average pace " />
+       <CheckBoxPreference
+           android:defaultValue="false"
+           android:key="speak_onlap_current_pace"
+           android:title="Current pace " />
+       <CheckBoxPreference
+           android:defaultValue="false"
+           android:key="speak_onlap_lap_pace"
+           android:title="Lap pace " />
+       <CheckBoxPreference
+           android:defaultValue="false"
+           android:key="speak_onlap_lap_duration"
+           android:title="Lap duration" />
+     
+  </PreferenceScreen>  
 </PreferenceScreen>
