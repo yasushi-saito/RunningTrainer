@@ -1,9 +1,11 @@
 package com.ysaito.runningtrainer;
 
 public class Workout {
-	static public final int REPEAT_FOREVER = 9999;
+	static public final int REPEAT_FOREVER = 999999;
 	static public final double NO_FAST_TARGET_PACE = 0.0;
-	static public final double NO_SLOW_TARGET_PACE = 9999.0;
+	static public final double NO_SLOW_TARGET_PACE = 999999.0;
+	static public final double INFINITE_DURATION = 999999.0;
+	static public final double INFINITE_DISTANCE = 999999.0;
 	
 	static public boolean hasFastTargetPace(double pace) {
 		return pace > NO_FAST_TARGET_PACE;

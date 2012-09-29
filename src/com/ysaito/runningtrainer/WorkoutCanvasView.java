@@ -30,6 +30,45 @@ import android.widget.RadioButton;
 public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	static private final String TAG = "WorkoutCanvasView";
 
+	private static Double[] durationsFromStrings(String[] list, double valueForInfinity) {
+		Double[] values = new Double[list.length];
+		for (int i = 0; i < list.length; ++i) {
+			if (list[i].equals("∞")) {
+				values[i] = valueForInfinity;
+			} else {
+				values[i] = (double)Util.durationFromString(list[i]);
+				if (values[i] < 0) Util.crash(null, "Failed to parse " + list[i]);
+			}
+		}
+		return values;
+	}
+
+	private static Double[] pacesFromStrings(String[] list, double valueForInfinity) {
+		Double[] values = new Double[list.length];
+		for (int i = 0; i < list.length; ++i) {
+			if (list[i].equals("∞")) {
+				values[i] = valueForInfinity;
+			} else {
+				values[i] = (double)Util.paceFromString(list[i]);
+				if (values[i] < 0) Util.crash(null, "Failed to parse " + list[i]);
+			}
+		}
+		return values;
+	}
+	
+	private static Double[] distancesFromStrings(String[] list, double valueForInfinity) {
+		Double[] values = new Double[list.length];
+		for (int i = 0; i < list.length; ++i) {
+			if (list[i].equals("∞")) {
+				values[i] = valueForInfinity;
+			} else {
+				values[i] = Util.distanceFromString(list[i]);
+				if (values[i] < 0) Util.crash(null, "Failed to parse " + list[i]);
+			}
+		}
+		return values;
+	}
+	
 	private final static String[] WHEEL_PACE_STRINGS = new String[] {
 		"0:00", 
 		"2:00",	"2:05", "2:10", "2:15", "2:20", "2:25", "2:30", "2:35", "2:40", "2:45", "2:50", "2:55", 
@@ -51,6 +90,8 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		"40:00", "45:00", "50:00", 
 		"∞"
 	};
+	private final static Double[] WHEEL_PACE_VALUES = pacesFromStrings(WHEEL_PACE_STRINGS, Workout.NO_SLOW_TARGET_PACE);
+	
 	private final static String[] WHEEL_DURATION_STRINGS = new String[] {
 		"0:05", "0:10", "0:15", "0:20", "0:25", "0:30", "0:35", "0:40", "0:45", "0:50", "0:55", 
 		"1:00",	"1:05", "1:10", "1:15", "1:20", "1:25", "1:30", "1:35", "1:40", "1:45", "1:50", "1:55", 
@@ -76,6 +117,8 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		"7:00:00", "7:15:00", "7:30:00", "7:45:00",							
 		"∞"
 	};
+	private final static Double[] WHEEL_DURATION_VALUES = durationsFromStrings(WHEEL_DURATION_STRINGS, Workout.INFINITE_DURATION);
+	
 	private final static String[] WHEEL_DISTANCE_STRINGS = new String[]{
 		"0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9",
 		"1.0", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9",
@@ -92,7 +135,21 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		"90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
 		"∞"
 	};
-			
+	private final static Double[] WHEEL_DISTANCE_VALUES = distancesFromStrings(WHEEL_DISTANCE_STRINGS, Workout.INFINITE_DISTANCE);
+
+	private final static int findClosestIndex(double value, Double[] candidates) {
+		double  minDiff = 99999999.0;
+		int closestIndex = -1;
+		for (int i = 0; i < candidates.length; ++i) {
+			double diff = Math.abs(value - candidates[i]);
+			if (diff < minDiff) {
+				closestIndex = i;
+				minDiff = diff;
+			}
+		}
+		return closestIndex;
+	}
+	
 	public static class IntervalDialog extends DialogFragment {
 		private View mDistanceBox, mDurationBox;
 		private WheelView mDistanceWheel;
@@ -139,11 +196,11 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 	        if (mElem.getDistance() > 0) {
 	        	distanceButton.setChecked(true);
-	        	// mDistanceWheel.setText(Util.distanceToString(mElem.getDistance()));
+	        	mDistanceWheel.setCurrentItem(findClosestIndex(mElem.getDistance(), WHEEL_DISTANCE_VALUES));
 	        	onDistanceButtonPress();
 	        } else if (mElem.getDuration() > 0) {
 	        	durationButton.setChecked(true);
-	        	// mDurationWheel.setText(Util.durationToString(mElem.getDuration()));
+	        	mDurationWheel.setCurrentItem(findClosestIndex(mElem.getDuration(), WHEEL_DURATION_VALUES));
 	        	onDurationButtonPress();
 	        } else {
 	        	lapButton.setChecked(true);
@@ -154,21 +211,13 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	        mFastPaceWheel.setViewAdapter(new ArrayWheelAdapter<String>(getActivity(), WHEEL_PACE_STRINGS));
 	        
 	        final double fast = mElem.getFastTargetPace();
-	        if (Workout.hasFastTargetPace(fast)) {
-	        	// mFastPaceEditor.setText(Util.paceToString(fast));
-	        } else {
-	        	// mFastPaceEditor.setText("");
-	        }
+	        mFastPaceWheel.setCurrentItem(findClosestIndex(fast, WHEEL_PACE_VALUES));
 
 	        mSlowPaceWheel = (WheelView)v.findViewById(R.id.wheel_slow_pace);
 	        mSlowPaceWheel.setViewAdapter(new ArrayWheelAdapter<String>(getActivity(), WHEEL_PACE_STRINGS));
 	        
 	        final double slow = mElem.getSlowTargetPace();
-	        if (Workout.hasSlowTargetPace(slow)) {
-	        	// mSlowPaceEditor.setText(Util.paceToString(slow));
-	        } else {
-	        	// mSlowPaceEditor.setText("");
-	        }
+	        mSlowPaceWheel.setCurrentItem(findClosestIndex(slow, WHEEL_PACE_VALUES));
 	        
 	    	AlertDialog.Builder builder = new AlertDialog.Builder(getActivity())
 	                .setTitle("Edit Interval")
@@ -189,13 +238,13 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	                        			distanceStr = WHEEL_DISTANCE_STRINGS[selection];
 	                        		}
 	                        	}
-	                        	String fastPaceStr = ""; // TODO: set default
 	                        	int selection = mFastPaceWheel.getCurrentItem();
+	                        	String fastPaceStr = WHEEL_PACE_STRINGS[0];
 	                        	if (selection >= 0 && selection < WHEEL_PACE_STRINGS.length) {
 	                        		fastPaceStr = WHEEL_PACE_STRINGS[selection];
 	                        	}
-	                        	String slowPaceStr = ""; // TODO: set default
 	                        	selection = mSlowPaceWheel.getCurrentItem();
+	                        	String slowPaceStr = WHEEL_PACE_STRINGS[WHEEL_PACE_STRINGS.length - 1];
 	                        	if (selection >= 0 && selection < WHEEL_PACE_STRINGS.length) {
 	                        		slowPaceStr = WHEEL_PACE_STRINGS[selection];
 	                        	}

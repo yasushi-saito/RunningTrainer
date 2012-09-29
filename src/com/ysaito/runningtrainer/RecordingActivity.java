@@ -173,10 +173,10 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     private Button mStartStopButton;
     private Button mLapButton;    
 
-    private static final int RESET = 0;          // Initial state
-    private static final int RUNNING = 1;        // Running state.
-    private static final int STOPPED = 2;        // Paused state. The GPS activity is live, but the stats won't count
-    private static final int TRANSITIONING = 3;  // Doing async I/O. No state transition allowed until the I/O finishes
+    private static final int RESET = GpsTrackingService.RESET;                  // Initial state
+    private static final int RUNNING = GpsTrackingService.RUNNING;              // Running state.
+    private static final int STOPPED = GpsTrackingService.STOPPED;              // Paused state. The GPS activity is live, but the stats won't count
+    private static final int TRANSITIONING = GpsTrackingService.TRANSITIONING;  // Doing async I/O. No state transition allowed until the I/O finishes
     private int mRecordingState = RESET;
 
     // Current activity. Non-null only when mRecordingState != RESET.
@@ -340,6 +340,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
 
     	startListWorkouts();
         mRecordingState = GpsTrackingService.getServiceState();
+        Log.d(TAG, "STATE=" + mRecordingState);
         if (mRecordingState == RUNNING) {
         	mStartStopButton.setText(R.string.pause); 
         } else if (mRecordingState == RESET) {
@@ -418,10 +419,19 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	
     	FileManager.runAsync(new FileManager.AsyncRunner<Workout>() {
 			public Workout doInThread() throws Exception {
-				return FileManager.readFile(dir, workoutFilename, Workout.class);
+				if (workoutFilename != null) {
+					return FileManager.readFile(dir, workoutFilename, Workout.class);
+				} else {
+					return null;
+				}
 			}
 
-			public void onFinish(Exception error, Workout workout/*maybe null*/) {
+			/**
+			 * 
+			 * @param error
+			 * @param workout Is always null if the workoutFilename is null.
+			 */
+			public void onFinish(Exception error, Workout workout) {
 				if (error != null) {
 					Util.error(mThisActivity, "Failed to read workout: " + error);
 					// Fallthrough

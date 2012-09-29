@@ -63,10 +63,11 @@ public class GpsTrackingService extends Service {
     // TODO: there should be a cleaner way to achieve the the same effect. The use of the global variable is rather ugly.
     private static Workout mNewestSpecifiedWorkout;
     
+    public static final int RESET = 0;          // Initial state
+    public static final int RUNNING = 1;        // Running state.
+    public static final int STOPPED = 2;        // Paused state. The GPS activity is live, but the stats won't count
+    public static final int TRANSITIONING = 3;  // Doing async I/O. No state transition allowed until the I/O finishes
     
-    private static final int RESET = 0;
-    private static final int STOPPED = 1;
-    private static final int RUNNING = 2;
     private int mState = RUNNING;
 
     public static GpsTrackingService getSingleton() { return mSingleton; }
@@ -280,6 +281,7 @@ public class GpsTrackingService extends Service {
 		Log.d(TAG, "onCreate");
 		
 		mPath = new ArrayList<HealthGraphClient.JsonWGS84>();
+		/*
 		HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();  
 		wgs.latitude = 100.0;
 		wgs.longitude = 100.0;
@@ -287,7 +289,7 @@ public class GpsTrackingService extends Service {
 		wgs.timestamp = 0.0;
 		wgs.type = "start";
 		mPath.add(wgs);
-		
+		*/
 		mTotalStats = new LapStats();
 		mLapStats = new LapStats();
 		
@@ -381,7 +383,7 @@ public class GpsTrackingService extends Service {
 					Handler handler = new Handler(Looper.getMainLooper());
 					handler.post(new Runnable() {
 						public void run() { 
-							dofakeGpsLocationUpdate();
+							// dofakeGpsLocationUpdate();
 							notifyListeners(); 
 						}
 					});

@@ -123,7 +123,12 @@ public class Util {
 
 	private static final Pattern HOUR_MIN_SEC_PATTERN = Pattern.compile("^(\\d+):(\\d+):(\\d+)$");
 	private static final Pattern MIN_SEC_PATTERN = Pattern.compile("^(\\d+):(\\d+)$");
-	
+
+	/**
+	 * Parse string of form "MM:SS" or "HH:MM:SS".
+	 *
+	 * @return the number of seconds. -1 on error.
+	 */
 	static public double durationFromString(String s) {
 		try {
 			int hour = 0;
@@ -146,7 +151,7 @@ public class Util {
 			if (sec < 0 || sec >= 60) return -1.0;			
 			return hour * 3600 + min * 60 + sec;
 		} catch (NumberFormatException e) {
-			return -1.0;
+			return -1;
 		}
 	}
 	
