@@ -205,13 +205,20 @@ public class Util {
 	}
 	
 	static public String paceToString(double secondsPerMeter) {
+		long seconds;
 		if (Settings.unit == Settings.US) {
-			long secondsPerMile = (long)(secondsPerMeter * METERS_PER_MILE);
-			return durationToString(secondsPerMile);
+			seconds = (long)(secondsPerMeter * METERS_PER_MILE);
 		} else {
-			long secondsPerKm = (long)(secondsPerMeter * 1000);
-			return durationToString(secondsPerKm);
+			seconds = (long)(secondsPerMeter * 1000);
 		}
+		if (seconds < 99 * 60 + 60) {
+			return String.format("%02d:%02d",
+					seconds / 60,
+					seconds % 60);
+		} else {
+			return "99:59";
+		}
+		
 	}
 
 	/**

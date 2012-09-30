@@ -1,6 +1,7 @@
 package com.ysaito.runningtrainer;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
@@ -87,6 +88,36 @@ public class HealthGraphClient {
 		public String type; // One of the following values: start, end, gps, pause, resume, manual
 	};
 
+	static public class PathAggregator {
+		private ArrayList<JsonWGS84> mPath = new ArrayList<JsonWGS84>();
+		
+		/**
+		 * @param timestamp Number of seconds elapsed since the start of the activity
+		 */
+		public void addPoint(
+			double timestamp, double latitude, double longitude, double altitude) {
+			JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
+			wgs.latitude = latitude;
+			wgs.longitude = longitude;
+			wgs.altitude = altitude;
+			if (mPath.size() == 0) {
+				wgs.type = "start";
+			} else {
+				wgs.type = "gps";
+			}
+			wgs.timestamp = timestamp;
+			mPath.add(wgs);
+		}
+		
+		public JsonWGS84 lastPoint() { 
+			return mPath.get(mPath.size() - 1);
+		}
+		
+		public ArrayList<JsonWGS84> getPath() { 
+			return mPath; 
+		}
+	}
+	
 	/**
 	 * User profile on runkeeper
 	 *

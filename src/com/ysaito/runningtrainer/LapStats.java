@@ -26,7 +26,9 @@ class LapStats {
 	private long mCumulativeDurationBeforeLastResume = 0;
 
 	// The last GPS coordinate and timestamp reported.
-	private HealthGraphClient.JsonWGS84 mLastPoint = null;
+	private double mLastTimestamp = -1.0;
+	private double mLastLatitude = 0.0;
+	private double mLastLongitude = 0.0;	
 	
 	// Cumulative distance of points in path[0..mLastPathSegment].
 	private double mDistance = 0;
@@ -133,29 +135,28 @@ class LapStats {
 		}
 	}
 
-	public final void onGpsUpdate(HealthGraphClient.JsonWGS84 point) {
-		if (mLastPoint == null) {
-			mLastPoint = point;
-			mRecordStartTimeMillis = System.currentTimeMillis() - (long)(point.timestamp * 1000);
-			return;
-		}
+	public final void onGpsUpdate(double timestamp, double latitude, double longitude) {
+		if (mLastTimestamp < 0.0) {
+			mRecordStartTimeMillis = System.currentTimeMillis() - (long)(timestamp * 1000);
+		} else {
+			Location.distanceBetween(mLastLatitude, mLastLongitude,	latitude, longitude, mTmp);
+			mDistance += mTmp[0];
 		
-		Location.distanceBetween(mLastPoint.latitude, mLastPoint.longitude,
-				point.latitude, point.longitude, mTmp);
-		mDistance += mTmp[0];
-		
-		final long absTime = mRecordStartTimeMillis + (long)(point.timestamp * 1000);
-		mRecentEvents.addLast(new Event(mTmp[0], absTime));
-		mLastPoint = point;
-			
-		// Drop events that are more than 30 seconds old. But keep at least one record so that	
-		// if the user stops moving, we can still display the current pace.
-		final long lastRetained = System.currentTimeMillis() - 30 * 1000;
-		while (mRecentEvents.size() > 1) {
-			Event e = mRecentEvents.peekFirst();
-			if (e.absTime >= lastRetained) break;
-			mRecentEvents.removeFirst();
+			final long absTime = mRecordStartTimeMillis + (long)(timestamp * 1000);
+			mRecentEvents.addLast(new Event(mTmp[0], absTime));
+
+			// Drop events that are more than 30 seconds old. But keep at least one record so that	
+			// if the user stops moving, we can still display the current pace.
+			final long lastRetained = System.currentTimeMillis() - 30 * 1000;
+			while (mRecentEvents.size() > 1) {
+				Event e = mRecentEvents.peekFirst();
+				if (e.absTime >= lastRetained) break;
+				mRecentEvents.removeFirst();
+			}
 		}
+		mLastTimestamp = timestamp;
+		mLastLatitude = latitude;
+		mLastLongitude = longitude;
 	}
 }
 

@@ -1,6 +1,13 @@
 package com.ysaito.runningtrainer;
 
 /**
+ * TODO: create a more formal credits statement
+ * 
+ * CREDITS: http://button-download.com (Creative commons)
+ * 
+ */
+
+/**
  * TODO: smooth GPS readouts and reduce sampling rate
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * TODO: automatic syncing of records on reconnect and/or token authorization
@@ -13,7 +20,8 @@ package com.ysaito.runningtrainer;
  * TODO: reliably check if TTS voice data has been downloaded.
  * TODO: satellite view
  * TODO: undo of workout edits.
- * TODO: concise speech. 1.00 mile should be "1 mile"
+ * TODO: remove the stats view row when none of the views show anything
+ * TODO: Lap stats
  */
 import java.util.HashMap;
 

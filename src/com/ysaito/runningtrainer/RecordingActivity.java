@@ -144,11 +144,13 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	}
     	
     	public void update(LapStats totalStats, LapStats lapStats) {
-    		String value = "         ";
-    		String title = "YY";
+    		String value = "";
+    		String title = "";
     		
     		if (mDisplayType.equals("none")) {
-    			;
+    			mValueView.setVisibility(View.INVISIBLE);
+    			mTitleView.setVisibility(View.INVISIBLE);
+    			return;
     		} else if (mDisplayType.equals("total_distance")) {
     			title = "Total " + Util.distanceUnitString();
     			value = Util.distanceToString(totalStats.getDistance());
@@ -174,6 +176,8 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     			value = "Unknown display type: " + mDisplayType;
     			title = "???";
     		}
+    		mValueView.setVisibility(View.VISIBLE);
+    		mTitleView.setVisibility(View.VISIBLE);
     		mValueView.setText(value);
     		mTitleView.setText(title);
     	}
@@ -477,6 +481,11 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     			record.start_time = HealthGraphClient.generateStartTimeString(status.startTime);
     			record.notes = "Recorded by RunningTrainer";
 
+    			// Copy the path entries out
+    			record.path = new HealthGraphClient.JsonWGS84[status.path.size() + 1];
+    			for (int i = 0; i < status.path.size(); ++i) record.path[i] = status.path.get(i);
+
+    			// Add the "end" marker
     			HealthGraphClient.JsonWGS84 last = status.path.get(status.path.size() - 1);
     			HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
     			wgs.latitude = last.latitude;
@@ -484,11 +493,9 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     			wgs.altitude = last.altitude;
     			wgs.type = "end";
     			wgs.timestamp = mTotalStats.getDurationSeconds();
-    			status.path.add(wgs);
-    			record.path = new HealthGraphClient.JsonWGS84[status.path.size()];
-    			for (int i = 0; i < status.path.size(); ++i) record.path[i] = status.path.get(i);
-    		
+    			record.path[status.path.size()] =  wgs;
     			record.duration = wgs.timestamp;
+    			
     			HealthGraphClient.JsonWGS84 lastLocation = null;
     		
     			float[] distance = new float[1];

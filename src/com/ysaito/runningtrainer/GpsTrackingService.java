@@ -82,7 +82,7 @@ public class GpsTrackingService extends Service {
     			status = new ActivityStatus();
     			status.startTime = mSingleton.mStartTime;
     			status.currentInterval = mSingleton.getCurrentWorkoutInterval();
-    			status.path = mSingleton.mPath;
+    			status.path = mSingleton.mPath.getPath();
     			status.lapStats = mSingleton.mLapStats;
     			status.totalStats = mSingleton.mTotalStats;
     		}
@@ -131,7 +131,7 @@ public class GpsTrackingService extends Service {
     	ActivityStatus status = new ActivityStatus();
     	status.startTime = mStartTime;
     	status.currentInterval = getCurrentWorkoutInterval();
-    	status.path = mPath;
+    	status.path = mPath.getPath();
     	status.lapStats = mLapStats;
     	status.totalStats = mTotalStats;
     	
@@ -280,7 +280,7 @@ public class GpsTrackingService extends Service {
     		status = new ActivityStatus();
     		status.startTime = mStartTime;
     		status.currentInterval = getCurrentWorkoutInterval();
-    		status.path = mPath;
+    		status.path = mPath.getPath();
     		status.lapStats = mLapStats;
     		status.totalStats = mTotalStats;
     	}
@@ -304,7 +304,7 @@ public class GpsTrackingService extends Service {
 	private LocationManager mLocationManager;
 
 	// List of gps points recorded so far.
-	private ArrayList<HealthGraphClient.JsonWGS84> mPath;
+	private HealthGraphClient.PathAggregator mPath = null;
 	
 	// Stats since the beginning of the activity. */
 	private LapStats mTotalStats = null;
@@ -460,15 +460,9 @@ public class GpsTrackingService extends Service {
 			Workout workout = (Workout)intent.getSerializableExtra("workout");
 			speak("started", null);
     		
-			mPath = new ArrayList<HealthGraphClient.JsonWGS84>();
+			mPath = new HealthGraphClient.PathAggregator();
 			if (Settings.fakeGps) {
-				HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();  
-				wgs.latitude = 100.0;
-				wgs.longitude = 100.0;
-				wgs.altitude = 0;
-				wgs.timestamp = 0.0;
-				wgs.type = "start";
-				mPath.add(wgs);
+				mPath.addPoint(0.0, 100.0, 100.0, 0);
 			}
 			mTotalStats = new LapStats();
 			mLapStats = new LapStats();
@@ -493,37 +487,24 @@ public class GpsTrackingService extends Service {
 	
 	private void onGpsLocationUpdate(long now, Location newLocation) {
 		if (mState == RUNNING) {
-			HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
-			wgs.latitude = newLocation.getLatitude();
-			wgs.longitude = newLocation.getLongitude();
-			wgs.altitude = newLocation.getAltitude();
-			if (mPath.size() == 0) {
-				wgs.timestamp = 0;
-				wgs.type = "start";
-			} else {
-				wgs.timestamp = mTotalStats.getDurationSeconds();
-				wgs.type = "gps";
-			}
-			mPath.add(wgs);
-			mTotalStats.onGpsUpdate(wgs);
-			mLapStats.onGpsUpdate(wgs);
+			final double timestamp = mTotalStats.getDurationSeconds();
+			mPath.addPoint(timestamp,
+					newLocation.getLatitude(),
+					newLocation.getLongitude(),
+					newLocation.getAltitude());
+			mTotalStats.onGpsUpdate(timestamp, newLocation.getLatitude(), newLocation.getLongitude());
+			mLapStats.onGpsUpdate(timestamp, newLocation.getLatitude(), newLocation.getLongitude());
 			updateStats(LapType.KEEP_CURRENT_LAP_IF_POSSIBLE);
 		}
 	}
 
 	private void dofakeGpsLocationUpdate() {
 		if (mState == RUNNING) {
-			if (mPath.size() > 0) {
-				HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
-				HealthGraphClient.JsonWGS84 lastWgs = mPath.get(mPath.size() - 1);
-				wgs.latitude = lastWgs.latitude + 0.0008;
-				wgs.longitude = lastWgs.longitude;
-				wgs.altitude = lastWgs.altitude;
-				wgs.timestamp = lastWgs.timestamp + 0.3;
-				wgs.type = "gps";
-				mPath.add(wgs);
-				mTotalStats.onGpsUpdate(wgs);
-				mLapStats.onGpsUpdate(wgs);
+			if (mPath.getPath().size() > 0) {
+				HealthGraphClient.JsonWGS84 lastWgs = mPath.lastPoint();
+				mPath.addPoint(lastWgs.timestamp + 0.3, lastWgs.latitude + 0.0008, lastWgs.longitude, lastWgs.altitude);
+				mTotalStats.onGpsUpdate(lastWgs.timestamp + 0.3, lastWgs.latitude + 0.0008, lastWgs.longitude);
+				mLapStats.onGpsUpdate(lastWgs.timestamp + 0.3, lastWgs.latitude + 0.0008, lastWgs.longitude);
 				updateStats(LapType.KEEP_CURRENT_LAP_IF_POSSIBLE);
 			}
 		}
