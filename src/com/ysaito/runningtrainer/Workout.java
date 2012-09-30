@@ -1,6 +1,10 @@
 package com.ysaito.runningtrainer;
 
-public class Workout {
+import java.io.Serializable;
+
+public class Workout implements Serializable {
+	private static final long serialVersionUID = 8193415968299454246L;
+	
 	static public final int REPEAT_FOREVER = 999999;
 	static public final double NO_FAST_TARGET_PACE = 0.0;
 	static public final double NO_SLOW_TARGET_PACE = 999999.0;

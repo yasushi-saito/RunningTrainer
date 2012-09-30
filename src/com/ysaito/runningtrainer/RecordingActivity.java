@@ -9,17 +9,14 @@ import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
 import com.ysaito.runningtrainer.FileManager.ParsedFilename;
-import com.ysaito.runningtrainer.HealthGraphClient.JsonActivity;
 
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.ServiceConnection;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -41,52 +38,17 @@ import android.widget.Toast;
 public class RecordingActivity extends MapActivity implements GpsTrackingService.StatusListener {
     static final String TAG = "Recording";
 
-    private GpsTrackingService mGpsService;
-    private boolean mIsBound = false;
-    
-    private ServiceConnection mGpsServiceConnection = new ServiceConnection() {
-    	public void onServiceConnected(ComponentName className, IBinder service) {
-    		Util.info(mThisActivity, "CONNECTED0!");
-    		mGpsService = ((GpsTrackingService.Binder)service).getService();
-    		if (mIsBound) {
-    			mGpsService.registerListener(mThisActivity);
-    		}
-    		Util.info(mThisActivity, "CONNECTED!");
-    	}
-
-    	public void onServiceDisconnected(ComponentName name) {
-    		Log.d(TAG, "DISCANNECTED!");
-    		Util.info(mThisActivity, "DISCONN");
-    		mGpsService = null;
-    	}
-    };
-
-    void startGpsService() {
-    	if (!mIsBound) {
-    		// Establish a connection with the service.  We use an explicit
-    		// class name because we want a specific service implementation that
-    		// we know will be running in our own process (and thus won't be
-    		// supporting component replacement by other applications).
-    		Intent intent = new Intent(this, GpsTrackingService.class);
-    		getApplicationContext().startService(intent);
-    		getApplicationContext().bindService(intent,
-    				mGpsServiceConnection, 
-    				Context.BIND_AUTO_CREATE);
-    		mIsBound = true;
-    		Log.d(TAG, "START GPS!");
-    	}
+    void startGpsService(Workout workout) {
+    	// Establish a connection with the service.  We use an explicit
+    	// class name because we want a specific service implementation that
+    	// we know will be running in our own process (and thus won't be
+    	// supporting component replacement by other applications).
+    	Intent intent = new Intent(this, GpsTrackingService.class);
+    	intent.putExtra("workout", workout);
+    	getApplicationContext().startService(intent);
+    	// Note: this service will stop itself once the recording activity stops (by the user long-pressing the "Stop" button)
     }
 
-    void detachGpsService() {
-    	if (mIsBound) {
-    		if (mGpsService != null) mGpsService.unregisterListener(this);
-    		// Detach our existing connection.
-    		getApplicationContext().unbindService(mGpsServiceConnection);
-    		mGpsService = null;
-    		mIsBound = false;
-    	}
-    }
-    
     static public class MyOverlay extends Overlay {
         private ArrayList<GeoPoint> mPoints;
         private double mCurrentAccuracy; // the latest report on GPS accuracy (meters)
@@ -285,7 +247,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
 
     @Override public void onPause() {
     	super.onPause();
-    	detachGpsService();
+    	GpsTrackingService.unregisterListener(mThisActivity);
         mLocationManager.removeUpdates(mLocationListener);
     }
 
@@ -402,7 +364,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
         }
 
     	startListWorkouts();
-        startGpsService();
+    	GpsTrackingService.registerListener(mThisActivity);
     }
     
     @Override
@@ -428,8 +390,9 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	mLapButton.setEnabled(false);  // the lap button is disabled unless the activity is running
         mLapButton.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
-        		if (mGpsService != null) {
-        			mGpsService.onLapButtonPress();
+        		final GpsTrackingService gpsService = GpsTrackingService.getSingleton();
+        		if (gpsService != null) {
+        			gpsService.onLapButtonPress();
         		}
         	}
         });
@@ -449,29 +412,28 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
         });        
     }
 
-    @Override
-    public void onDestroy() {
-    	super.onDestroy();
-    	detachGpsService();
-    	if (Util.ASSERT_ENABLED) {
-    		if (mGpsService != null && mGpsService.isListenerRegistered(this)) {
-    			Util.crash(this, "onPause not called??");
-    		}
-    	}
-    }
-
     private String mLastSelectedWorkoutFilename = null;
     private Workout mLastSelectedWorkout = null;
+
+    private void startOrStopWithWorkout(Workout workout) {
+    	GpsTrackingService gpsService = GpsTrackingService.getSingleton(); 
+    	if (gpsService == null) {
+    		startGpsService(workout);
+    	} else {
+    		gpsService.onStartStopButtonPress();
+    	}
+    }
     
     void onStartStopButtonPress() {
     	if (mTransitioning) return;
-    	
+
     	final int pos = mWorkoutListSpinner.getSelectedItemPosition();
     	final String workoutFilename = (pos >= 0  && pos < mWorkoutFiles.size() ? mWorkoutFiles.get(pos) : null);
 
-    	if (workoutFilename == null ||
-    			(mLastSelectedWorkoutFilename != null && mLastSelectedWorkoutFilename.equals(workoutFilename))) {
-    		mGpsService.onStartStopButtonPress(mLastSelectedWorkout);
+    	if (workoutFilename == null) {
+    		startOrStopWithWorkout(null);
+    	} else if (mLastSelectedWorkoutFilename != null && mLastSelectedWorkoutFilename.equals(workoutFilename)) {
+    		startOrStopWithWorkout(mLastSelectedWorkout);
     	} else {
     		final File dir = FileManager.getWorkoutDir(this);
     		mTransitioning = true;
@@ -489,8 +451,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     					mLastSelectedWorkoutFilename = workoutFilename;
     					mLastSelectedWorkout = workout;
     				}
-    				
-    				mGpsService.onStartStopButtonPress(workout);
+    				startOrStopWithWorkout(workout);
     			}
 			});
     	}
@@ -504,9 +465,11 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	mLapButton.setEnabled(false);
     	mWorkoutListSpinner.setVisibility(View.VISIBLE);
     	mWorkoutTitle.setText("Workout: ");
+
+    	final GpsTrackingService gpsService = GpsTrackingService.getSingleton();
     	
-    	if (mGpsService != null) {
-    		GpsTrackingService.ActivityStatus status = mGpsService.resetActivityAndStop();
+    	if (gpsService != null) {
+    		GpsTrackingService.ActivityStatus status = gpsService.resetActivityAndStop();
     		
     		if (status != null && status.path.size() >= 1) {
     			final HealthGraphClient.JsonActivity record = new HealthGraphClient.JsonActivity(); 
@@ -555,8 +518,6 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     			});
     		}
     	}
-    	detachGpsService();
-    	startGpsService();
     }	
     
     @Override

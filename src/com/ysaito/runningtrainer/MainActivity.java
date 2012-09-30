@@ -14,7 +14,6 @@ package com.ysaito.runningtrainer;
  * TODO: satellite view
  * TODO: undo of workout edits.
  * TODO: concise speech. 1.00 mile should be "1 mile"
- * TODO: implement "onlap" speech
  */
 import java.util.HashMap;
 

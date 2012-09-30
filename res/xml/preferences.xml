@@ -14,6 +14,11 @@
        android:key="autolap_distance_interval"
        android:title="Autolap distance interval" />
 
+   <CheckBoxPreference
+       android:defaultValue="false"
+       android:key="fake_gps"
+       android:title="Fake GPS" />
+
   <PreferenceScreen
     android:key="pref_key_display_settings"
     android:title="Display settings" >

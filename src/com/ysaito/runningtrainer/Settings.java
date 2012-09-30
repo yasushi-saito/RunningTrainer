@@ -30,8 +30,14 @@ public class Settings {
 		public boolean lapDistance;
 		public boolean lapDuration;
 		public boolean lapPace;	
-		public void unionFrom(final SpeechTypes other) {
-			
+		public void unionFrom(SpeechTypes other) {
+			if (other.totalDistance) totalDistance = true;
+			if (other.totalDuration) totalDuration = true;			
+			if (other.averagePace) averagePace = true;
+			if (other.currentPace) currentPace = true;
+			if (other.lapDistance) lapDistance = true;
+			if (other.lapDuration) lapDuration = true;
+			if (other.lapPace) lapPace = true;
 		}
 	}
 	static public double autoLapDistanceInterval; // in meters. <= 0 if disabled
@@ -41,7 +47,7 @@ public class Settings {
 	static public SpeechTypes speakDistanceTypes = new SpeechTypes();
 	static public SpeechTypes speakTimeTypes = new SpeechTypes();	
 	static public SpeechTypes speakOnLapTypes = new SpeechTypes();		
-	
+	static public boolean fakeGps;
 	private static SharedPreferences mPrefs;
 	private static SharedPreferences.OnSharedPreferenceChangeListener mListener;
 	private static Context mContext;
@@ -72,6 +78,7 @@ public class Settings {
 			onChange("unit");
 			for (int i = 0; i < 6; ++i) onChange("display" + i);
 			onChange("autolap_distance_interval");
+			onChange("fake_gps");
 			onChange("speak_distance_interval");
 			onChange("speak_distance_total_distance");
 			onChange("speak_distance_total_duration");
@@ -119,6 +126,8 @@ public class Settings {
 			} else {
 				viewTypes[index] = mPrefs.getString(key, "none");
 			}
+		} else if (key.equals("fake_gps")) {
+			fakeGps = mPrefs.getBoolean(key, false);
 		} else if (key.equals("autolap_distance_interval")) {
 			autoLapDistanceInterval = Double.parseDouble(mPrefs.getString("autolap_distance_interval", "0"));
 		} else if (key.equals("speak_time_interval")) {

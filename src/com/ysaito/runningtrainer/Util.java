@@ -99,11 +99,23 @@ public class Util {
 	}
 
 	static public String distanceToSpeechText(double meters) {
+		String unit; 
+		long value100;
 		if (Settings.unit == Settings.US) {
-			return String.format("%.2f miles", meters / METERS_PER_MILE);
+			unit = "miles";
+			value100 = (long)((meters * 100) / METERS_PER_MILE);
 		} else {
-			return String.format("%.2f kilometers", meters / 1000.0);
+			unit = "kilometers";
+			value100 = (long)((meters * 100) / 1000.0);
 		}
+		// Drop the fraction if the value >= 100
+		if (value100 >= 100 * 100 || value100 % 100 == 0)
+			return String.format("%d %s", value100 / 100, unit);
+		// Speak up to one digit fraction if the value >= 10
+		if (value100 >= 10 * 100 || value100 % 10 == 0)
+			return String.format("%d.%d %s", value100 / 100, (value100 / 10) % 10, unit);
+		// Else speak up to two digits fraction
+		return String.format("%d.%d %s", value100 / 100, value100 % 100, unit);
 	}
 	
 	static public String durationToString(double secondsD) {
