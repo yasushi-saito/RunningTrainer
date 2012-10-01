@@ -24,7 +24,6 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.EditText;
 import android.widget.RadioButton;
 
 public class WorkoutCanvasView extends View implements View.OnTouchListener {

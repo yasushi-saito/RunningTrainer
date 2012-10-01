@@ -7,11 +7,13 @@
       android:id="@+id/new_interval_button"
       android:layout_width="wrap_content"
       android:layout_height="wrap_content"
-      android:layout_marginLeft="10dip"
-      android:layout_marginRight="10dip"
+      android:layout_marginLeft="5dip"
+      android:layout_marginRight="5dip"
+      android:textSize="12sp" 
       android:text="New"
       android:layout_alignParentTop="true"
       android:layout_alignParentLeft="true"
+      android:background="@drawable/start_stop_button"
        />
 
     <Button
@@ -19,19 +21,23 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_marginLeft="10dip"
-        android:layout_marginRight="10dip"
+        android:layout_marginLeft="5dip"
+        android:layout_marginRight="5dip"
         android:layout_toRightOf="@id/new_interval_button"
-        android:text="Repeats" />
+        android:background="@drawable/start_stop_button"
+        android:text="Repeats"
+        android:textSize="12sp" />
 
     <Button
         android:id="@+id/save_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_marginLeft="10dip"
-        android:layout_marginRight="10dip"
+        android:layout_marginLeft="5dip"
+        android:layout_marginRight="5dip"
+        android:textSize="12sp"
         android:layout_toRightOf="@id/new_repeats_button"
+      android:background="@drawable/start_stop_button"
         android:text="Save" />
     
     <Button
@@ -39,9 +45,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:layout_marginLeft="10dip"
-        android:layout_marginRight="10dip"
+        android:layout_marginLeft="5dip"
+        android:layout_marginRight="5dip"
+        android:textSize="12sp"
         android:layout_toRightOf="@id/save_button"
+      android:background="@drawable/start_stop_button"
         android:text="Cancel" />
     
     <TextView
