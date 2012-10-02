@@ -22,6 +22,7 @@ import com.google.gson.GsonBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -97,17 +98,51 @@ public class HealthGraphClient {
 		
 		// Cumulative meters climbed, since the start of the activity
 		double elevationGain;
+		
 		// Cumulative meters lost, since the start of the activity
-		double evelationLoss;
+		double elevationLoss;
+		
+		JsonWGS84 location;
 	}
+	
 	static public ArrayList<LapSummary> ExtractLapSummaries(JsonActivity record) {
 		final ArrayList<LapSummary> laps = new ArrayList<LapSummary>();
 		double autoLapInterval = Settings.autoLapDistanceInterval;
 		if (autoLapInterval <= 0.0) {
 			autoLapInterval = (Settings.unit == Settings.Unit.US ? Util.METERS_PER_MILE : 1000.0);
 		}
-		// TODO: fill
-		return null;
+		int lastLap = 0;
+		double distance = 0.0;       // Cumulative meters traveled
+		double elevationGain = 0.0;  // Cumulative elevation gain, in meters
+		double elevationLoss = 0.0;  // Cumulative elevation loss, in meters		
+		float[] tmp = new float[1];
+		for (int i = 1; i < record.path.length; ++i) {
+			JsonWGS84 location = record.path[i];
+			JsonWGS84 lastLocation = record.path[i - 1];
+			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+					location.latitude, location.longitude,
+					tmp);
+			distance += tmp[0];
+			
+			final double elevationDelta = location.altitude - lastLocation.altitude;
+			if (elevationDelta < 0) {
+				elevationLoss += -elevationDelta;
+			} else {
+				elevationGain += elevationDelta;
+			}
+			final int thisLap = (int)(distance / autoLapInterval); 
+			if (lastLap != thisLap) {
+				LapSummary lap = new LapSummary();
+				lap.distance = distance;
+				lap.elapsedSeconds = location.timestamp;
+				lap.elevationGain = elevationGain;
+				lap.elevationLoss = elevationLoss;
+				lap.location = location;
+				laps.add(lap);
+				lastLap = thisLap;
+			}
+		}
+		return laps;
 	}
 	
 	static public class PathAggregator {
@@ -167,6 +202,7 @@ public class HealthGraphClient {
 	}
 	
     static private HealthGraphClient mSingleton;
+    
     
     static private final String OAUTH2_CLIENT_ID = "0808ef781c68449298005c8624d3700b";
     static private final String OAUTH2_CLIENT_SECRET = "dda5888cd8d64760a044dc61ae4f44db";

@@ -105,19 +105,23 @@ public class RecordReplayActivity extends MapActivity {
     
     private static class MyAdapter extends BaseAdapter {
     	private final LayoutInflater mInflater;
-    	private ArrayList<String> mObjects = new ArrayList<String>();
+    	private ArrayList<HealthGraphClient.LapSummary> mLaps = new ArrayList<HealthGraphClient.LapSummary>();
     		    
     	public MyAdapter(Context context) { 
     		mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE); 
-    		for (int i = 0; i < 10; ++i) {
-    			mObjects.add("FOO" + i);
-    		}
+    	}
+
+    	public void setRecord(HealthGraphClient.JsonActivity record) {
+    		mLaps = HealthGraphClient.ExtractLapSummaries(record);
+    		notifyDataSetChanged();
     	}
     	
-    	public int getCount() { return mObjects.size(); }
+    	
+    	// Methods for BaseAdapter
+    	public int getCount() { return mLaps.size(); }
     	public Object getItem(int position) { 
-    		if (position < 0 || position >= mObjects.size()) return null;
-    		return mObjects.get(position); 
+    		if (position < 0 || position >= mLaps.size()) return null;
+    		return mLaps.get(position); 
    		} 
     	public long getItemId(int position) { 
     		return position; 
@@ -130,20 +134,40 @@ public class RecordReplayActivity extends MapActivity {
     		} else {
     			layout = (LinearLayout)convertView;
     		}
-    		TextView text = (TextView)layout.findViewById(R.id.lap_list_distance);
-    		text.setHorizontallyScrolling(false);
-    		if (position >= 0 && position < mObjects.size()) {
-    			text.setText(mObjects.get(position));
+    		TextView distanceView = (TextView)layout.findViewById(R.id.lap_list_distance);
+    		TextView paceView = (TextView)layout.findViewById(R.id.lap_list_pace);
+    		TextView elevGainView = (TextView)layout.findViewById(R.id.lap_list_elevation_gain);
+    		TextView elevLossView = (TextView)layout.findViewById(R.id.lap_list_elevation_loss);
+    		if (position == 0) {
+    			// Print the header line
+    			distanceView.setText(Util.distanceUnitString());
+    			paceView.setText("Pace");
+    			elevGainView.setText("Elev gain");
+    			elevLossView.setText("Elev loss");    			
     		} else {
-    			text.setText("");
+    			--position;
+    			if (position < 0 && position >= mLaps.size()) return layout;
+
+    			final HealthGraphClient.LapSummary lap = mLaps.get(position);
+    			final HealthGraphClient.LapSummary lastLap = (position > 0 ? mLaps.get(position - 1) : null);
+
+    			distanceView.setHorizontallyScrolling(false);
+    			distanceView.setText(Util.distanceToString(lap.distance));
+
+    			double lastElapsed = (lastLap != null ? lastLap.elapsedSeconds : 0.0);
+    			double lastDistance = (lastLap != null ? lastLap.distance : 0.0);
+
+    			double distanceDelta = lap.distance - lastDistance;
+    			double elapsedDelta = lap.elapsedSeconds - lastElapsed;
+    			double pace = (distanceDelta > 0 ? elapsedDelta / distanceDelta : 0.0);
+    			paceView.setText(Util.paceToString(pace));
+
+    			double v = (lap.elevationGain - (lastLap != null ? lastLap.elevationGain : 0.0));
+    			elevGainView.setText(Util.distanceToString(v));
+
+    			v = (lap.elevationLoss - (lastLap != null ? lastLap.elevationLoss : 0.0));
+    			elevLossView.setText(Util.distanceToString(v));
     		}
-
-    		// TODO: complete the code
-    		text = (TextView)layout.findViewById(R.id.lap_list_pace);
-    		text.setText("Pace " + position);
-
-    		text = (TextView)layout.findViewById(R.id.lap_list_elevation_gain);
-    		text.setText("Elev " + position);
     		return layout;
     	}
     }
@@ -206,6 +230,7 @@ public class RecordReplayActivity extends MapActivity {
     	mMapOverlay.setPath(record.path);
     	Util.RescaleMapView(mMapView, mMapOverlay.getPoints());
     	mMapView.invalidate();
+    	mLapListAdapter.setRecord(record);
     	updateStatsViews();
     }
 }

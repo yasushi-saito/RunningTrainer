@@ -18,4 +18,8 @@
      <TextView android:id="@+id/lap_list_elevation_gain"
          android:layout_width="60dip"
          android:layout_height="wrap_content"  android:layout_weight="1"/>
+     
+     <TextView android:id="@+id/lap_list_elevation_loss"
+         android:layout_width="60dip"
+         android:layout_height="wrap_content"  android:layout_weight="1"/>
 </LinearLayout>
