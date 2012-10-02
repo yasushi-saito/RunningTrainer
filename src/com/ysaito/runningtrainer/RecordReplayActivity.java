@@ -18,6 +18,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -28,11 +29,8 @@ public class RecordReplayActivity extends MapActivity {
 	private static final String TAG = "Recording";
 
     static public class MyOverlay extends Overlay {
-        private ArrayList<GeoPoint> mPoints;
-        
-        public MyOverlay() {
-            mPoints = new ArrayList<GeoPoint>();
-        }
+        private final ArrayList<GeoPoint> mPoints = new ArrayList<GeoPoint>();
+        private GeoPoint mHighlight = null;
 
         public ArrayList<GeoPoint> getPoints() { return mPoints; }
         
@@ -44,6 +42,10 @@ public class RecordReplayActivity extends MapActivity {
         	}
         }
 
+        public void setHighlight(HealthGraphClient.JsonWGS84 location) {
+        	mHighlight = new GeoPoint((int)(location.latitude * 1e6), (int)(location.longitude * 1e6));
+        }
+        
         @Override
         public boolean draw(Canvas canvas, MapView mapView, boolean shadow, long when) {
             boolean v = super.draw(canvas, mapView, shadow, when);
@@ -52,6 +54,7 @@ public class RecordReplayActivity extends MapActivity {
             Projection projection = mapView.getProjection();
             Paint paint = new Paint();
             paint.setAntiAlias(true);
+            
             if (mPoints.size() > 0) {
             	paint.setColor(0xff000080);
             	paint.setStyle(Paint.Style.STROKE);
@@ -91,6 +94,17 @@ public class RecordReplayActivity extends MapActivity {
             		}
             		canvas.drawPath(path, paint);
             	}
+            }
+            if (mHighlight != null) {
+            	Point point = new Point();
+            	projection.toPixels(mHighlight, point);
+            	
+            	paint.setColor(0xff000080);
+            	paint.setStyle(Paint.Style.STROKE);
+            	paint.setStrokeWidth(8);
+            	paint.setColor(0xff0000ff);
+            	
+            	canvas.drawCircle(point.x, point.y, 10, paint);
             }
             return v;
         }
@@ -184,6 +198,18 @@ public class RecordReplayActivity extends MapActivity {
         mLapListView = (ListView)findViewById(R.id.replay_lap_list);
         mLapListAdapter = new MyAdapter(this);
         mLapListView.setAdapter(mLapListAdapter);
+        
+        mLapListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+			public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
+				final HealthGraphClient.LapSummary lap = (HealthGraphClient.LapSummary)mLapListAdapter.getItem(position);
+				if (lap == null) {
+					mMapOverlay.setHighlight(null);
+				} else {
+					mMapOverlay.setHighlight(lap.location);
+				}
+				mMapView.invalidate();
+			}
+        });
     }
 
     @Override public void onResume() {
