@@ -131,7 +131,7 @@ public class HealthGraphClient {
 				elevationGain += elevationDelta;
 			}
 			final int thisLap = (int)(distance / autoLapInterval); 
-			if (lastLap != thisLap) {
+			if (lastLap != thisLap || i == record.path.length - 1) {
 				LapSummary lap = new LapSummary();
 				lap.distance = distance;
 				lap.elapsedSeconds = location.timestamp;

@@ -43,7 +43,11 @@ public class RecordReplayActivity extends MapActivity {
         }
 
         public void setHighlight(HealthGraphClient.JsonWGS84 location) {
-        	mHighlight = new GeoPoint((int)(location.latitude * 1e6), (int)(location.longitude * 1e6));
+        	if (location == null) {
+        		mHighlight = null;
+        	} else {
+        		mHighlight = new GeoPoint((int)(location.latitude * 1e6), (int)(location.longitude * 1e6));
+        	}
         }
         
         @Override
@@ -129,14 +133,26 @@ public class RecordReplayActivity extends MapActivity {
     		mLaps = HealthGraphClient.listLaps(record);
     		notifyDataSetChanged();
     	}
+
+    	public final HealthGraphClient.LapSummary getLapSummary(int index) {
+    		if (index < 0 || index >= mLaps.size()) return null;
+    		return mLaps.get(index);
+    	}
     	
+    	//
+    	// Methods to implement BaseAdapter
+    	//
     	
-    	// Methods for BaseAdapter
-    	public int getCount() { return mLaps.size(); }
+    	public int getCount() { 
+    		// +1 for the header row
+    		return mLaps.size() + 1;
+    	}
+    	
     	public Object getItem(int position) { 
-    		if (position < 0 || position >= mLaps.size()) return null;
-    		return mLaps.get(position); 
+    		if (position == 0) return null;
+    		return getLapSummary(position - 1);
    		} 
+    	
     	public long getItemId(int position) { 
     		return position; 
     	}
