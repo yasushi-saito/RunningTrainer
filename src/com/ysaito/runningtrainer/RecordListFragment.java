@@ -159,6 +159,7 @@ public class RecordListFragment extends ListFragment {
 		final FileManager.ParsedFilename f = mAdapter.getItem(position);
 		if (f == null) return;
 
+		startBusyThrob();
 		FileManager.runAsync(new FileManager.AsyncRunner<HealthGraphClient.JsonActivity>() {
 			public JsonActivity doInThread() throws Exception {
 				return FileManager.readFile(mRecordDir, f.getBasename(), HealthGraphClient.JsonActivity.class);
@@ -168,6 +169,7 @@ public class RecordListFragment extends ListFragment {
 					Util.error(mActivity,  "Failed to read file : " + f.getBasename() + ": " + error);
 					return;
 				}
+				stopBusyThrob();
 				RecordReplayFragment fragment = (RecordReplayFragment)mActivity.findOrCreateFragment(
 						"com.ysaito.runningtrainer.RecordReplayFragment");
 				fragment.setRecord(record);

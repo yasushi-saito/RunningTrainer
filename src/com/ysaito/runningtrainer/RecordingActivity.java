@@ -25,7 +25,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -206,16 +205,16 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
 	}
 
     public void onGpsUpdate(
-    		int newState,
+    		GpsTrackingService.State newState,
     		GpsTrackingService.ActivityStatus status) {
-    	if (newState == GpsTrackingService.RESET) {
+    	if (newState == GpsTrackingService.State.RESET) {
     		mStartStopButton.setText(R.string.start);
     		mLapButton.setEnabled(false);
     		mWorkoutListSpinner.setVisibility(View.GONE);
     		mWorkoutListSpinner.setVisibility(View.VISIBLE);
     		mWorkoutTitle.setText("Workout: ");
     	} else {
-    		if (newState == GpsTrackingService.RUNNING) {
+    		if (newState == GpsTrackingService.State.RUNNING) {
     			mStartStopButton.setText(R.string.pause); 
     			mLapButton.setEnabled(true);
     		} else {

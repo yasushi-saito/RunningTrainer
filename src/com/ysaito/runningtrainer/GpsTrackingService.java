@@ -57,9 +57,7 @@ public class GpsTrackingService extends Service {
     	 * @param state
     	 * @param status null if state==RESET. Else nonnull.
     	 */
-    	public void onGpsUpdate(
-    			int state,
-    			ActivityStatus status);
+    	public void onGpsUpdate(State state, ActivityStatus status);
     	public void onGpsError(String message);
     }
     
@@ -78,7 +76,7 @@ public class GpsTrackingService extends Service {
     	if (mSingleton != null) {
     		// Call the listener immediately to give the initial stats
     		ActivityStatus status = null;
-    		if (mSingleton.mState != RESET) {
+    		if (mSingleton.mState != State.RESET) {
     			status = new ActivityStatus();
     			status.startTime = mSingleton.mStartTime;
     			status.currentInterval = mSingleton.getCurrentWorkoutInterval();
@@ -98,11 +96,12 @@ public class GpsTrackingService extends Service {
     	return mListeners.contains(listener);
     }*/
     
-    public static final int RESET = 0;          // Initial state
-    public static final int RUNNING = 1;        // Running state.
-    public static final int STOPPED = 2;        // Paused state. The GPS activity is live, but the stats won't count
-    
-    private int mState = RESET;
+    enum State {
+    	RESET,     // Either the initial state, or the activity has finished
+    	RUNNING,   // Currently running
+    	STOPPED    // Paused
+    }
+    private State mState = State.RESET;
     private double mStartTime = -1.0;
 
     private final void startNewLap() {
@@ -121,12 +120,12 @@ public class GpsTrackingService extends Service {
     }
 
     public final ActivityStatus resetActivityAndStop() {
-    	if (mState == RESET) {
+    	if (mState == State.RESET) {
     		stopSelf();
     		mSingleton = null;
     		return null;
     	}
-    	mState = RESET;
+    	mState = State.RESET;
 		updateTimer();
     	ActivityStatus status = new ActivityStatus();
     	status.startTime = mStartTime;
@@ -145,16 +144,16 @@ public class GpsTrackingService extends Service {
     }
     
     public final void onStartStopButtonPress() {
-    	if (mState == RESET) {
+    	if (mState == State.RESET) {
     		;
-    	} else if (mState == STOPPED) {
+    	} else if (mState == State.STOPPED) {
     		speak("Resumed", null);
-    		mState = RUNNING;
+    		mState = State.RUNNING;
     		mTotalStats.onResume();
     		mLapStats.onResume();
     	} else {
     		speak("Paused", null);
-    		mState = STOPPED;  
+    		mState = State.STOPPED;  
     		mTotalStats.onPause();
     		mLapStats.onPause();
     	}
@@ -276,7 +275,7 @@ public class GpsTrackingService extends Service {
     	
     	// Notify the listener
     	ActivityStatus status = null;
-    	if (mState != RESET) {
+    	if (mState != State.RESET) {
     		status = new ActivityStatus();
     		status.startTime = mStartTime;
     		status.currentInterval = getCurrentWorkoutInterval();
@@ -422,7 +421,7 @@ public class GpsTrackingService extends Service {
     		mTimer.purge();
     		mTimer = null;
     	}
-		if (mState == RUNNING) {
+		if (mState == State.RUNNING) {
 			mTimer = new Timer();
 			mTimer.schedule(new TimerTask() {
 				@Override public void run() {
@@ -441,7 +440,7 @@ public class GpsTrackingService extends Service {
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, toString() + ": Destroyed");
-		mState = RESET;
+		mState = State.RESET;
 		updateTimer();
 		Toast.makeText(this, toString() + ": Stopped", Toast.LENGTH_LONG).show();
 		mLocationManager.removeUpdates(mLocationListener);
@@ -452,7 +451,7 @@ public class GpsTrackingService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d(TAG, toString() + ": OnStart " + startId + " state=" + mState);
 		mSingleton = this;
-		if (mState != RESET) {
+		if (mState != State.RESET) {
 			// The activity already running.
 			// Happens when startService is called after the activity has
 			// resumed from previous sleep.
@@ -467,7 +466,7 @@ public class GpsTrackingService extends Service {
 			mTotalStats = new LapStats();
 			mLapStats = new LapStats();
 			mStartTime = System.currentTimeMillis() / 1000.0;
-			mState = RUNNING;
+			mState = State.RUNNING;
 			if (workout != null) {
 				mWorkoutIterator = new WorkoutIterator(new Workout(workout));
 			} else {
@@ -486,7 +485,7 @@ public class GpsTrackingService extends Service {
 	}
 	
 	private void onGpsLocationUpdate(long now, Location newLocation) {
-		if (mState == RUNNING) {
+		if (mState == State.RUNNING) {
 			final double timestamp = mTotalStats.getDurationSeconds();
 			mPath.addPoint(timestamp,
 					newLocation.getLatitude(),
@@ -499,7 +498,7 @@ public class GpsTrackingService extends Service {
 	}
 
 	private void dofakeGpsLocationUpdate() {
-		if (mState == RUNNING) {
+		if (mState == State.RUNNING) {
 			if (mPath.getPath().size() > 0) {
 				HealthGraphClient.JsonWGS84 lastWgs = mPath.lastPoint();
 				mPath.addPoint(lastWgs.timestamp + 0.3, lastWgs.latitude + 0.0008, lastWgs.longitude, lastWgs.altitude);

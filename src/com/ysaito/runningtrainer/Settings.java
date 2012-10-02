@@ -15,10 +15,12 @@ import android.preference.PreferenceManager;
  */
 public class Settings {
 	// Unit of measurement
-	public static final int METRIC = 0;
-	public static final int US = 1;
+	enum Unit {
+		METRIC,   // km, meter
+		US,       // mile, feet
+	}
 	
-	static public int unit = METRIC;
+	static public Unit unit = Unit.METRIC;
 	static public Locale locale = Locale.US;
 	static public String viewTypes[] = new String[]{"none", "none", "none", "none", "none", "none"};
 	
@@ -116,9 +118,9 @@ public class Settings {
 
 	private static void onChange(String key) {
 		if (key.equals("unit")) {
-			unit = METRIC;
+			unit = Unit.METRIC;
 			final String value = mPrefs.getString(key, "US");
-			if (value.equals("US")) unit = US;
+			if (value.equals("US")) unit = Unit.US;
 		} else if (key.startsWith("display")) {
 			int index = Integer.parseInt(key.substring(7));
 			if (Util.ASSERT_ENABLED && (index < 0 || index >= 6)) {

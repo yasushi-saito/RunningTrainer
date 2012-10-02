@@ -3,34 +3,11 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
-    <TextView
-        android:id="@+id/workout_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="20sp"
-        android:layout_marginTop="10sp"
-        android:layout_marginBottom="10sp"
-        android:text="Workout: " />
-    
-    <Spinner
-        android:id="@+id/workout_spinner"
-        android:prompt="@string/foobar"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignBottom="@id/workout_title"
-        android:layout_toRightOf="@id/workout_title" />
-
-    <View
-        android:id="@+id/strut"
-        android:layout_width="fill_parent"
-        android:layout_height="20sp"
-        android:layout_below="@id/workout_title" />
-
     <Button
         style="@style/LargeButton"
         android:id="@+id/start_stop_button"
         android:layout_alignParentLeft="true"
-        android:layout_below="@id/strut"
+        android:layout_marginTop="5pt"
         android:text="@string/start"
         android:background="@drawable/start_stop_button"/>    
 
@@ -39,14 +16,42 @@
         android:id="@+id/lap_button"
         android:layout_alignBottom="@id/start_stop_button"
         android:layout_alignParentRight="true"
+        android:layout_marginTop="5pt"
         android:text="@string/lap"
         android:background="@drawable/start_stop_button"/>    
 
+    <View
+        android:id="@+id/strut"
+        android:layout_width="fill_parent"
+        android:layout_height="10sp"
+        android:layout_below="@id/start_stop_button" />
+
+    <LinearLayout
+        android:id="@+id/workout_box"
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/strut">
+        
+    <TextView
+        android:id="@+id/workout_title"
+        android:layout_width="wrap_content"
+        android:layout_height="40sp"
+        android:textSize="20sp"
+        android:text="Workout: " />
+    
+    <Spinner
+        android:id="@+id/workout_spinner"
+        android:prompt="@string/foobar"
+        android:layout_width="fill_parent"
+        android:layout_height="40sp"/>
+    </LinearLayout>
+    
     <TextView
         android:id="@+id/view0"
         style="@style/ActivityDisplay"
         android:layout_alignParentLeft="true"
-        android:layout_below="@id/start_stop_button" />
+        android:layout_below="@id/workout_box" />
 
         <TextView
             android:id="@+id/view0_title"

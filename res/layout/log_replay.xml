@@ -5,50 +5,67 @@
 
     <TextView
         style="@style/ActivityDisplay"
-        android:id="@+id/distance"
+        android:id="@+id/replay_distance"
         android:layout_alignParentTop="true"
         android:layout_alignParentLeft="true"
         />
     <TextView
         style="@style/ActivityLegend"
-        android:id="@+id/distance_title"
-        android:layout_below="@id/distance"
-        android:layout_alignRight="@id/distance"
+        android:id="@+id/replay_distance_title"
+        android:layout_below="@id/replay_distance"
+        android:layout_alignRight="@id/replay_distance"
         />
 
     <TextView
         style="@style/ActivityDisplay"
-        android:id="@+id/duration"
+        android:id="@+id/replay_duration"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         />
     <TextView
         style="@style/ActivityLegend"
-        android:id="@+id/duration_title"
-        android:layout_below="@id/duration"
-        android:layout_alignRight="@id/duration"
+        android:id="@+id/replay_duration_title"
+        android:layout_below="@id/replay_duration"
+        android:layout_alignRight="@id/replay_duration"
         />
     
     <TextView
         style="@style/ActivityDisplay"
-        android:id="@+id/pace"
+        android:id="@+id/replay_pace"
         android:layout_alignParentTop="true"
         android:layout_alignParentRight="true"
         />
     <TextView
         style="@style/ActivityLegend"
-        android:id="@+id/pace_title"
-        android:layout_below="@id/pace"
-        android:layout_alignRight="@id/pace"
+        android:id="@+id/replay_pace_title"
+        android:layout_below="@id/replay_pace"
+        android:layout_alignRight="@id/replay_pace"
         />
 
-    <com.google.android.maps.MapView
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_below="@id/replay_distance_title"
+        android:orientation="vertical" >
+    <FrameLayout 
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent"
+      android:layout_weight="0.3" >     
+      
+        <com.google.android.maps.MapView
             xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/map_view"
-            android:layout_below="@id/distance_title"
-            android:clickable="true"
+            android:id="@+id/replay_map_view"
+            android:layout_width="fill_parent"
+            android:layout_height="match_parent"
+            android:apiKey="0bz2DrYPiw87fMixiWlMONq1nDV9ZDJP7XgzESQ"
+            android:clickable="true"/>
+    </FrameLayout>
+        <ListView
+            android:id="@+id/replay_lap_list"
             android:layout_width="fill_parent"
             android:layout_height="fill_parent"
-            android:apiKey="0bz2DrYPiw87fMixiWlMONq1nDV9ZDJP7XgzESQ"
-                 />
+            android:layout_weight="0.7" />
+
+    </LinearLayout>
+
 </RelativeLayout>

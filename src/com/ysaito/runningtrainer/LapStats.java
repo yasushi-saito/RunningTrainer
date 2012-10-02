@@ -7,12 +7,14 @@ import android.location.Location;
 import android.util.Log;
 
 class LapStats {
+	@SuppressWarnings("unused")
 	private final String TAG = "LapStats";
 
 	// Current state of the activity. RUNNING if the timer is ticking. PAUSED if the user pressed the "Pause" button
-	private static final int RUNNING = 1;
-	private static final int PAUSED = 2;
-	private int mState = RUNNING;
+	enum State {
+		RUNNING, PAUSED
+	}
+	private State mState = State.RUNNING;
 	
 	// The time this lap started. Millisecs since 1970/1/1
 	private long mLapStartTimeMillis = 0;
@@ -73,7 +75,7 @@ class LapStats {
 	 */
 	public final double getDurationSeconds() {
 		long d = mCumulativeDurationBeforeLastResume; 
-		if (mState == RUNNING && mLastResumeTimeMillis > 0) {
+		if (mState == State.RUNNING && mLastResumeTimeMillis > 0) {
 			d += System.currentTimeMillis() - mLastResumeTimeMillis;
 		}
 		return d / 1000.0;
@@ -120,18 +122,18 @@ class LapStats {
 	}
 	
 	public final void onPause() {
-		if (mState == RUNNING) {
+		if (mState == State.RUNNING) {
 			final long now = System.currentTimeMillis();
 			mCumulativeDurationBeforeLastResume += (now - mLastResumeTimeMillis);
-			mState = PAUSED;
+			mState = State.PAUSED;
 		}
 	}
 	
 	public final void onResume() {
-		if (mState == PAUSED) {
+		if (mState == State.PAUSED) {
 			final long now = System.currentTimeMillis();
 			mLastResumeTimeMillis = now;
-			mState = RUNNING;
+			mState = State.RUNNING;
 		}
 	}
 

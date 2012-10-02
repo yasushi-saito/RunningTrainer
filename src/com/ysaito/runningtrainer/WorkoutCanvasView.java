@@ -520,7 +520,6 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		private Repeats mParent = null;
 		
 		public Repeats(int n) { mRepeats = n; }
-		public final int getRepeats() { return mRepeats; }
 		public final Repeats getParent() { return mParent; };
 		public final void setParent(Repeats p) { mParent = p; }
 		

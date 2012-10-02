@@ -22,12 +22,11 @@ public class Util {
 	}
 	
 	public static class Singleton<T> {
-		private static final int UNINITIALIZED = 0;		
-		private static final int INITIALIZER_RUNNING = 1;
-		private static final int INITIALIZED = 2;
-
+		private enum State {
+			UNINITIALIZED, INITIALIZER_RUNNING, INITIALIZED
+		}
 		private T mObject = null;
-		private int mState = UNINITIALIZED;
+		private State mState = State.UNINITIALIZED;
 		
 		public Singleton() { }
 		
@@ -35,17 +34,17 @@ public class Util {
 		 * Get the singleton object. If the object hasn't been initialized yet, run the @p initializer.
 		 */
 		synchronized T get(SingletonInitializer<T> initializer) {
-			while (mState == INITIALIZER_RUNNING) {
+			while (mState == State.INITIALIZER_RUNNING) {
 				try {
 					wait();
 				} catch (InterruptedException e) {
 					;
 				}
 			}
-			if (mState == UNINITIALIZED) {
-				mState = INITIALIZER_RUNNING;
+			if (mState == State.UNINITIALIZED) {
+				mState = State.INITIALIZER_RUNNING;
 				mObject = initializer.createSingleton();
-				mState = INITIALIZED;
+				mState = State.INITIALIZED;
 			}
 			return mObject;
 		}
@@ -74,7 +73,7 @@ public class Util {
 	}
 
 	static public String paceToSpeechText(double secondsPerMeter) {
-		return durationToSpeechText(secondsPerMeter * (Settings.unit == Settings.US ? METERS_PER_MILE : 1000.0));
+		return durationToSpeechText(secondsPerMeter * (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0));
 	}
 	
 	static public String durationToSpeechText(double totalSecondsD) {
@@ -101,7 +100,7 @@ public class Util {
 	static public String distanceToSpeechText(double meters) {
 		String unit; 
 		long value100;
-		if (Settings.unit == Settings.US) {
+		if (Settings.unit == Settings.Unit.US) {
 			unit = "miles";
 			value100 = (long)((meters * 100) / METERS_PER_MILE);
 		} else {
@@ -168,7 +167,7 @@ public class Util {
 	}
 	
 	static public String distanceUnitString() {
-		if (Settings.unit == Settings.US) {
+		if (Settings.unit == Settings.Unit.US) {
 			return "mile";
 		} else {
 			return "km";
@@ -176,7 +175,7 @@ public class Util {
 	}
 
 	static public String distanceToString(double meters) {
-		if (Settings.unit == Settings.US) {
+		if (Settings.unit == Settings.Unit.US) {
 			return String.format("%.2f", meters / METERS_PER_MILE);
 		} else {
 			return String.format("%.2f", meters / 1000.0);
@@ -189,7 +188,7 @@ public class Util {
 	 */
 	static public double distanceFromString(String s) {
 		try {
-			double multiplier = (Settings.unit == Settings.US ? METERS_PER_MILE : 1000.0);
+			double multiplier = (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0);
 			return Double.parseDouble(s) * multiplier;
 		} catch (NumberFormatException e) {
 			return -1.0;
@@ -197,7 +196,7 @@ public class Util {
 	}
 	
 	static public String paceUnitString() {
-		if (Settings.unit == Settings.US) {
+		if (Settings.unit == Settings.Unit.US) {
 			return "s/mile";
 		} else {
 			return "s/km";
@@ -206,7 +205,7 @@ public class Util {
 	
 	static public String paceToString(double secondsPerMeter) {
 		long seconds;
-		if (Settings.unit == Settings.US) {
+		if (Settings.unit == Settings.Unit.US) {
 			seconds = (long)(secondsPerMeter * METERS_PER_MILE);
 		} else {
 			seconds = (long)(secondsPerMeter * 1000);
@@ -228,7 +227,7 @@ public class Util {
 	static public double paceFromString(String s) {
 		final double d = durationFromString(s);
 		if (d < 0.0) return d;
-		return d / (Settings.unit == Settings.US ? METERS_PER_MILE : 1000.0);
+		return d / (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0);
 	}
 	
 	static public void RescaleMapView(MapView mapView, ArrayList<GeoPoint> points) {

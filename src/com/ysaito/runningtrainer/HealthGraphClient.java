@@ -88,6 +88,28 @@ public class HealthGraphClient {
 		public String type; // One of the following values: start, end, gps, pause, resume, manual
 	};
 
+	static public class LapSummary {
+		// Cumulative meters traveled, since the start of the activity
+		double distance;
+
+		// Activity duration, since the start of the activity
+		double elapsedSeconds;
+		
+		// Cumulative meters climbed, since the start of the activity
+		double elevationGain;
+		// Cumulative meters lost, since the start of the activity
+		double evelationLoss;
+	}
+	static public ArrayList<LapSummary> ExtractLapSummaries(JsonActivity record) {
+		final ArrayList<LapSummary> laps = new ArrayList<LapSummary>();
+		double autoLapInterval = Settings.autoLapDistanceInterval;
+		if (autoLapInterval <= 0.0) {
+			autoLapInterval = (Settings.unit == Settings.Unit.US ? Util.METERS_PER_MILE : 1000.0);
+		}
+		// TODO: fill
+		return null;
+	}
+	
 	static public class PathAggregator {
 		private ArrayList<JsonWGS84> mPath = new ArrayList<JsonWGS84>();
 		
@@ -178,11 +200,10 @@ public class HealthGraphClient {
     	}
     }
 
-    private static final int TOKEN_UNSET = 0;
-    private static final int TOKEN_AUTHENTICATING = 1;
-    private static final int TOKEN_ERROR = 2;
-    private static final int TOKEN_OK = 3;
-    private int mAccessTokenState;  // one of TOKEN_XXX
+    enum TokenState {
+    	UNSET, AUTHENTICATING, ERROR, OK
+    }
+    private TokenState mAccessTokenState = TokenState.UNSET;
     
     /**
      * Runkeeper oauth2 access token. null if not yet acquired. Once acquired, it is
@@ -191,10 +212,6 @@ public class HealthGraphClient {
     private String mToken;
     
     private AuthenticatorImpl mAuthenticator;
-    
-    public HealthGraphClient() {
-    	mAccessTokenState = TOKEN_UNSET;
-    }
 
     /**
      * Get the user profile from runkeeper asynchronously. The result will be passed through the listener in the main thread.  
@@ -244,10 +261,10 @@ public class HealthGraphClient {
     	synchronized(this) {
     		mToken = token;
     		if (token == null) {
-    			mAccessTokenState = TOKEN_ERROR;
+    			mAccessTokenState = TokenState.ERROR;
     			Util.error(context,  "Failed to sign into runkeeper");
     		} else {
-    			mAccessTokenState = TOKEN_OK;
+    			mAccessTokenState = TokenState.OK;
     			SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
     			SharedPreferences.Editor editor = pref.edit();
     			editor.putString("AccessToken", token);
@@ -287,7 +304,7 @@ public class HealthGraphClient {
 
     private String getAccessToken() throws Exception {
     	synchronized(this) {
-    		if (mAccessTokenState != TOKEN_OK) {
+    		if (mAccessTokenState != TokenState.OK) {
     			// TODO: provide more precise message
     			throw new Exception("HealthGraph token retrieval failed");
     		}
@@ -508,15 +525,15 @@ public class HealthGraphClient {
     public void startAuthentication(Context context) {
     	synchronized(this) {
     		SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
-    		mAccessTokenState = TOKEN_UNSET;
+    		mAccessTokenState = TokenState.UNSET;
     		mToken = pref.getString("AccessToken", null);
     		if (mToken != null) {
     			Log.d(TAG, "Found cached token: " + mToken);
-    			mAccessTokenState = TOKEN_OK;
+    			mAccessTokenState = TokenState.OK;
     			Util.info(context,  "Signed into runkeeper");
     		}
-    		if (mAccessTokenState != TOKEN_OK) {
-    			mAccessTokenState = TOKEN_AUTHENTICATING;
+    		if (mAccessTokenState != TokenState.OK) {
+    			mAccessTokenState = TokenState.AUTHENTICATING;
     			mAuthenticator = new AuthenticatorImpl(context);
     			mAuthenticator.start();
     		}
