@@ -105,7 +105,7 @@ public class HealthGraphClient {
 		JsonWGS84 location;
 	}
 	
-	static public ArrayList<LapSummary> ExtractLapSummaries(JsonActivity record) {
+	static public ArrayList<LapSummary> listLaps(JsonActivity record) {
 		final ArrayList<LapSummary> laps = new ArrayList<LapSummary>();
 		double autoLapInterval = Settings.autoLapDistanceInterval;
 		if (autoLapInterval <= 0.0) {

@@ -126,7 +126,7 @@ public class RecordReplayActivity extends MapActivity {
     	}
 
     	public void setRecord(HealthGraphClient.JsonActivity record) {
-    		mLaps = HealthGraphClient.ExtractLapSummaries(record);
+    		mLaps = HealthGraphClient.listLaps(record);
     		notifyDataSetChanged();
     	}
     	
