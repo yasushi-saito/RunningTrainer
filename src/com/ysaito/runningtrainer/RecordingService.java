@@ -6,6 +6,9 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -21,44 +24,38 @@ import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
 import android.util.Log;
 import android.widget.Toast;
 
-public class GpsTrackingService extends Service {
+/**
+ * Background service that runs while a recording is ongoing
+ *
+ */
+public class RecordingService extends Service {
 	private static String TAG = "Gps";
-	
-	/**
-     * Class for clients to access.  Because we know this service always
-     * runs in the same process as its clients, we don't need to deal with
-     * IPC.
-     */
-    public class Binder extends android.os.Binder {
-    	GpsTrackingService getService() {
-            return GpsTrackingService.this;
-        }
-    }
-    // This is the object that receives interactions from clients.  See
-    // RemoteService for a more complete example.
-    private final IBinder mBinder = new Binder();
+    private NotificationManager mNM;
 
     @Override
     public IBinder onBind(Intent intent) {
-        return mBinder;
+    	return null;
     }
 
-    public static class ActivityStatus {
+    enum State {
+    	RESET,     // Either the initial state, or the activity has finished
+    	RUNNING,   // Currently running
+    	STOPPED    // Paused
+    }
+    public static class Status {
     	double startTime;
     	ArrayList<HealthGraphClient.JsonWGS84> path;
     	LapStats totalStats;
     	LapStats lapStats;
     	Workout currentInterval;
     }
-    
     public interface StatusListener {
     	/**
-    	 * 
-    	 * @param state
-    	 * @param status null if state==RESET. Else nonnull.
+    	 * Called every one second, or when a GPS update is received
+    	 * @param state Whether the timer is running or paused
     	 */
-    	public void onGpsUpdate(State state, ActivityStatus status);
-    	public void onGpsError(String message);
+    	public void onStatusUpdate(State state, Status status);
+    	public void onError(String message);
     }
     
     /*
@@ -67,42 +64,32 @@ public class GpsTrackingService extends Service {
      * the GpsTrackingService from RecordingActivity.
      */
     private static StatusListener mListener = null;
-    private static GpsTrackingService mSingleton = null;
+    private static RecordingService mSingleton = null;
     
-    public static GpsTrackingService getSingleton() { return mSingleton; }
+    public static RecordingService getSingleton() { return mSingleton; }
     public static void registerListener(StatusListener listener) {
     	mListener = listener;
 
     	if (mSingleton != null) {
     		// Call the listener immediately to give the initial stats
-    		ActivityStatus status = null;
+    		Status status = null;
     		if (mSingleton.mState != State.RESET) {
-    			status = new ActivityStatus();
+    			status = new Status();
     			status.startTime = mSingleton.mStartTime;
     			status.currentInterval = mSingleton.getCurrentWorkoutInterval();
     			status.path = mSingleton.mPath.getPath();
     			status.lapStats = mSingleton.mLapStats;
     			status.totalStats = mSingleton.mTotalStats;
     		}
-    		listener.onGpsUpdate(mSingleton.mState, status);
+    		listener.onStatusUpdate(mSingleton.mState, status);
     	}
     }
     
     public static void unregisterListener(RecordingActivity listener) {
     	mListener = null;
     }
-    /*
-    private boolean isListenerRegistered(RecordingActivity listener) {
-    	return mListeners.contains(listener);
-    }*/
     
-    enum State {
-    	RESET,     // Either the initial state, or the activity has finished
-    	RUNNING,   // Currently running
-    	STOPPED    // Paused
-    }
     private State mState = State.RESET;
-    private double mStartTime = -1.0;
 
     private final void startNewLap() {
     	if (mWorkoutIterator != null && !mWorkoutIterator.done()) {
@@ -119,7 +106,7 @@ public class GpsTrackingService extends Service {
     	mLapStats = new LapStats();
     }
 
-    public final ActivityStatus resetActivityAndStop() {
+    public final Status resetActivityAndStop() {
     	if (mState == State.RESET) {
     		stopSelf();
     		mSingleton = null;
@@ -127,14 +114,16 @@ public class GpsTrackingService extends Service {
     	}
     	mState = State.RESET;
 		updateTimer();
-    	ActivityStatus status = new ActivityStatus();
+
+		Status status = new Status();
     	status.startTime = mStartTime;
     	status.currentInterval = getCurrentWorkoutInterval();
     	status.path = mPath.getPath();
     	status.lapStats = mLapStats;
     	status.totalStats = mTotalStats;
-    	
+
     	mTts.stop();  // Discard queued speeches
+    	mNM.cancel(1);
     	speak("Reset", new SpeakDoneListener() {
     		public void onDone() {
     			stopSelf();
@@ -274,9 +263,9 @@ public class GpsTrackingService extends Service {
     	}
     	
     	// Notify the listener
-    	ActivityStatus status = null;
+    	Status status = null;
     	if (mState != State.RESET) {
-    		status = new ActivityStatus();
+    		status = new Status();
     		status.startTime = mStartTime;
     		status.currentInterval = getCurrentWorkoutInterval();
     		status.path = mPath.getPath();
@@ -284,13 +273,13 @@ public class GpsTrackingService extends Service {
     		status.totalStats = mTotalStats;
     	}
     	if (mListener != null) {
-    		mListener.onGpsUpdate(mState, status);
+    		mListener.onStatusUpdate(mState, status);
     	}
     }
 
     private void notifyError(String message) {
     	if (mListener != null) {
-    		mListener.onGpsError(message);
+    		mListener.onError(message);
     	}
     }
 
@@ -302,6 +291,8 @@ public class GpsTrackingService extends Service {
 	private LocationListener mLocationListener;
 	private LocationManager mLocationManager;
 
+	private double mStartTime = -1.0;
+	
 	// List of gps points recorded so far.
 	private HealthGraphClient.PathAggregator mPath = null;
 	
@@ -322,6 +313,7 @@ public class GpsTrackingService extends Service {
 	@Override
 	public void onCreate() {
 		Settings.Initialize(getApplicationContext());
+        mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
 		mId = mInstanceSeq++;
 		Toast.makeText(this, toString() + ": Created", Toast.LENGTH_LONG).show();
@@ -458,7 +450,6 @@ public class GpsTrackingService extends Service {
 		} else {
 			Workout workout = (Workout)intent.getSerializableExtra("workout");
 			speak("started", null);
-    		
 			mPath = new HealthGraphClient.PathAggregator();
 			if (Settings.fakeGps) {
 				mPath.addPoint(0.0, 100.0, 100.0, 0);
@@ -479,6 +470,18 @@ public class GpsTrackingService extends Service {
 				mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
 				mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
 			}
+	        Notification notification = new Notification(R.drawable.running_logo, 
+	        		"Started recording",
+	        		System.currentTimeMillis());
+	        // The PendingIntent to launch our activity if the user selects this notification
+	        PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
+	                new Intent(this, MainActivity.class), 0);
+
+	        notification.setLatestEventInfo(this, "RunningTrainer", 
+	        		"Recording since " + Util.dateToString(System.currentTimeMillis()/1000),
+	        		contentIntent);
+
+	        mNM.notify(1, notification);
 			updateTimer();
 		}
 		return START_STICKY;

@@ -34,7 +34,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class RecordingActivity extends MapActivity implements GpsTrackingService.StatusListener {
+public class RecordingActivity extends MapActivity implements RecordingService.StatusListener {
     static final String TAG = "Recording";
 
     void startGpsService(Workout workout) {
@@ -42,7 +42,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	// class name because we want a specific service implementation that
     	// we know will be running in our own process (and thus won't be
     	// supporting component replacement by other applications).
-    	Intent intent = new Intent(this, GpsTrackingService.class);
+    	Intent intent = new Intent(this, RecordingService.class);
     	intent.putExtra("workout", workout);
     	getApplicationContext().startService(intent);
     	// Note: this service will stop itself once the recording activity stops (by the user long-pressing the "Stop" button)
@@ -200,21 +200,23 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     ArrayList<HealthGraphClient.JsonWGS84> mLastReportedPath = null;
     
 
-	public void onGpsError(String message) {
+    // Implements RecodingService.StatusListener
+	public void onError(String message) {
 		showDialog(message);
 	}
 
-    public void onGpsUpdate(
-    		GpsTrackingService.State newState,
-    		GpsTrackingService.ActivityStatus status) {
-    	if (newState == GpsTrackingService.State.RESET) {
+    // Implements RecodingService.StatusListener
+    public void onStatusUpdate(
+    		RecordingService.State newState,
+    		RecordingService.Status status) {
+    	if (newState == RecordingService.State.RESET) {
     		mStartStopButton.setText(R.string.start);
     		mLapButton.setEnabled(false);
     		mWorkoutListSpinner.setVisibility(View.GONE);
     		mWorkoutListSpinner.setVisibility(View.VISIBLE);
     		mWorkoutTitle.setText("Workout: ");
     	} else {
-    		if (newState == GpsTrackingService.State.RUNNING) {
+    		if (newState == RecordingService.State.RUNNING) {
     			mStartStopButton.setText(R.string.pause); 
     			mLapButton.setEnabled(true);
     		} else {
@@ -250,7 +252,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
 
     @Override public void onPause() {
     	super.onPause();
-    	GpsTrackingService.unregisterListener(mThisActivity);
+    	RecordingService.unregisterListener(mThisActivity);
         mLocationManager.removeUpdates(mLocationListener);
     }
 
@@ -367,7 +369,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
         }
 
     	startListWorkouts();
-    	GpsTrackingService.registerListener(mThisActivity);
+    	RecordingService.registerListener(mThisActivity);
     }
     
     @Override
@@ -393,7 +395,7 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	mLapButton.setEnabled(false);  // the lap button is disabled unless the activity is running
         mLapButton.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
-        		final GpsTrackingService gpsService = GpsTrackingService.getSingleton();
+        		final RecordingService gpsService = RecordingService.getSingleton();
         		if (gpsService != null) {
         			gpsService.onLapButtonPress();
         		}
@@ -418,8 +420,12 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     private String mLastSelectedWorkoutFilename = null;
     private Workout mLastSelectedWorkout = null;
 
+    public void setMapMode(MapMode mode) {
+    	mMapView.setSatellite(mode == MapMode.SATTELITE);
+    }
+    
     private void startOrStopWithWorkout(Workout workout) {
-    	GpsTrackingService gpsService = GpsTrackingService.getSingleton(); 
+    	RecordingService gpsService = RecordingService.getSingleton(); 
     	if (gpsService == null) {
     		startGpsService(workout);
     	} else {
@@ -469,10 +475,10 @@ public class RecordingActivity extends MapActivity implements GpsTrackingService
     	mWorkoutListSpinner.setVisibility(View.VISIBLE);
     	mWorkoutTitle.setText("Workout: ");
 
-    	final GpsTrackingService gpsService = GpsTrackingService.getSingleton();
+    	final RecordingService gpsService = RecordingService.getSingleton();
     	
     	if (gpsService != null) {
-    		GpsTrackingService.ActivityStatus status = gpsService.resetActivityAndStop();
+    		RecordingService.Status status = gpsService.resetActivityAndStop();
     		
     		if (status != null && status.path.size() >= 1) {
     			final HealthGraphClient.JsonActivity record = new HealthGraphClient.JsonActivity(); 

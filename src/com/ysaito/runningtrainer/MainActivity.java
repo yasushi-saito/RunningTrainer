@@ -4,19 +4,19 @@ package com.ysaito.runningtrainer;
  * TODO: create a more formal credits statement
  * 
  * CREDITS: http://button-download.com (Creative commons)
+ * LOGO: http://openclipart.org/detail/2883/running-pig-by-liftarn
  * 
  */
 
 /**
+ * TODO: center map on lap click.
  * TODO: smooth GPS readouts and reduce sampling rate
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * TODO: automatic syncing of records on reconnect and/or token authorization
- * TODO: show status in notification tray
  * TODO: show runkeeper sync status somewhere
  * TODO: detect when the user pauses during running
  * TODO: sync all. 
  * TODO: show some indicator when runkeeper communication is happening
- * TODO: notification to show distance, duration, etc.
  * TODO: reliably check if TTS voice data has been downloaded.
  * TODO: satellite view
  * TODO: undo of workout edits.

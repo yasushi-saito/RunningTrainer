@@ -62,17 +62,9 @@ public class RecordListFragment extends ListFragment {
 			final TextView view = (TextView) super.getView(position, convertView, parent);
 			final FileManager.ParsedFilename f = this.getItem(position);
 			
-			GregorianCalendar tmpCalendar = new GregorianCalendar();
 			StringBuilder b = new StringBuilder();
-			tmpCalendar.setTimeInMillis(f.getLong(FileManager.KEY_START_TIME, 0) * 1000);
-		
-			// TODO: change the date format depending on settings.locale
-			b.append(String.format("%04d/%02d/%02d-%02d:%02d ",
-					tmpCalendar.get(Calendar.YEAR),
-					tmpCalendar.get(Calendar.MONTH) - Calendar.JANUARY + 1,
-					tmpCalendar.get(Calendar.DAY_OF_MONTH),
-					tmpCalendar.get(Calendar.HOUR_OF_DAY),
-					tmpCalendar.get(Calendar.MINUTE)));
+			b.append(Util.dateToString(f.getLong(FileManager.KEY_START_TIME, 0)));
+			b.append(" ");
 			b.append(Util.distanceToString(f.getLong(FileManager.KEY_DISTANCE, 0)));
 			b.append("  ");
 			b.append(Util.distanceUnitString());

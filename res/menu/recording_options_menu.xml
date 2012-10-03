@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-  <item android:id="@+id/record_list_sort_by_date" 
-	android:title="Sort by date" />
-  <item android:id="@+id/record_list_sort_by_distance" 
-	android:title="Sort by distance" />
-  <item android:id="@+id/record_list_delete_all"
-      android:title="Delete all"/>
-  <item android:id="@+id/record_list_undo" 
-	android:title="Undo" />
+
+  <item
+      android:id="@+id/recording_map_view"
+      android:checkable="true"
+      android:title="Map view"/>
+  <item
+      android:id="@+id/recording_sattelite_view"
+      android:checkable="true"
+      android:title="Sattelite view"/>
 </menu>
+    
+
     
     
     
         
-         
     
     
     

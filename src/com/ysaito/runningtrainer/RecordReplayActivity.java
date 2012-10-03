@@ -202,6 +202,10 @@ public class RecordReplayActivity extends MapActivity {
     	}
     }
     
+    public void setMapMode(MapMode mode) {
+    	mMapView.setSatellite(mode == MapMode.SATTELITE);
+    }
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);

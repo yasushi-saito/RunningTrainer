@@ -1,6 +1,8 @@
 package com.ysaito.runningtrainer;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -201,6 +203,21 @@ public class Util {
 		} else {
 			return "s/km";
 		}
+	}
+
+	static public String dateToString(double utcSeconds) {
+		StringBuilder b = new StringBuilder();
+		GregorianCalendar tmpCalendar = new GregorianCalendar();
+		tmpCalendar.setTimeInMillis((long)(utcSeconds * 1000));
+		
+		// TODO: change the date format depending on settings.locale
+		b.append(String.format("%04d/%02d/%02d-%02d:%02d",
+				tmpCalendar.get(Calendar.YEAR),
+				tmpCalendar.get(Calendar.MONTH) - Calendar.JANUARY + 1,
+				tmpCalendar.get(Calendar.DAY_OF_MONTH),
+				tmpCalendar.get(Calendar.HOUR_OF_DAY),
+				tmpCalendar.get(Calendar.MINUTE)));
+		return b.toString();
 	}
 	
 	static public String paceToString(double secondsPerMeter) {
