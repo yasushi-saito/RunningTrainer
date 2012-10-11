@@ -2,7 +2,7 @@ package com.ysaito.runningtrainer;
 
 import java.io.Serializable;
 
-public class Workout implements Serializable {
+public class JsonWorkout implements Serializable {
 	private static final long serialVersionUID = 8193415968299454246L;
 	
 	static public final int REPEAT_FOREVER = 999999;
@@ -18,7 +18,7 @@ public class Workout implements Serializable {
 		return pace < NO_SLOW_TARGET_PACE;
 	}
 
-	public static String workoutToSpeechText(Workout workout) {
+	public static String workoutToSpeechText(JsonWorkout workout) {
 		StringBuilder b = new StringBuilder("Workout for ");
 		if (workout.distance >= 0) {
 			b.append(Util.distanceToSpeechText(workout.distance));
@@ -78,11 +78,11 @@ public class Workout implements Serializable {
 		}
 	}
 	
-	public Workout() {
+	public JsonWorkout() {
 		
 	}
 	
-	public Workout(Workout other) {
+	public JsonWorkout(JsonWorkout other) {
 		id = other.id;
 		name = other.name;
 		type = other.type;
@@ -92,9 +92,9 @@ public class Workout implements Serializable {
 		fastTargetPace = other.fastTargetPace;
 		slowTargetPace = other.slowTargetPace;
 		if (other.children != null) {
-			children = new Workout[other.children.length];
+			children = new JsonWorkout[other.children.length];
 			for (int i = 0; i < other.children.length; ++i) {
-				children[i] = new Workout(other.children[i]);
+				children[i] = new JsonWorkout(other.children[i]);
 			}
 		}
 	}
@@ -143,7 +143,7 @@ public class Workout implements Serializable {
 	public int type;  // One of TYPE_XXX.
 
 	// Meaningful only when type=="Root" or type=="Repeats"
-	public Workout[] children;
+	public JsonWorkout[] children;
 
     // Number of the times the children[] are repeated, sequentially.
 	// INVARIANT: >0 if type==TYPE_REPEATS

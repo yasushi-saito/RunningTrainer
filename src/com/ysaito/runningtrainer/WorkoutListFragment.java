@@ -31,9 +31,9 @@ public class WorkoutListFragment extends ListFragment {
 	private MyAdapter mAdapter;
 
 	private class UndoEntry {
-		public UndoEntry(String f, Workout w) { filename = f; workout = w; }
+		public UndoEntry(String f, JsonWorkout w) { filename = f; workout = w; }
 		public final String filename;
-		public final Workout workout;
+		public final JsonWorkout workout;
 	}
 	private Stack<UndoEntry> mUndos = new Stack<UndoEntry>();
 	
@@ -131,7 +131,7 @@ public class WorkoutListFragment extends ListFragment {
 		});
 	}
 
-	private void startWorkoutEditor(Workout workout) {
+	private void startWorkoutEditor(JsonWorkout workout) {
 		WorkoutEditorFragment fragment = (WorkoutEditorFragment)mActivity.findOrCreateFragment(
 				"com.ysaito.runningtrainer.WorkoutEditorFragment");
 		fragment.setWorkout(workout);
@@ -143,19 +143,19 @@ public class WorkoutListFragment extends ListFragment {
 		final FileManager.ParsedFilename f = mAdapter.getItem(position);
 		if (f == null) return;
 		if (f.getString(FileManager.KEY_WORKOUT_NAME, "unknown").equals(NEW_WORKOUT)) {
-			Workout workout = new Workout();
+			JsonWorkout workout = new JsonWorkout();
 			workout.id = System.currentTimeMillis() / 1000;
 			workout.name = "Unnamed Workout";
-			workout.type = Workout.TYPE_REPEATS;
+			workout.type = JsonWorkout.TYPE_REPEATS;
 			workout.repeats = 1;
-			workout.children = new Workout[0];
+			workout.children = new JsonWorkout[0];
 			startWorkoutEditor(workout);
 		} else {
-			FileManager.runAsync(new FileManager.AsyncRunner<Workout>() {
-				public Workout doInThread() throws Exception {
-					return FileManager.readFile(mWorkoutDir, f.getBasename(), Workout.class);
+			FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
+				public JsonWorkout doInThread() throws Exception {
+					return FileManager.readJson(mWorkoutDir, f.getBasename(), JsonWorkout.class);
 				}
-				public void onFinish(Exception error, Workout workout) {
+				public void onFinish(Exception error, JsonWorkout workout) {
 					if (error != null) {
 						Util.error(mActivity,  "Failed to read file : " + f.getBasename() + ": " + error);
 						return;
@@ -180,7 +180,7 @@ public class WorkoutListFragment extends ListFragment {
 			final UndoEntry undo = mUndos.pop();
 			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
 				public Void doInThread() throws Exception {
-					FileManager.writeFile(mWorkoutDir, undo.filename, undo.workout);
+					FileManager.writeJson(mWorkoutDir, undo.filename, undo.workout);
 					return null;
 				}
 				public void onFinish(Exception error, Void value) {
@@ -215,13 +215,13 @@ public class WorkoutListFragment extends ListFragment {
 		switch (item.getItemId()) {
 		case R.id.workout_list_delete:
 			// Read the workout file so that we can save it it in mUndos.
-			FileManager.runAsync(new FileManager.AsyncRunner<Workout>() {
-				public Workout doInThread() throws Exception {
-					Workout workout = FileManager.readFile(mWorkoutDir, summary.getBasename(), Workout.class);
+			FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
+				public JsonWorkout doInThread() throws Exception {
+					JsonWorkout workout = FileManager.readJson(mWorkoutDir, summary.getBasename(), JsonWorkout.class);
 					FileManager.deleteFile(mWorkoutDir, summary.getBasename());
 					return workout;
 				}
-				public void onFinish(Exception e, Workout workout) {
+				public void onFinish(Exception e, JsonWorkout workout) {
 					if (e != null) {
 						Util.error(mActivity, "Failed to delete " + summary.getBasename() + ": " + e);
 					} else {

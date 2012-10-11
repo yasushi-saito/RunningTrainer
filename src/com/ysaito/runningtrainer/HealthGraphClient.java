@@ -1,7 +1,6 @@
 package com.ysaito.runningtrainer;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
@@ -22,7 +21,6 @@ import com.google.gson.GsonBuilder;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -58,152 +56,7 @@ public class HealthGraphClient {
 				cal.get(Calendar.SECOND));
 	}
 	
-	/**
-	 * Record of a run log. Corresponds to "newly completed activites" json described in
-	 * http://developer.runkeeper.com/healthgraph/fitness-activities.
-	 *
-	 * This object is converted to a JSON string using GSON.
-	 *
-	 */
-	static public class JsonActivity {
-	    public String type; // "Running", "Cycling", etc.
-	    public String equipment; // usually "None"
-	    public String start_time;      // "Sat, 1 Jan 2011 00:00:00"
-	    public double total_distance;  // total distance, in meters
-	    public double duration;        // duration, in seconds
-	    public String notes;
-	    public JsonWGS84[] path;
-	    public Boolean post_to_facebook;
-	    public Boolean post_to_twitter;
-	    public Boolean detect_pauses;
-	}
-	
-	/**
-	 * GPS reading reported to runkeeper
-	 */
-	static public class JsonWGS84 {
-		public double timestamp;  // The number of seconds since the start of the activity
-		public double latitude;  // The latitude, in degrees (values increase northward and decrease southward)
-		public double longitude; // The longitude, in degrees (values increase eastward and decrease westward)
-		public double altitude;  //	The altitude of the point, in meters
-		public String type; // One of the following values: start, end, gps, pause, resume, manual
-	};
-
-	static public class LapSummary {
-		// Cumulative meters traveled, since the start of the activity
-		double distance;
-
-		// Activity duration, since the start of the activity
-		double elapsedSeconds;
-		
-		// Cumulative meters climbed, since the start of the activity
-		double elevationGain;
-		
-		// Cumulative meters lost, since the start of the activity
-		double elevationLoss;
-		
-		JsonWGS84 location;
-	}
-	
-	static public ArrayList<LapSummary> listLaps(JsonActivity record) {
-		final ArrayList<LapSummary> laps = new ArrayList<LapSummary>();
-		double autoLapInterval = Settings.autoLapDistanceInterval;
-		if (autoLapInterval <= 0.0) {
-			autoLapInterval = (Settings.unit == Settings.Unit.US ? Util.METERS_PER_MILE : 1000.0);
-		}
-		int lastLap = 0;
-		double distance = 0.0;       // Cumulative meters traveled
-		double elevationGain = 0.0;  // Cumulative elevation gain, in meters
-		double elevationLoss = 0.0;  // Cumulative elevation loss, in meters		
-		float[] tmp = new float[1];
-		for (int i = 1; i < record.path.length; ++i) {
-			JsonWGS84 location = record.path[i];
-			JsonWGS84 lastLocation = record.path[i - 1];
-			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
-					location.latitude, location.longitude,
-					tmp);
-			distance += tmp[0];
-			
-			final double elevationDelta = location.altitude - lastLocation.altitude;
-			if (elevationDelta < 0) {
-				elevationLoss += -elevationDelta;
-			} else {
-				elevationGain += elevationDelta;
-			}
-			final int thisLap = (int)(distance / autoLapInterval); 
-			if (lastLap != thisLap || i == record.path.length - 1) {
-				LapSummary lap = new LapSummary();
-				lap.distance = distance;
-				lap.elapsedSeconds = location.timestamp;
-				lap.elevationGain = elevationGain;
-				lap.elevationLoss = elevationLoss;
-				lap.location = location;
-				laps.add(lap);
-				lastLap = thisLap;
-			}
-		}
-		return laps;
-	}
-	
-	static public class PathAggregator {
-		private ArrayList<JsonWGS84> mPath = new ArrayList<JsonWGS84>();
-		
-		/**
-		 * @param timestamp Number of seconds elapsed since the start of the activity
-		 */
-		public void addPoint(
-			double timestamp, double latitude, double longitude, double altitude) {
-			JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
-			wgs.latitude = latitude;
-			wgs.longitude = longitude;
-			wgs.altitude = altitude;
-			if (mPath.size() == 0) {
-				wgs.type = "start";
-			} else {
-				wgs.type = "gps";
-			}
-			wgs.timestamp = timestamp;
-			mPath.add(wgs);
-		}
-		
-		public JsonWGS84 lastPoint() { 
-			return mPath.get(mPath.size() - 1);
-		}
-		
-		public ArrayList<JsonWGS84> getPath() { 
-			return mPath; 
-		}
-	}
-	
-	/**
-	 * User profile on runkeeper
-	 *
-	 */
-	static public class JsonUser {
-		public String userID;
-		public String profile;
-		public String settings;
-		public String fitness_activities;
-		public String strength_training_activities;
-		public String background_activities;
-		public String sleep;
-		public String nutrition;
-		public String weight;
-		public String general_measurements;
-		public String diabetes;
-		public String records;
-		public String team;
-	}
-	
-	static public class JsonFitnessActivities {
-		public int size;
-		public JsonActivity[] items; // doesn't have path[] set
-		public String previous;
-	}
-	
-    static private HealthGraphClient mSingleton;
-    
-    
+	static private final HealthGraphClient mSingleton = new HealthGraphClient();
     static private final String OAUTH2_CLIENT_ID = "0808ef781c68449298005c8624d3700b";
     static private final String OAUTH2_CLIENT_SECRET = "dda5888cd8d64760a044dc61ae4f44db";
     static private final String OAUTH2_REDIRECT_URI = "ysaito://oauthresponse";
@@ -212,10 +65,6 @@ public class HealthGraphClient {
      *  This method is not thread safe. It can be called only by the main thread
      */
     static HealthGraphClient getSingleton() {
-    	if (mSingleton == null) {
-    		Log.d(TAG, "Creating singleton!!");
-    		mSingleton = new HealthGraphClient();
-    	}
     	return mSingleton;
     }
 

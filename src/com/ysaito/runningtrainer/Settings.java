@@ -15,7 +15,7 @@ import android.preference.PreferenceManager;
  */
 public class Settings {
 	// Unit of measurement
-	enum Unit {
+	public enum Unit {
 		METRIC,   // km, meter
 		US,       // mile, feet
 	}

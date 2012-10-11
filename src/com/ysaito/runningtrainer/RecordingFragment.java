@@ -21,10 +21,10 @@ public class RecordingFragment extends MapWrapperFragment {
 		super.onPrepareOptionsMenu(menu);
 		if (mMapMode == MapMode.MAP) {
 			menu.findItem(R.id.recording_map_view).setChecked(true);
-			menu.findItem(R.id.recording_sattelite_view).setChecked(false);		
+			menu.findItem(R.id.recording_satellite_view).setChecked(false);		
 		} else {
 			menu.findItem(R.id.recording_map_view).setChecked(false);
-			menu.findItem(R.id.recording_sattelite_view).setChecked(true);		
+			menu.findItem(R.id.recording_satellite_view).setChecked(true);		
 		}
 		mMenu = menu;
 	}	
@@ -39,8 +39,8 @@ public class RecordingFragment extends MapWrapperFragment {
 				mMapMode = MapMode.MAP;
 			}
 			break;
-		case R.id.recording_sattelite_view:
-			if (mMenu.findItem(R.id.recording_sattelite_view).isChecked()) {
+		case R.id.recording_satellite_view:
+			if (mMenu.findItem(R.id.recording_satellite_view).isChecked()) {
 				mMapMode = MapMode.MAP;
 			} else {
 				mMapMode = MapMode.SATTELITE;

@@ -9,19 +9,18 @@ package com.ysaito.runningtrainer;
  */
 
 /**
+ * TODO: enable/disable dependent settings
+ * TODO: satellite/map view mode value should be process-global.
  * TODO: center map on lap click.
  * TODO: smooth GPS readouts and reduce sampling rate
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * TODO: automatic syncing of records on reconnect and/or token authorization
  * TODO: show runkeeper sync status somewhere
- * TODO: detect when the user pauses during running
  * TODO: sync all. 
  * TODO: show some indicator when runkeeper communication is happening
  * TODO: reliably check if TTS voice data has been downloaded.
- * TODO: satellite view
  * TODO: undo of workout edits.
  * TODO: remove the stats view row when none of the views show anything
- * TODO: Lap stats
  */
 import java.util.HashMap;
 
@@ -73,8 +72,17 @@ public class MainActivity extends Activity {
 		return fragment;
 	}
 
+	@Override public void onDestroy() { 
+		super.onDestroy();
+		Plog.d(TAG, "onDestroy");
+	}
+	@Override public void onResume() { super.onResume(); Plog.d(TAG, "onResume"); }
+	@Override public void onPause() { super.onPause(); Plog.d(TAG, "onPause"); }
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
+    	Plog.Init(this, 8.0);
+    	Plog.d(TAG, "onCreate");
     	super.onCreate(savedInstanceState);
     	
     	Settings.Initialize(getApplicationContext());
@@ -101,7 +109,7 @@ public class MainActivity extends Activity {
         		if (e != null) {
         			Log.e(TAG, "GET finished with exception: " + e.toString());
         		} else if (o != null) {
-        			Log.d(TAG, "GET ok: " + ((HealthGraphClient.JsonUser)o).toString());
+        			Log.d(TAG, "GET ok: " + ((JsonUser)o).toString());
         		}
         	}
         });

@@ -19,12 +19,12 @@ public class WorkoutEditorFragment extends Fragment {
 	private File mWorkoutDir;
 	private EditText mWorkoutNameEditor;
 	private WorkoutCanvasView mCanvas;
-	private Workout mWorkout = null;
+	private JsonWorkout mWorkout = null;
 	
 	// TODO: Add "no target pace" button
 	// TODO: make the code more resilient to corrupt workouts.
-	public void setWorkout(Workout w) { 
-		mWorkout = new Workout(w);
+	public void setWorkout(JsonWorkout w) { 
+		mWorkout = new JsonWorkout(w);
 	}
 	
 	@Override 
@@ -41,11 +41,11 @@ public class WorkoutEditorFragment extends Fragment {
         button.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
         		final long workoutId = mWorkout.id;
-        		final Workout newWorkout = mCanvas.getWorkout();
+        		final JsonWorkout newWorkout = mCanvas.getWorkout();
 		
         		// the workout will be of "Repeats" type, so make it into a "Root" type
         		// TODO: this probably isn't necessary.
-        		newWorkout.type = Workout.TYPE_REPEATS;
+        		newWorkout.type = JsonWorkout.TYPE_REPEATS;
         		newWorkout.repeats = 1; 
         		newWorkout.name = mWorkoutNameEditor.getText().toString();
         		newWorkout.id = workoutId;
@@ -57,7 +57,7 @@ public class WorkoutEditorFragment extends Fragment {
 
         		FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
 					public Void doInThread() throws Exception {
-						FileManager.writeFile(mWorkoutDir, newBasename, newWorkout);
+						FileManager.writeJson(mWorkoutDir, newBasename, newWorkout);
 						
 						// Delete the old file(s) for the same workout
 						ArrayList<ParsedFilename> files = FileManager.listFiles(mWorkoutDir);

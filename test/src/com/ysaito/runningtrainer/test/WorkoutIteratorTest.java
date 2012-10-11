@@ -8,23 +8,23 @@ package com.ysaito.runningtrainer.test;
 import com.ysaito.runningtrainer.HealthGraphClient;
 import com.ysaito.runningtrainer.FileManager;
 import com.ysaito.runningtrainer.RecordSummary;
-import com.ysaito.runningtrainer.Workout;
+import com.ysaito.runningtrainer.JsonWorkout;
 import com.ysaito.runningtrainer.WorkoutIterator;
 
 import android.test.InstrumentationTestCase;
 
 public class WorkoutIteratorTest extends InstrumentationTestCase {
-	private Workout newRepeats(int numChildren) {
-		Workout w = new Workout();
-		w.type = Workout.TYPE_REPEATS;
+	private JsonWorkout newRepeats(int numChildren) {
+		JsonWorkout w = new JsonWorkout();
+		w.type = JsonWorkout.TYPE_REPEATS;
 		w.repeats = 1;
-		w.children = new Workout[numChildren];
+		w.children = new JsonWorkout[numChildren];
 		return w;	
 	}
 
-	private Workout newInterval(double duration, double distance, double fast, double slow) {
-		Workout w = new Workout();
-		w.type = Workout.TYPE_INTERVAL;
+	private JsonWorkout newInterval(double duration, double distance, double fast, double slow) {
+		JsonWorkout w = new JsonWorkout();
+		w.type = JsonWorkout.TYPE_INTERVAL;
 		w.duration = duration;
 		w.distance = distance;
 		w.fastTargetPace = fast;
@@ -45,13 +45,13 @@ public class WorkoutIteratorTest extends InstrumentationTestCase {
 
 	
 	public void testEmpty() {
-		Workout w = newRepeats(0);
+		JsonWorkout w = newRepeats(0);
 		WorkoutIterator iter = new WorkoutIterator(w);
 		assertEquals("", iteratorToString(iter));
 	}
 	
 	public void testSimple() {
-		Workout root = newRepeats(2);
+		JsonWorkout root = newRepeats(2);
 		root.children[0] = newInterval(1.0, 2.0, 3.0, 4.0);
 		root.children[1] = newInterval(2.0, 3.0, 4.0, 5.0);		
 		WorkoutIterator iter = new WorkoutIterator(root);
@@ -62,10 +62,10 @@ public class WorkoutIteratorTest extends InstrumentationTestCase {
 	}
 
 	public void testRepeats() {
-		Workout root = newRepeats(3);
+		JsonWorkout root = newRepeats(3);
 		root.children[0] = newInterval(1.0, 2.0, 3.0, 4.0);
 		
-		Workout repeat = newRepeats(2);
+		JsonWorkout repeat = newRepeats(2);
 		repeat.repeats = 2;
 		repeat.children[0] = newInterval(2.0, 3.0, 4.0, 5.0);
 		repeat.children[1] = newInterval(4.0, 5.0, 6.0, 7.0);

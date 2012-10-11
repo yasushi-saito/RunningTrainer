@@ -6,24 +6,24 @@ import android.util.Log;
 
 public class WorkoutIterator {
 	private static class Entry {
-		public Entry(Workout w) {
+		public Entry(JsonWorkout w) {
 			workout = w;
 			remainingRepeats = w.repeats;
 		}
-		public Workout workout;
+		public JsonWorkout workout;
 		public int remainingRepeats;
 	}
 	private static final String TAG = "WorkoutIterator";
-	private Workout mRoot;
+	private JsonWorkout mRoot;
 	private final Stack<Entry> mStack = new Stack<Entry>();
 	
-	public WorkoutIterator(Workout workout) { 
+	public WorkoutIterator(JsonWorkout workout) { 
 		mRoot = workout; 
 		addEntry(mRoot);
 	}
 	
-	public void addEntry(Workout w) {
-		if (w.type == Workout.TYPE_REPEATS) {
+	public void addEntry(JsonWorkout w) {
+		if (w.type == JsonWorkout.TYPE_REPEATS) {
 			if (w.children == null || w.children.length == 0 || w.repeats <= 0) {
 				Log.d(TAG, "Invalid repeat spec: " + w.toString());
 				return;
@@ -31,16 +31,16 @@ public class WorkoutIterator {
 			mStack.add(new Entry(w));
 			addEntry(w.children[0]);
 		} else {
-			if (w.type != Workout.TYPE_INTERVAL) Util.crash(null, "Invalid workout" + w.toString());
+			if (w.type != JsonWorkout.TYPE_INTERVAL) Util.crash(null, "Invalid workout" + w.toString());
 			mStack.add(new Entry(w));
 		}
 	}
 	
-	public Workout getWorkout() {
-		Workout w = mStack.get(mStack.size() - 1).workout;
+	public JsonWorkout getWorkout() {
+		JsonWorkout w = mStack.get(mStack.size() - 1).workout;
 		
 		// The bottommost entry should be always an interval.
-		if (Util.ASSERT_ENABLED && w.type != Workout.TYPE_INTERVAL) 
+		if (Util.ASSERT_ENABLED && w.type != JsonWorkout.TYPE_INTERVAL) 
 			Util.crash(null, "Invalid workout" + w.toString());
 		return mStack.get(mStack.size() - 1).workout;
 	}

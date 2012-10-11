@@ -7,6 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import android.content.Context;
+import android.location.Location;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -23,6 +24,17 @@ public class Util {
 		public T createSingleton();
 	}
 	
+	/**
+	 * Singleton support.
+	 * 
+	 * The below example would initialize mSingleton with the current time when the object is created.
+	 * 
+	 * Singleton<Integer> mSingleton = new Singleton<Integer>;
+	 * ...
+	 * Integer x = mSingleton.get(new SingletonInitializer<Integer>() {
+	 *    public Integer createSingleton() { return System.currentTimeMillis(); }
+	 * });   
+	 */
 	public static class Singleton<T> {
 		private enum State {
 			UNINITIALIZED, INITIALIZER_RUNNING, INITIALIZED
@@ -31,9 +43,11 @@ public class Util {
 		private State mState = State.UNINITIALIZED;
 		
 		public Singleton() { }
-		
+
 		/**
-		 * Get the singleton object. If the object hasn't been initialized yet, run the @p initializer.
+		 * Get the singleton instance.
+		 * @param initializer Called on the first call to this function. It should create and return the singleton object.
+		 * Subsequent calls to get() will return this object.
 		 */
 		synchronized T get(SingletonInitializer<T> initializer) {
 			while (mState == State.INITIALIZER_RUNNING) {
@@ -47,11 +61,166 @@ public class Util {
 				mState = State.INITIALIZER_RUNNING;
 				mObject = initializer.createSingleton();
 				mState = State.INITIALIZED;
+				notifyAll();
 			}
 			return mObject;
 		}
 	}
 	
+	static public class LapSummary {
+		// Cumulative meters traveled, since the start of the activity
+		double distance;
+	
+		// Activity duration, since the start of the activity
+		double elapsedSeconds;
+		
+		// Cumulative meters climbed, since the start of the activity
+		double elevationGain;
+		
+		// Cumulative meters lost, since the start of the activity
+		double elevationLoss;
+
+		// The location at the start of the lap.
+		JsonWGS84 location;
+	}
+
+	public enum PauseType {
+		RUNNING, PAUSE_STARTED, PAUSE_CONTINUING, PAUSE_ENDED,
+	}
+		
+	public static class Point {
+		double absTime;
+		double latitude;
+		double longitude;
+		double altitude;
+	}
+	
+	public static class PathAggregatorResult {
+		public PauseType pauseType;
+		
+		// The number of meters moved since the last call to addLocation. >0 only when pauseType == {RUNNING,PAUSE_ENDED}
+		public double deltaDistance;
+		
+		// If pauseType=={RUNNING, PAUSE_ENDED}, the current duration, as the # of wall seconds since 1970/1/1
+		// If pauseType==PAUSE_CONTINUING, the value is 0.
+		//
+		// If pauseType==PAUSE_STARTED, this is the time pause started, as the # of wall seconds since 1970/1/1
+		// The pause-start time may be in the past.
+		public double absTime;
+		
+		@Override public String toString() {
+			String t = "";
+			if (pauseType == PauseType.RUNNING) t = "running";
+			if (pauseType == PauseType.PAUSE_STARTED) t = "pause_started";
+			if (pauseType == PauseType.PAUSE_CONTINUING) t = "pause_continuing";			
+			if (pauseType == PauseType.PAUSE_ENDED) t = "pause_ended";						
+			return String.format("pause=%s delta=%f time=%f", t, deltaDistance, absTime);
+		}
+	}
+		
+	static public class PathAggregator {
+		private float[] mTmp = new float[1];
+		private final ArrayList<Point> mPath = new ArrayList<Point>();
+		
+		private boolean mPaused = false;
+		private double mPauseEndTime = -1.0;
+		
+		public static final double PAUSE_DETECTION_WINDOW_SECONDS = 10.0; 
+		public static final double PAUSE_MAX_DISTANCE = 5.0;
+		public static final double JUMP_DETECTION_MIN_PACE = 1.5 * 60 / 1000.0;
+		/**
+		 * @param timestamp Number of seconds elapsed since the start of the activity (not adjusted for pause time)
+		 */
+		public PathAggregatorResult addLocation(
+			double absTime, double latitude, double longitude, double altitude) {
+			PathAggregatorResult r = new PathAggregatorResult();
+			r.pauseType = Util.PauseType.RUNNING;
+
+			if (mPath.size() == 0) {
+				mPauseEndTime = absTime;
+			} else {
+				Point lastLocation = mPath.get(mPath.size() - 1);
+				Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+						latitude, longitude, mTmp);
+				double pace = (absTime - lastLocation.absTime) / mTmp[0];
+				if (pace < JUMP_DETECTION_MIN_PACE) {
+					Log.d(TAG, "PACE=" + pace + " " + JUMP_DETECTION_MIN_PACE);
+					// Large jump detected. Ignore the GPS reading.
+					r.absTime = absTime;
+					r.pauseType = (mPaused ? PauseType.RUNNING : PauseType.PAUSE_CONTINUING);
+					r.deltaDistance = 0.0;
+					return r;
+				}
+			}
+
+			if (!mPaused) {
+				// Currently in running mode. Detect a pause when:
+				// (1) at least 10 seconds passed since the last resumption. 
+				// (2) every GPS report in the last 10 seconds is within 5 meters of the current location.
+				//
+				// The condition (1) is needed to pausing too often when GPS is noisy.
+				if (absTime >= mPauseEndTime + PAUSE_DETECTION_WINDOW_SECONDS) {
+					for (int i = mPath.size() - 1; i >= 0; --i) {
+						final Point location = mPath.get(i);
+						Location.distanceBetween(location.latitude, location.longitude,
+								latitude, longitude, mTmp);
+						final double distance = mTmp[0];
+						if (distance >= PAUSE_MAX_DISTANCE) {
+							// The user moved. 
+							break;
+						}
+						if (absTime - location.absTime >= PAUSE_DETECTION_WINDOW_SECONDS) {
+							mPaused = true;
+							// Remove all the elements after the @p location, since they are part of the pause
+							while (mPath.size() > i + 1) mPath.remove(mPath.size() - 1);
+							r.pauseType = Util.PauseType.PAUSE_STARTED;
+							r.absTime = location.absTime;
+							return r;
+						}
+					}
+				}
+			} else  {
+				// Currently paused. Detect resumption.
+				Point lastLocation = mPath.get(mPath.size() - 1);
+				Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+						latitude, longitude, mTmp);
+				final double distance = mTmp[0];
+				if (distance < PAUSE_MAX_DISTANCE) {
+					r.pauseType = Util.PauseType.PAUSE_CONTINUING;
+					return r;
+				} 
+				r.pauseType = Util.PauseType.PAUSE_ENDED;
+				mPaused = false;
+				mPauseEndTime = absTime;
+				// Fallthrough
+			}
+			Point wgs = new Point();
+			wgs.latitude = latitude;
+			wgs.longitude = longitude;
+			wgs.altitude = altitude;
+			wgs.absTime = absTime;
+
+			if (mPath.size() > 0) {
+				Point lastLocation = mPath.get(mPath.size() - 1);
+				Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+						latitude, longitude,
+						mTmp);
+				r.deltaDistance = mTmp[0];
+			}
+			r.absTime = absTime;
+			mPath.add(wgs);
+			return r;
+		}
+		
+		/**
+		 * Return the list of locations visited during the activity, in time series order. 
+		 * Locations during pauses are removed.
+		 */
+		public ArrayList<Point> getPath() { 
+			return mPath; 
+		}
+	}
+
 	/**
 	 * Crash the program after displaying a message
 	 * @param context If not null, used to show a toast just before crashing. 
@@ -265,6 +434,46 @@ public class Util {
 		final MapController controller = mapView.getController();
 		controller.zoomToSpan(maxLat - minLat, maxLong - minLong);
 		controller.animateTo(new GeoPoint((minLat + maxLat) / 2, (minLong + maxLong) / 2));
+	}
+
+	static public ArrayList<Util.LapSummary> listLaps(JsonActivity record) {
+		final ArrayList<Util.LapSummary> laps = new ArrayList<Util.LapSummary>();
+		double autoLapInterval = Settings.autoLapDistanceInterval;
+		if (autoLapInterval <= 0.0) {
+			autoLapInterval = (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0);
+		}
+		int lastLap = 0;
+		double distance = 0.0;       // Cumulative meters traveled
+		double elevationGain = 0.0;  // Cumulative elevation gain, in meters
+		double elevationLoss = 0.0;  // Cumulative elevation loss, in meters		
+		float tmp[] = new float[2];
+		for (int i = 1; i < record.path.length; ++i) {
+			JsonWGS84 location = record.path[i];
+			JsonWGS84 lastLocation = record.path[i - 1];
+			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+					location.latitude, location.longitude,
+					tmp);
+			distance += tmp[0];
+			
+			final double elevationDelta = location.altitude - lastLocation.altitude;
+			if (elevationDelta < 0) {
+				elevationLoss += -elevationDelta;
+			} else {
+				elevationGain += elevationDelta;
+			}
+			final int thisLap = (int)(distance / autoLapInterval); 
+			if (lastLap != thisLap || i == record.path.length - 1) {
+				Util.LapSummary lap = new Util.LapSummary();
+				lap.distance = distance;
+				lap.elapsedSeconds = location.timestamp;
+				lap.elevationGain = elevationGain;
+				lap.elevationLoss = elevationLoss;
+				lap.location = location;
+				laps.add(lap);
+				lastLap = thisLap;
+			}
+		}
+		return laps;
 	}
 	
 }

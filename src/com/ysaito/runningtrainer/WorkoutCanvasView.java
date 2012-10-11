@@ -89,7 +89,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		"40:00", "45:00", "50:00", 
 		"∞"
 	};
-	private final static Double[] WHEEL_PACE_VALUES = pacesFromStrings(WHEEL_PACE_STRINGS, Workout.NO_SLOW_TARGET_PACE);
+	private final static Double[] WHEEL_PACE_VALUES = pacesFromStrings(WHEEL_PACE_STRINGS, JsonWorkout.NO_SLOW_TARGET_PACE);
 	
 	private final static String[] WHEEL_DURATION_STRINGS = new String[] {
 		"0:05", "0:10", "0:15", "0:20", "0:25", "0:30", "0:35", "0:40", "0:45", "0:50", "0:55", 
@@ -116,7 +116,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		"7:00:00", "7:15:00", "7:30:00", "7:45:00",							
 		"∞"
 	};
-	private final static Double[] WHEEL_DURATION_VALUES = durationsFromStrings(WHEEL_DURATION_STRINGS, Workout.INFINITE_DURATION);
+	private final static Double[] WHEEL_DURATION_VALUES = durationsFromStrings(WHEEL_DURATION_STRINGS, JsonWorkout.INFINITE_DURATION);
 	
 	private final static String[] WHEEL_DISTANCE_STRINGS = new String[]{
 		"0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9",
@@ -134,7 +134,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		"90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
 		"∞"
 	};
-	private final static Double[] WHEEL_DISTANCE_VALUES = distancesFromStrings(WHEEL_DISTANCE_STRINGS, Workout.INFINITE_DISTANCE);
+	private final static Double[] WHEEL_DISTANCE_VALUES = distancesFromStrings(WHEEL_DISTANCE_STRINGS, JsonWorkout.INFINITE_DISTANCE);
 
 	private final static int findClosestIndex(double value, Double[] candidates) {
 		double  minDiff = 99999999.0;
@@ -351,7 +351,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public float getHeight();
 		public float getWidth();
 		public RectF getLastBoundingBox();
-		public Workout toWorkout();
+		public JsonWorkout toWorkout();
 	}
 
 	private final float SCREEN_DENSITY = getContext().getResources().getDisplayMetrics().scaledDensity;
@@ -386,10 +386,10 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public RectF getLastBoundingBox() { 
 			return mLastBoundingBox;
 		}
-		public Workout toWorkout() { 
+		public JsonWorkout toWorkout() { 
 			// This shouldn't be called in practice. create some dummy entry
-			Workout w = new Workout();
-			w.type = Workout.TYPE_INTERVAL;
+			JsonWorkout w = new JsonWorkout();
+			w.type = JsonWorkout.TYPE_INTERVAL;
 			return w;
 		}
 
@@ -429,9 +429,9 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public Repeats getParent() { return mParent; };
 		public void setParent(Repeats p) { mParent = p; }
 
-		public Workout toWorkout() { 
-			Workout w = new Workout();
-			w.type = Workout.TYPE_INTERVAL;
+		public JsonWorkout toWorkout() { 
+			JsonWorkout w = new JsonWorkout();
+			w.type = JsonWorkout.TYPE_INTERVAL;
 			w.distance = mDistance;
 			w.duration = mDuration;
 			w.fastTargetPace = mFastTargetPace;
@@ -454,12 +454,12 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 				duration = Util.durationFromString(durationStr);
 				if (duration < 0.0) throw new Exception("Failed to parse duration " + durationStr);
 			}
-			double fastTargetPace = Workout.NO_FAST_TARGET_PACE;
+			double fastTargetPace = JsonWorkout.NO_FAST_TARGET_PACE;
 			if (!fastTargetPaceStr.isEmpty()) {
 				fastTargetPace = Util.paceFromString(fastTargetPaceStr);
 				if (fastTargetPace < 0.0) throw new Exception("Failed to parse pace " + fastTargetPaceStr);
 			}
-			double slowTargetPace = Workout.NO_SLOW_TARGET_PACE;
+			double slowTargetPace = JsonWorkout.NO_SLOW_TARGET_PACE;
 			if (!slowTargetPaceStr.isEmpty()) {
 				slowTargetPace = Util.paceFromString(slowTargetPaceStr);
 				if (slowTargetPace < 0.0) throw new Exception("Failed to parse pace " + fastTargetPaceStr);
@@ -504,7 +504,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			
 			final StringBuilder b = mTmpStringBuilder;
 			b.setLength(0);
-			Workout.addIntervalToDisplayStringTo(mDuration, mDistance, mFastTargetPace, mSlowTargetPace, b);
+			JsonWorkout.addIntervalToDisplayStringTo(mDuration, mDistance, mFastTargetPace, mSlowTargetPace, b);
 			Log.d(TAG, "TEXT: " + b.toString());
 			mPaint.setColor(0xff000000);
 			canvas.drawText(b.toString(), x + 2 * SCREEN_DENSITY, y + 25 * SCREEN_DENSITY, mPaint);
@@ -527,11 +527,11 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public final Element getChild(int i) { return mEntries.get(i); }
 		public final ArrayList<Element> getChildren() { return mEntries; }
 
-		public Workout toWorkout() { 
-			Workout w = new Workout();
-			w.type = Workout.TYPE_REPEATS;
+		public JsonWorkout toWorkout() { 
+			JsonWorkout w = new JsonWorkout();
+			w.type = JsonWorkout.TYPE_REPEATS;
 			w.repeats = mRepeats;
-			w.children = new Workout[mEntries.size()];
+			w.children = new JsonWorkout[mEntries.size()];
 			for (int i = 0; i < mEntries.size(); ++i) {
 				w.children[i] = mEntries.get(i).toWorkout();
 			}
@@ -589,7 +589,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		 */
 		public void update(String repeatsStr) throws Exception {
 			if (repeatsStr.equals("∞")) {
-				mRepeats = Workout.REPEAT_FOREVER;
+				mRepeats = JsonWorkout.REPEAT_FOREVER;
 			} else {
 				int n = Integer.parseInt(repeatsStr);
 				if (n <= 0) {
@@ -655,17 +655,17 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 
 	private Repeats mRoot = new Repeats(1);
 
-	private Element fromWorkout(Workout workout) {
-		if (workout.type == Workout.TYPE_REPEATS) {
+	private Element fromWorkout(JsonWorkout workout) {
+		if (workout.type == JsonWorkout.TYPE_REPEATS) {
 			Repeats r = new Repeats(workout.repeats);
 			if (workout.children != null) {  // Repeats, not Root
-				for (Workout child : workout.children) {
+				for (JsonWorkout child : workout.children) {
 					r.append(fromWorkout(child));
 				}
 			}
 			return r;
 		} else {
-			if (Util.ASSERT_ENABLED && workout.type != Workout.TYPE_INTERVAL)
+			if (Util.ASSERT_ENABLED && workout.type != JsonWorkout.TYPE_INTERVAL)
 				Util.crash(getContext(), "Wrong workout: " + workout.toString());
 			Interval i = new Interval();
 			i.mDistance = workout.distance;
@@ -941,15 +941,15 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	    fragment.show(ft, "interval_dialog");
 	}
 
-	public void setWorkout(Workout workout) {
+	public void setWorkout(JsonWorkout workout) {
 		Log.d(TAG, "Set workout: " + workout.toString());
 		mSelectedElement = null;
 		mRoot = (Repeats)fromWorkout(workout);
 		invalidate();
 	}
 	
-	public Workout getWorkout() {
-		Workout workout = mRoot.toWorkout();
+	public JsonWorkout getWorkout() {
+		JsonWorkout workout = mRoot.toWorkout();
 		return workout;
 	}
 }

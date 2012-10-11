@@ -6,9 +6,9 @@
       android:checkable="true"
       android:title="Map view"/>
   <item
-      android:id="@+id/recording_sattelite_view"
+      android:id="@+id/recording_satellite_view"
       android:checkable="true"
-      android:title="Sattelite view"/>
+      android:title="Satellite view"/>
 </menu>
     
 

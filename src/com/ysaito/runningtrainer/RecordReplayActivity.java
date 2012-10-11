@@ -34,15 +34,15 @@ public class RecordReplayActivity extends MapActivity {
 
         public ArrayList<GeoPoint> getPoints() { return mPoints; }
         
-        public void setPath(HealthGraphClient.JsonWGS84[] path) {
+        public void setPath(JsonWGS84[] path) {
         	mPoints.clear();
-        	for (HealthGraphClient.JsonWGS84 point : path) {
+        	for (JsonWGS84 point : path) {
         		GeoPoint p = new GeoPoint((int)(point.latitude * 1e6), (int)(point.longitude * 1e6));
         		mPoints.add(p);
         	}
         }
 
-        public void setHighlight(HealthGraphClient.JsonWGS84 location) {
+        public void setHighlight(JsonWGS84 location) {
         	if (location == null) {
         		mHighlight = null;
         	} else {
@@ -119,22 +119,22 @@ public class RecordReplayActivity extends MapActivity {
     private MapView mMapView;
     private ListView mLapListView;
     private MyAdapter mLapListAdapter;
-    private HealthGraphClient.JsonActivity mRecord;
+    private JsonActivity mRecord;
     
     private static class MyAdapter extends BaseAdapter {
     	private final LayoutInflater mInflater;
-    	private ArrayList<HealthGraphClient.LapSummary> mLaps = new ArrayList<HealthGraphClient.LapSummary>();
+    	private ArrayList<Util.LapSummary> mLaps = new ArrayList<Util.LapSummary>();
     		    
     	public MyAdapter(Context context) { 
     		mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE); 
     	}
 
-    	public void setRecord(HealthGraphClient.JsonActivity record) {
-    		mLaps = HealthGraphClient.listLaps(record);
+    	public void setRecord(JsonActivity record) {
+    		mLaps = Util.listLaps(record);
     		notifyDataSetChanged();
     	}
 
-    	public final HealthGraphClient.LapSummary getLapSummary(int index) {
+    	public final Util.LapSummary getLapSummary(int index) {
     		if (index < 0 || index >= mLaps.size()) return null;
     		return mLaps.get(index);
     	}
@@ -178,8 +178,8 @@ public class RecordReplayActivity extends MapActivity {
     			--position;
     			if (position < 0 && position >= mLaps.size()) return layout;
 
-    			final HealthGraphClient.LapSummary lap = mLaps.get(position);
-    			final HealthGraphClient.LapSummary lastLap = (position > 0 ? mLaps.get(position - 1) : null);
+    			final Util.LapSummary lap = mLaps.get(position);
+    			final Util.LapSummary lastLap = (position > 0 ? mLaps.get(position - 1) : null);
 
     			distanceView.setHorizontallyScrolling(false);
     			distanceView.setText(Util.distanceToString(lap.distance));
@@ -221,11 +221,14 @@ public class RecordReplayActivity extends MapActivity {
         
         mLapListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
-				final HealthGraphClient.LapSummary lap = (HealthGraphClient.LapSummary)mLapListAdapter.getItem(position);
+				final Util.LapSummary lap = (Util.LapSummary)mLapListAdapter.getItem(position);
 				if (lap == null) {
 					mMapOverlay.setHighlight(null);
 				} else {
 					mMapOverlay.setHighlight(lap.location);
+					MapController controller = mMapView.getController();
+					GeoPoint point = new GeoPoint((int)(lap.location.latitude * 1e6), (int)(lap.location.longitude * 1e6));
+					controller.animateTo(point);
 				}
 				mMapView.invalidate();
 			}
@@ -271,7 +274,7 @@ public class RecordReplayActivity extends MapActivity {
     @Override
     public boolean isRouteDisplayed() { return false; }
     
-    public void setRecord(HealthGraphClient.JsonActivity record) {
+    public void setRecord(JsonActivity record) {
     	mRecord = record;
     	mMapOverlay.setPath(record.path);
     	Util.RescaleMapView(mMapView, mMapOverlay.getPoints());

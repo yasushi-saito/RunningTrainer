@@ -2,13 +2,11 @@ package com.ysaito.runningtrainer;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Calendar;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.GregorianCalendar;
 import java.util.Stack;
 
 import com.ysaito.runningtrainer.FileManager.ParsedFilename;
-import com.ysaito.runningtrainer.HealthGraphClient.JsonActivity;
 
 import android.app.ListFragment;
 import android.content.Context;
@@ -16,13 +14,16 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
-import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -39,28 +40,40 @@ public class RecordListFragment extends ListFragment {
 	private MyAdapter mAdapter;
 	
 	private class UndoEntry {
-		public void add(String filename, HealthGraphClient.JsonActivity r) { records.add(r); filenames.add(filename); }
+		public void add(String filename, JsonActivity r) { records.add(r); filenames.add(filename); }
 		public final ArrayList<String> filenames = new ArrayList<String>();
-		public final ArrayList<HealthGraphClient.JsonActivity> records = new ArrayList<HealthGraphClient.JsonActivity>();
+		public final ArrayList<JsonActivity> records = new ArrayList<JsonActivity>();
 	}
 	private Stack<UndoEntry> mUndos = new Stack<UndoEntry>();
 	
-	private static class MyAdapter extends ArrayAdapter<FileManager.ParsedFilename> {
-		public MyAdapter(Context activity) {
-			super(activity, android.R.layout.simple_list_item_1);
-		}
+	private class MyAdapter extends BaseAdapter {
+    	private final LayoutInflater mInflater;
+    	private final ArrayList<FileManager.ParsedFilename> mRecords = new ArrayList<FileManager.ParsedFilename>();
+    	
+    	public MyAdapter(Context context) { 
+    		mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE); 
+    	}
 
+    	public void sort(Comparator<FileManager.ParsedFilename> comparator) {
+    		Collections.sort(mRecords, comparator);
+    	}
+    	
 		public void reset(ArrayList<FileManager.ParsedFilename> newRecords) {
-			clear();
-			addAll(newRecords);
+			mRecords.clear();
+			mRecords.addAll(newRecords);
 			sort(COMPARE_BY_START_TIME);
 			notifyDataSetChanged();
 		}
 
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-			final TextView view = (TextView) super.getView(position, convertView, parent);
-			final FileManager.ParsedFilename f = this.getItem(position);
+		public View getView(final int position, View convertView, ViewGroup parent) {
+	   		View layout;
+    		if (convertView == null) {
+    			layout = (View)mInflater.inflate(R.layout.record_list_row, parent, false);
+    		} else {
+    			layout = (View)convertView;
+    		}
+			final TextView view = (TextView)layout.findViewById(R.id.record_list_row_text);
+			final FileManager.ParsedFilename f = (FileManager.ParsedFilename)getItem(position);
 			
 			StringBuilder b = new StringBuilder();
 			b.append(Util.dateToString(f.getLong(FileManager.KEY_START_TIME, 0)));
@@ -74,13 +87,44 @@ public class RecordListFragment extends ListFragment {
 			} else {
 				view.setTextColor(0xffffffff);
 			}
-			return view;
+			
+			final ImageView deleteView = (ImageView)layout.findViewById(R.id.record_list_row_delete);
+			deleteView.setOnClickListener(new View.OnClickListener() {
+				public void onClick(View v) {
+					// TODO Auto-generated method stub
+					deleteRecordAtPosition(position);
+				}
+			});
+			final ImageView syncView = (ImageView)layout.findViewById(R.id.record_list_row_send);
+			syncView.setOnClickListener(new View.OnClickListener() {
+				public void onClick(View v) {
+					// TODO Auto-generated method stub
+					sendRecordAtPosition(position);
+				}
+			});
+			return layout;
+		}
+
+		public int getCount() {
+			return mRecords.size();
+		}
+
+		public Object getItem(int position) {
+			// TODO Auto-generated method stub
+			if (position < 0 || position >= mRecords.size()) return null;
+			return mRecords.get(position);
+		}
+
+		public long getItemId(int position) {
+			return position;
 		}
 	};
+
+	@Override public void onDestroy() { super.onDestroy(); Plog.d(TAG, "onDestroy"); }
 	
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
+	@Override public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Plog.d(TAG, "onCreate");
 		setHasOptionsMenu(true);
 	}
 	
@@ -148,13 +192,14 @@ public class RecordListFragment extends ListFragment {
 
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
-		final FileManager.ParsedFilename f = mAdapter.getItem(position);
+		final FileManager.ParsedFilename f = (FileManager.ParsedFilename)mAdapter.getItem(position);
+		Log.d(TAG, "SELECT: " + v.toString());
 		if (f == null) return;
 
 		startBusyThrob();
-		FileManager.runAsync(new FileManager.AsyncRunner<HealthGraphClient.JsonActivity>() {
+		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
 			public JsonActivity doInThread() throws Exception {
-				return FileManager.readFile(mRecordDir, f.getBasename(), HealthGraphClient.JsonActivity.class);
+				return FileManager.readJson(mRecordDir, f.getBasename(), JsonActivity.class);
 			}
 			public void onFinish(Exception error, JsonActivity record) {
 				if (error != null) {
@@ -242,7 +287,7 @@ public class RecordListFragment extends ListFragment {
 			// Extract the filenames so that they can be read from a different thread
 			final FileManager.ParsedFilename[] filenames = new FileManager.ParsedFilename[mAdapter.getCount()];
 			for (int i = 0; i < mAdapter.getCount(); ++i) {
-				filenames[i] = mAdapter.getItem(i);
+				filenames[i] = (FileManager.ParsedFilename)mAdapter.getItem(i);
 			}
 			startBusyThrob();
 			FileManager.runAsync(new FileManager.AsyncRunner<UndoEntry>() {
@@ -250,7 +295,7 @@ public class RecordListFragment extends ListFragment {
 					UndoEntry newUndos = new UndoEntry();
 					for (FileManager.ParsedFilename f : filenames) {
 						String basename = f.getBasename();
-						HealthGraphClient.JsonActivity record = FileManager.readFile(mRecordDir, f.getBasename(), HealthGraphClient.JsonActivity.class);
+						JsonActivity record = FileManager.readJson(mRecordDir, f.getBasename(), JsonActivity.class);
 						FileManager.deleteFile(mRecordDir, basename);
 						newUndos.add(basename, record);
 					}
@@ -276,7 +321,7 @@ public class RecordListFragment extends ListFragment {
 			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
 				public Void doInThread() throws Exception {
 					for (int i = 0; i < undo.filenames.size(); ++i) {
-						FileManager.writeFile(mRecordDir, undo.filenames.get(i), undo.records.get(i));
+						FileManager.writeJson(mRecordDir, undo.filenames.get(i), undo.records.get(i));
 					}
 					return null;
 				}
@@ -297,68 +342,76 @@ public class RecordListFragment extends ListFragment {
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-		final FileManager.ParsedFilename summary = mAdapter.getItem(info.position);
-
 		switch (item.getItemId()) {
 		case R.id.record_list_resend: 
-			startBusyThrob();
-			FileManager.runAsync(new FileManager.AsyncRunner<HealthGraphClient.JsonActivity>() {
-				public HealthGraphClient.JsonActivity doInThread() throws Exception {
-					return FileManager.readFile(mRecordDir, summary.getBasename(), HealthGraphClient.JsonActivity.class);
-				}
-				public void onFinish(Exception error, HealthGraphClient.JsonActivity record) {
-					if (error != null) {
-						Util.error(getActivity(), "Failed to read " + summary.getBasename() + ": " + error);
-						stopBusyThrob();
-						return;
-					} 
-					HealthGraphClient hgClient = HealthGraphClient.getSingleton();
-					hgClient.putNewFitnessActivity(
-							record,
-							new HealthGraphClient.PutNewFitnessActivityListener() {
-								public void onFinish(Exception e, String runkeeperPath) {
-									stopBusyThrob();
-									if (e != null) {
-										Util.error(getActivity(), "Failed to send activity: " + e);
-									} else if (runkeeperPath == null) {
-										Util.error(getActivity(), "Failed to send activity (reason unknown)");
-									} else {
-										Util.info(getActivity(), "Sent activity to runkeeper: " + runkeeperPath);
-										markAsSaved(summary, runkeeperPath);
-										startListing(); 
-									}
-								}
-							});
-				}
-			});
+			sendRecordAtPosition(info.position);
 			return true;
 		case R.id.record_list_delete: 
-			// Read the file contents so that we can save it it in mUndos.
-			startBusyThrob();
-			FileManager.runAsync(new FileManager.AsyncRunner<HealthGraphClient.JsonActivity>() {
-				public JsonActivity doInThread() throws Exception {
-					HealthGraphClient.JsonActivity record = FileManager.readFile(mRecordDir, summary.getBasename(), HealthGraphClient.JsonActivity.class);
-					FileManager.deleteFile(mRecordDir, summary.getBasename());
-					return record;
-				}
-
-				public void onFinish(Exception error, JsonActivity value) {
-					stopBusyThrob();
-					if (error != null) {
-						Util.error(mActivity, "Failed to restore file: " + summary.getBasename() + ": " + error);
-					} else {
-						if (value != null) {
-							// activity==null if the file was corrupt or something. It's ok not create an undo entry in such case
-							UndoEntry undo = new UndoEntry();
-							undo.add(summary.getBasename(), value);
-							mUndos.push(undo);
-						}
-						startListing();
-					}
-				}
-			});
+			deleteRecordAtPosition(info.position);
 			return true;
 		}
 		return super.onContextItemSelected(item);
+	}
+
+	private void sendRecordAtPosition(int position) {
+		final FileManager.ParsedFilename summary = (FileManager.ParsedFilename)mAdapter.getItem(position);
+		startBusyThrob();
+		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
+			public JsonActivity doInThread() throws Exception {
+				return FileManager.readJson(mRecordDir, summary.getBasename(), JsonActivity.class);
+			}
+			public void onFinish(Exception error, JsonActivity record) {
+				if (error != null) {
+					Util.error(getActivity(), "Failed to read " + summary.getBasename() + ": " + error);
+					stopBusyThrob();
+					return;
+				} 
+				HealthGraphClient hgClient = HealthGraphClient.getSingleton();
+				hgClient.putNewFitnessActivity(
+						record,
+						new HealthGraphClient.PutNewFitnessActivityListener() {
+							public void onFinish(Exception e, String runkeeperPath) {
+								stopBusyThrob();
+								if (e != null) {
+									Util.error(getActivity(), "Failed to send activity: " + e);
+								} else if (runkeeperPath == null) {
+									Util.error(getActivity(), "Failed to send activity (reason unknown)");
+								} else {
+									Util.info(getActivity(), "Sent activity to runkeeper: " + runkeeperPath);
+									markAsSaved(summary, runkeeperPath);
+									startListing(); 
+								}
+							}
+						});
+			}
+		});
+	}
+	
+	private void deleteRecordAtPosition(int position) {
+		final FileManager.ParsedFilename summary = (FileManager.ParsedFilename)mAdapter.getItem(position);
+		// Read the file contents so that we can save it it in mUndos.
+		startBusyThrob();
+		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
+			public JsonActivity doInThread() throws Exception {
+				JsonActivity record = FileManager.readJson(mRecordDir, summary.getBasename(), JsonActivity.class);
+				FileManager.deleteFile(mRecordDir, summary.getBasename());
+				return record;
+			}
+			
+			public void onFinish(Exception error, JsonActivity value) {
+				stopBusyThrob();
+				if (error != null) {
+					Util.error(mActivity, "Failed to restore file: " + summary.getBasename() + ": " + error);
+				} else {
+					if (value != null) {
+						// activity==null if the file was corrupt or something. It's ok not create an undo entry in such case
+						UndoEntry undo = new UndoEntry();
+						undo.add(summary.getBasename(), value);
+						mUndos.push(undo);
+					}
+					startListing();
+				}
+			}
+		});
 	}
 }

@@ -14,14 +14,15 @@ import android.view.Window;
 public abstract class MapWrapperFragment extends Fragment {
 	protected abstract Class<?> getActivityClass();
 	
-    static final String TAG = "RecordingFragment";
+    static final String TAG = "MapWrapperFragment";
     private static final String KEY_STATE_BUNDLE = "localActivityManagerState";
 	private LocalActivityManager mLocalActivityManager;
 	private Activity mChildActivity = null;
-	
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+    	Plog.d(TAG, "onCreate");
         Bundle state = null;
         if (savedInstanceState != null) {
             state = savedInstanceState.getBundle(KEY_STATE_BUNDLE);
@@ -35,6 +36,7 @@ public abstract class MapWrapperFragment extends Fragment {
     		LayoutInflater inflater, 
     		ViewGroup container,
             Bundle savedInstanceState) {
+    	Plog.d(TAG, "onCreateView");
     	Intent intent = new Intent(getActivity(), getActivityClass());
         Window window = mLocalActivityManager.startActivity("tag", intent); 
         View currentView = window.getDecorView(); 
@@ -62,24 +64,28 @@ public abstract class MapWrapperFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+    	Plog.d(TAG, "onResume");
         mLocalActivityManager.dispatchResume();
     }
 
     @Override
     public void onPause() {
         super.onPause();
+    	Plog.d(TAG, "onPause");
         mLocalActivityManager.dispatchPause(getActivity().isFinishing());
     }
 
     @Override
     public void onStop() {
         super.onStop();
+    	Plog.d(TAG, "onStop");
         mLocalActivityManager.dispatchStop();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+    	Plog.d(TAG, "onDestroy");
         mLocalActivityManager.dispatchDestroy(getActivity().isFinishing());
     }
 }

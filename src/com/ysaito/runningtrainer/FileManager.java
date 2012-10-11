@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 
 import android.content.Context;
@@ -60,6 +61,13 @@ public class FileManager {
 	
 	static private Util.Singleton<File> mWorkoutDir = new Util.Singleton<File>();
 	static private Util.Singleton<File> mRecordDir = new Util.Singleton<File>();	
+	static private Util.Singleton<File> mLogDir = new Util.Singleton<File>();
+
+	public static File getLogDir(final Context context) {
+		return mLogDir.get(new Util.SingletonInitializer<File>() {
+			public File createSingleton() { return getDirUnderRoot(context, "log"); }
+		});
+	}
 	
 	public static File getWorkoutDir(final Context context) {
 		return mWorkoutDir.get(new Util.SingletonInitializer<File>() {
@@ -238,34 +246,56 @@ public class FileManager {
 		task.execute((Void[])null);
 	}
 
-	public static void writeFile(File dir, String basename, Object object) throws Exception {
-		Gson gson = new GsonBuilder().create();
-		File destFile = new File(dir, basename);
-		FileWriter out = new FileWriter(destFile);
-		gson.toJson(object, out);
-		out.close();
+	private static final ReentrantReadWriteLock mLock = new ReentrantReadWriteLock();
+
+	public static void writeJson(File dir, String basename, Object object) throws Exception {
+		mLock.writeLock().lock();
+		try {
+			Gson gson = new GsonBuilder().create();
+			File destFile = new File(dir, basename);
+			FileWriter out = new FileWriter(destFile);
+			gson.toJson(object, out);
+			out.close();
+		} finally {
+			mLock.writeLock().unlock();
+		}
 	}
 	
-	public static <T> T readFile(File dir, String basename, Class<T> classObject) throws Exception {
-		File sourceFile = new File(dir, basename);
-		Gson gson = new GsonBuilder().create();
-		return gson.fromJson(new BufferedReader(new FileReader(sourceFile)), classObject);
+	public static <T> T readJson(File dir, String basename, Class<T> classObject) throws Exception {
+		mLock.readLock().lock();
+		try {
+			File sourceFile = new File(dir, basename);
+			Gson gson = new GsonBuilder().create();
+			return gson.fromJson(new BufferedReader(new FileReader(sourceFile)), classObject);
+		} finally {
+			mLock.readLock().unlock();
+		}
 	}
 
 	public static void deleteFile(File dir, String basename) throws Exception {
-		if (!new File(dir, basename).delete()) {
-			throw new Exception("Failed to delete: " + basename);
+		mLock.writeLock().lock();
+		try {
+			if (!new File(dir, basename).delete()) {
+				throw new Exception("Failed to delete: " + basename);
+			}
+		} finally {
+			mLock.writeLock().unlock();
 		}
 	}
 	
 	public static ArrayList<ParsedFilename> listFiles(File dir) {
-		ArrayList<ParsedFilename> list = new ArrayList<ParsedFilename>();
-		for (String basename : dir.list()) {
-			if (basename.startsWith("log,")) {
-				ParsedFilename summary = ParsedFilename.parse(basename);
-				if (summary != null) list.add(summary);
+		mLock.readLock().lock();
+		try {
+			ArrayList<ParsedFilename> list = new ArrayList<ParsedFilename>();
+			for (String basename : dir.list()) {
+				if (basename.startsWith("log,")) {
+					ParsedFilename summary = ParsedFilename.parse(basename);
+					if (summary != null) list.add(summary);
+				}
 			}
+			return list;
+		} finally {
+			mLock.readLock().unlock();
 		}
-	    return list;
 	}
 }

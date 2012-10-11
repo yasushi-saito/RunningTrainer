@@ -31,23 +31,28 @@ import android.widget.Toast;
 public class RecordingService extends Service {
 	private static String TAG = "Gps";
     private NotificationManager mNM;
-
+    private boolean mAutoPaused = false;
+    private boolean mUserPaused = false;
+    private boolean mStarted = false;
+    
     @Override
     public IBinder onBind(Intent intent) {
+    	Plog.d(TAG, "onBind");
     	return null;
     }
 
     enum State {
-    	RESET,     // Either the initial state, or the activity has finished
-    	RUNNING,   // Currently running
-    	STOPPED    // Paused
+    	RESET,        // Either the initial state, or the activity has finished
+    	RUNNING,      // Currently running
+    	USER_PAUSED,  // Paused by the user using through the UI button
+    	AUTO_PAUSED
     }
     public static class Status {
     	double startTime;
-    	ArrayList<HealthGraphClient.JsonWGS84> path;
+    	ArrayList<Util.Point> path;
     	LapStats totalStats;
     	LapStats lapStats;
-    	Workout currentInterval;
+    	JsonWorkout currentInterval;
     }
     public interface StatusListener {
     	/**
@@ -73,7 +78,7 @@ public class RecordingService extends Service {
     	if (mSingleton != null) {
     		// Call the listener immediately to give the initial stats
     		Status status = null;
-    		if (mSingleton.mState != State.RESET) {
+    		if (mSingleton.mStarted) {
     			status = new Status();
     			status.startTime = mSingleton.mStartTime;
     			status.currentInterval = mSingleton.getCurrentWorkoutInterval();
@@ -81,24 +86,29 @@ public class RecordingService extends Service {
     			status.lapStats = mSingleton.mLapStats;
     			status.totalStats = mSingleton.mTotalStats;
     		}
-    		listener.onStatusUpdate(mSingleton.mState, status);
+    		listener.onStatusUpdate(mSingleton.getState(), status);
     	}
     }
     
+    private State getState() {
+    	if (!mStarted) return State.RESET;
+    	if (mUserPaused) return State.USER_PAUSED;
+    	if (mAutoPaused) return State.AUTO_PAUSED;
+    	return State.RUNNING;
+    }
+
     public static void unregisterListener(RecordingActivity listener) {
     	mListener = null;
     }
     
-    private State mState = State.RESET;
-
     private final void startNewLap() {
     	if (mWorkoutIterator != null && !mWorkoutIterator.done()) {
     		mWorkoutIterator.next();
-    		final Workout newWorkout = getCurrentWorkoutInterval();
+    		final JsonWorkout newWorkout = getCurrentWorkoutInterval();
     		if (newWorkout == null) {
     			speak("Workout ended", null);
     		} else {
-    			speak(Workout.workoutToSpeechText(newWorkout), null);
+    			speak(JsonWorkout.workoutToSpeechText(newWorkout), null);
     		}
     	}
     	final long curDistance = (long)mTotalStats.getDistance();
@@ -107,12 +117,13 @@ public class RecordingService extends Service {
     }
 
     public final Status resetActivityAndStop() {
-    	if (mState == State.RESET) {
+    	if (!mStarted) {
+    		// Shouldn't happen in practice
     		stopSelf();
     		mSingleton = null;
     		return null;
     	}
-    	mState = State.RESET;
+    	mStarted = false;
 		updateTimer();
 
 		Status status = new Status();
@@ -133,18 +144,24 @@ public class RecordingService extends Service {
     }
     
     public final void onStartStopButtonPress() {
-    	if (mState == State.RESET) {
+    	final double now = System.currentTimeMillis() / 1000.0;
+    	State prevState = getState();
+    	if (!mStarted) {
     		;
-    	} else if (mState == State.STOPPED) {
-    		speak("Resumed", null);
-    		mState = State.RUNNING;
-    		mTotalStats.onResume();
-    		mLapStats.onResume();
+    	} else if (mUserPaused) {
+    		mUserPaused = false;
+    		mTotalStats.onResume(now);
+    		mLapStats.onResume(now);
     	} else {
-    		speak("Paused", null);
-    		mState = State.STOPPED;  
-    		mTotalStats.onPause();
-    		mLapStats.onPause();
+    		mUserPaused = true;
+    		mTotalStats.onPause(now);
+    		mLapStats.onPause(now);
+    	}
+    	State newState = getState();
+    	if (prevState == State.RUNNING && newState == State.USER_PAUSED) {
+    		speak("paused", null);
+    	} else if (prevState == State.USER_PAUSED && newState == State.RUNNING) {
+    		speak("resumed", null);
     	}
     	updateTimer();
     	updateStats(LapType.KEEP_CURRENT_LAP_IF_POSSIBLE);
@@ -181,9 +198,10 @@ public class RecordingService extends Service {
     // Used to perform auto lapping.
     private long mLapStartDistance = 0;
 
-    private String mLastPaceAlertText = "";
+    private String mLastPaceAlertText = null;
     private double mLastPaceAlertTime = 0.0;
-
+    private double mLastPaceAlertIntervalSeconds = 5.0;
+    
     enum LapType {
     	KEEP_CURRENT_LAP_IF_POSSIBLE,
 		FORCE_NEW_LAP
@@ -191,7 +209,7 @@ public class RecordingService extends Service {
     private void updateStats(LapType lapType) {
     	boolean newLap = (lapType == LapType.FORCE_NEW_LAP);
 
-    	final Workout currentWorkout = getCurrentWorkoutInterval();
+    	final JsonWorkout currentWorkout = getCurrentWorkoutInterval();
     	if (currentWorkout != null) {
     		// When a workout interval is active, ignore the autolap setting
     		// and continue the lap until the interval specifies.
@@ -205,20 +223,32 @@ public class RecordingService extends Service {
     		} else {
     			final double pace = mLapStats.getPace();
     			String text = null;
-    			if (pace == 0.0) {
-    				// No movement. Special case and shut up.
-    			} else if (pace > currentWorkout.slowTargetPace) {
+    			if (pace > currentWorkout.slowTargetPace) {
     				text = "Faster";
-    			} else if (pace < currentWorkout.fastTargetPace) {
+    			} else if (pace != 0.0 && pace < currentWorkout.fastTargetPace) {
+    				// Pace==0.0 if no movement. Shut up in that case
     				text = "Slower";
-    			}
+    			} 
     			if (text != null) {
     				double nowSeconds = System.currentTimeMillis() / 1000.0;
-    				if (!text.equals(mLastPaceAlertText) || 
-    						mLastPaceAlertTime + 5.0 < nowSeconds) {
+    				if (!text.equals(mLastPaceAlertText)) {
     					speak(text, null);
     					mLastPaceAlertText = text;
     					mLastPaceAlertTime = nowSeconds;
+    					mLastPaceAlertIntervalSeconds = 5.0;
+    				} else if (mLastPaceAlertTime + mLastPaceAlertIntervalSeconds < nowSeconds) {
+    					speak(text, null);
+    					mLastPaceAlertText = text;
+    					mLastPaceAlertTime = nowSeconds;
+    					mLastPaceAlertIntervalSeconds = Math.min(
+    							mLastPaceAlertIntervalSeconds * 1.5,
+    							30.0);
+    				}
+    			} else {
+    				if (mLastPaceAlertText != null) {
+    					// Speak "on target" just once
+    					speak("On target", null);
+    					mLastPaceAlertText = null;
     				}
     			}
     		}
@@ -264,7 +294,7 @@ public class RecordingService extends Service {
     	
     	// Notify the listener
     	Status status = null;
-    	if (mState != State.RESET) {
+    	if (mStarted) {
     		status = new Status();
     		status.startTime = mStartTime;
     		status.currentInterval = getCurrentWorkoutInterval();
@@ -273,7 +303,7 @@ public class RecordingService extends Service {
     		status.totalStats = mTotalStats;
     	}
     	if (mListener != null) {
-    		mListener.onStatusUpdate(mState, status);
+    		mListener.onStatusUpdate(getState(), status);
     	}
     }
 
@@ -283,7 +313,7 @@ public class RecordingService extends Service {
     	}
     }
 
-    private final Workout getCurrentWorkoutInterval() {
+    private final JsonWorkout getCurrentWorkoutInterval() {
     	return (mWorkoutIterator != null && !mWorkoutIterator.done()) ? 
     			mWorkoutIterator.getWorkout() :	null;
     }
@@ -294,7 +324,7 @@ public class RecordingService extends Service {
 	private double mStartTime = -1.0;
 	
 	// List of gps points recorded so far.
-	private HealthGraphClient.PathAggregator mPath = null;
+	private Util.PathAggregator mPath = null;
 	
 	// Stats since the beginning of the activity. */
 	private LapStats mTotalStats = null;
@@ -312,6 +342,7 @@ public class RecordingService extends Service {
 	}
 	@Override
 	public void onCreate() {
+    	Plog.d(TAG, "onCreate");
 		Settings.Initialize(getApplicationContext());
         mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
@@ -413,7 +444,7 @@ public class RecordingService extends Service {
     		mTimer.purge();
     		mTimer = null;
     	}
-		if (mState == State.RUNNING) {
+		if (getState() == State.RUNNING) {
 			mTimer = new Timer();
 			mTimer.schedule(new TimerTask() {
 				@Override public void run() {
@@ -431,8 +462,10 @@ public class RecordingService extends Service {
 
 	@Override
 	public void onDestroy() {
+		super.onDestroy();
+    	Plog.d(TAG, "onDestroy");
 		Log.d(TAG, toString() + ": Destroyed");
-		mState = State.RESET;
+		mStarted = false;
 		updateTimer();
 		Toast.makeText(this, toString() + ": Stopped", Toast.LENGTH_LONG).show();
 		mLocationManager.removeUpdates(mLocationListener);
@@ -441,34 +474,35 @@ public class RecordingService extends Service {
 	
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		Log.d(TAG, toString() + ": OnStart " + startId + " state=" + mState);
+		Log.d(TAG, toString() + ": OnStart " + startId + " state=" + getState());
 		mSingleton = this;
-		if (mState != State.RESET) {
+		if (mStarted) {
 			// The activity already running.
 			// Happens when startService is called after the activity has
 			// resumed from previous sleep.
 		} else {
-			Workout workout = (Workout)intent.getSerializableExtra("workout");
+			JsonWorkout workout = (JsonWorkout)intent.getSerializableExtra("workout");
 			speak("started", null);
-			mPath = new HealthGraphClient.PathAggregator();
-			if (Settings.fakeGps) {
-				mPath.addPoint(0.0, 100.0, 100.0, 0);
-			}
+			mPath = new Util.PathAggregator();
 			mTotalStats = new LapStats();
 			mLapStats = new LapStats();
 			mStartTime = System.currentTimeMillis() / 1000.0;
-			mState = State.RUNNING;
+			mStarted = true;
+			mUserPaused = false;
+			mAutoPaused = false;
 			if (workout != null) {
-				mWorkoutIterator = new WorkoutIterator(new Workout(workout));
+				mWorkoutIterator = new WorkoutIterator(new JsonWorkout(workout));
 			} else {
 				mWorkoutIterator = null;
 			}
-			if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-					!mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-				notifyError("Please enable GPS in Settings / Location services.");
-			} else {
-				mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
-				mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
+			if (!Settings.fakeGps) {
+				if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+						!mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+					notifyError("Please enable GPS in Settings / Location services.");
+				} else {
+					mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+					mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
+				}
 			}
 	        Notification notification = new Notification(R.drawable.running_logo, 
 	        		"Started recording",
@@ -488,27 +522,64 @@ public class RecordingService extends Service {
 	}
 	
 	private void onGpsLocationUpdate(long now, Location newLocation) {
-		if (mState == State.RUNNING) {
-			final double timestamp = mTotalStats.getDurationSeconds();
-			mPath.addPoint(timestamp,
+		if (mStarted) {
+			Util.PathAggregatorResult result = mPath.addLocation(
+					System.currentTimeMillis() / 1000.0,
 					newLocation.getLatitude(),
 					newLocation.getLongitude(),
 					newLocation.getAltitude());
-			mTotalStats.onGpsUpdate(timestamp, newLocation.getLatitude(), newLocation.getLongitude());
-			mLapStats.onGpsUpdate(timestamp, newLocation.getLatitude(), newLocation.getLongitude());
+			handleResult(result);
 			updateStats(LapType.KEEP_CURRENT_LAP_IF_POSSIBLE);
 		}
 	}
 
+	private int mNumFakeInputs = 0;
+	
 	private void dofakeGpsLocationUpdate() {
-		if (mState == State.RUNNING) {
-			if (mPath.getPath().size() > 0) {
-				HealthGraphClient.JsonWGS84 lastWgs = mPath.lastPoint();
-				mPath.addPoint(lastWgs.timestamp + 0.3, lastWgs.latitude + 0.0008, lastWgs.longitude, lastWgs.altitude);
-				mTotalStats.onGpsUpdate(lastWgs.timestamp + 0.3, lastWgs.latitude + 0.0008, lastWgs.longitude);
-				mLapStats.onGpsUpdate(lastWgs.timestamp + 0.3, lastWgs.latitude + 0.0008, lastWgs.longitude);
+		if (mStarted) {
+			double now = System.currentTimeMillis() / 1000.0;
+			if (mPath.getPath().size() == 0) {
+				mPath.addLocation(now, 100.0, 100.0, 0);
+			} else {
+				Util.Point lastWgs = mPath.getPath().get(mPath.getPath().size() - 1);
+				double latitude, longitude;
+				if (mNumFakeInputs % 25 == 0) {
+					// Simulate a jump in GPS reading
+					latitude = 200.0;
+					longitude = 200.0;
+				} else if (mNumFakeInputs % 20 > 10) {
+					latitude = lastWgs.latitude + 0.0001;
+					longitude = lastWgs.longitude;
+				} else {
+					latitude = lastWgs.latitude;
+					longitude = lastWgs.longitude;
+				}
+				Util.PathAggregatorResult result = mPath.addLocation(now, latitude, longitude, lastWgs.altitude);
+				Log.d(TAG, "ADD: " + latitude + " " + lastWgs.latitude + " r=" + result);
+				handleResult(result);
+				++mNumFakeInputs;
 				updateStats(LapType.KEEP_CURRENT_LAP_IF_POSSIBLE);
 			}
 		}
 	}
+
+	private void handleResult(Util.PathAggregatorResult result) {
+		if (result.pauseType == Util.PauseType.RUNNING) {
+			mTotalStats.onGpsUpdate(result.absTime, result.deltaDistance);
+			mLapStats.onGpsUpdate(result.absTime, result.deltaDistance);
+		} else if (result.pauseType == Util.PauseType.PAUSE_STARTED) {
+			speak("auto paused", null);
+			mTotalStats.onPause(result.absTime);
+			mLapStats.onPause(result.absTime);			
+			mAutoPaused = true;
+		} else if (result.pauseType == Util.PauseType.PAUSE_ENDED) {
+			speak("auto resumed", null);
+			mTotalStats.onResume(result.absTime);
+			mLapStats.onResume(result.absTime);			
+			mTotalStats.onGpsUpdate(result.absTime, result.deltaDistance);
+			mLapStats.onGpsUpdate(result.absTime, result.deltaDistance);
+			mAutoPaused = false;
+		}
+	}
+	
 }

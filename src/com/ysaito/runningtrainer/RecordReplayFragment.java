@@ -11,7 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 public class RecordReplayFragment extends MapWrapperFragment {
-	private HealthGraphClient.JsonActivity mRecord;
+	private JsonActivity mRecord;
     private Menu mMenu = null;
     private MapMode mMapMode = MapMode.MAP;
 	
@@ -31,10 +31,10 @@ public class RecordReplayFragment extends MapWrapperFragment {
 		super.onPrepareOptionsMenu(menu);
 		if (mMapMode == MapMode.MAP) {
 			menu.findItem(R.id.recording_map_view).setChecked(true);
-			menu.findItem(R.id.recording_sattelite_view).setChecked(false);		
+			menu.findItem(R.id.recording_satellite_view).setChecked(false);		
 		} else {
 			menu.findItem(R.id.recording_map_view).setChecked(false);
-			menu.findItem(R.id.recording_sattelite_view).setChecked(true);		
+			menu.findItem(R.id.recording_satellite_view).setChecked(true);		
 		}
 		mMenu = menu;
 	}	
@@ -49,8 +49,8 @@ public class RecordReplayFragment extends MapWrapperFragment {
 				mMapMode = MapMode.MAP;
 			}
 			break;
-		case R.id.recording_sattelite_view:
-			if (mMenu.findItem(R.id.recording_sattelite_view).isChecked()) {
+		case R.id.recording_satellite_view:
+			if (mMenu.findItem(R.id.recording_satellite_view).isChecked()) {
 				mMapMode = MapMode.MAP;
 			} else {
 				mMapMode = MapMode.SATTELITE;
@@ -103,7 +103,7 @@ public class RecordReplayFragment extends MapWrapperFragment {
 		super.onPause();
 	}
 	
-	public void setRecord(HealthGraphClient.JsonActivity record) {
+	public void setRecord(JsonActivity record) {
 		mRecord = record;
 		RecordReplayActivity activity = (RecordReplayActivity)getChildActivity();
 		if (activity != null) {

@@ -37,7 +37,7 @@ import android.widget.Toast;
 public class RecordingActivity extends MapActivity implements RecordingService.StatusListener {
     static final String TAG = "Recording";
 
-    void startGpsService(Workout workout) {
+    void startGpsService(JsonWorkout workout) {
     	// Establish a connection with the service.  We use an explicit
     	// class name because we want a specific service implementation that
     	// we know will be running in our own process (and thus won't be
@@ -63,19 +63,19 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		mCurrentLocation = null;
     	}
 
-        public void updatePath(double startTime, ArrayList<HealthGraphClient.JsonWGS84> path) {
+        public void updatePath(double startTime, ArrayList<Util.Point> path) {
         	if (startTime != mStartTime) {
         		mStartTime = startTime;
         		mPoints.clear();
         	}
         	while (mPoints.size() < path.size()) {
-        		HealthGraphClient.JsonWGS84 point = path.get(mPoints.size());
+        		Util.Point point = path.get(mPoints.size());
         		GeoPoint p = new GeoPoint((int)(point.latitude * 1e6), (int)(point.longitude * 1e6));
         		mPoints.add(p);
         	}
         }
 
-        public void setCurrentLocation(HealthGraphClient.JsonWGS84 location, double accuracy) {
+        public void setCurrentLocation(JsonWGS84 location, double accuracy) {
         	mCurrentLocation = new GeoPoint((int)(location.latitude * 1e6), (int)(location.longitude * 1e6));
         	mCurrentAccuracy = accuracy;
         }
@@ -197,7 +197,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     private boolean mTransitioning = false;
 
     private LapStats mTotalStats = null;
-    ArrayList<HealthGraphClient.JsonWGS84> mLastReportedPath = null;
+    ArrayList<Util.Point> mLastReportedPath = null;
     
 
     // Implements RecodingService.StatusListener
@@ -216,10 +216,11 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		mWorkoutListSpinner.setVisibility(View.VISIBLE);
     		mWorkoutTitle.setText("Workout: ");
     	} else {
-    		if (newState == RecordingService.State.RUNNING) {
+    		if (newState == RecordingService.State.RUNNING || newState == RecordingService.State.AUTO_PAUSED) {
     			mStartStopButton.setText(R.string.pause); 
     			mLapButton.setEnabled(true);
     		} else {
+    			// newState == USER_PAUSED
     			mStartStopButton.setText(R.string.resume);
     			mLapButton.setEnabled(false);
     		}
@@ -235,7 +236,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         	}
         	if (status.currentInterval != null) {
         		StringBuilder b = new StringBuilder(); 
-        		Workout.addIntervalToDisplayStringTo(
+        		JsonWorkout.addIntervalToDisplayStringTo(
         				status.currentInterval.duration, 
         				status.currentInterval.distance, 
         				status.currentInterval.fastTargetPace, 
@@ -333,7 +334,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         // Define a listener that responds to location updates
         mLocationListener = new LocationListener() {
     		public void onLocationChanged(Location location) {
-    			HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
+    			JsonWGS84 wgs = new JsonWGS84();
     			wgs.latitude = location.getLatitude();
     			wgs.longitude = location.getLongitude();
     			wgs.altitude = location.getAltitude();
@@ -418,13 +419,13 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     }
 
     private String mLastSelectedWorkoutFilename = null;
-    private Workout mLastSelectedWorkout = null;
+    private JsonWorkout mLastSelectedWorkout = null;
 
     public void setMapMode(MapMode mode) {
     	mMapView.setSatellite(mode == MapMode.SATTELITE);
     }
     
-    private void startOrStopWithWorkout(Workout workout) {
+    private void startOrStopWithWorkout(JsonWorkout workout) {
     	RecordingService gpsService = RecordingService.getSingleton(); 
     	if (gpsService == null) {
     		startGpsService(workout);
@@ -446,11 +447,11 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     	} else {
     		final File dir = FileManager.getWorkoutDir(this);
     		mTransitioning = true;
-    		FileManager.runAsync(new FileManager.AsyncRunner<Workout>() {
-    			public Workout doInThread() throws Exception {
-    				return FileManager.readFile(dir, workoutFilename, Workout.class);
+    		FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
+    			public JsonWorkout doInThread() throws Exception {
+    				return FileManager.readJson(dir, workoutFilename, JsonWorkout.class);
     			}
-    			public void onFinish(Exception error, Workout workout) {
+    			public void onFinish(Exception error, JsonWorkout workout) {
     				if (!mTransitioning) Util.crash(mThisActivity, "blah");
     				mTransitioning = false;
     				if (error != null) {
@@ -480,31 +481,35 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     	if (gpsService != null) {
     		RecordingService.Status status = gpsService.resetActivityAndStop();
     		
-    		if (status != null && status.path.size() >= 1) {
-    			final HealthGraphClient.JsonActivity record = new HealthGraphClient.JsonActivity(); 
+    		if (status != null && status.path.size() > 1) {
+    			final JsonActivity record = new JsonActivity(); 
     			record.type = "Running";  // TODO: allow changing
     			record.start_time = HealthGraphClient.generateStartTimeString(status.startTime);
     			record.notes = "Recorded by RunningTrainer";
 
     			// Copy the path entries out
-    			record.path = new HealthGraphClient.JsonWGS84[status.path.size() + 1];
-    			for (int i = 0; i < status.path.size(); ++i) record.path[i] = status.path.get(i);
-
-    			// Add the "end" marker
-    			HealthGraphClient.JsonWGS84 last = status.path.get(status.path.size() - 1);
-    			HealthGraphClient.JsonWGS84 wgs = new HealthGraphClient.JsonWGS84();
-    			wgs.latitude = last.latitude;
-    			wgs.longitude = last.longitude;
-    			wgs.altitude = last.altitude;
-    			wgs.type = "end";
-    			wgs.timestamp = mTotalStats.getDurationSeconds();
-    			record.path[status.path.size()] =  wgs;
-    			record.duration = wgs.timestamp;
+    			record.path = new JsonWGS84[status.path.size()];
+    			for (int i = 0; i < status.path.size(); ++i) {
+    				JsonWGS84 wgs = new JsonWGS84();
+    				Util.Point point = status.path.get(i);
+    				record.path[i] = wgs;
+    				wgs.latitude = point.latitude;
+    				wgs.longitude = point.longitude;
+    				wgs.altitude = point.altitude;
+    				if (i == 0) {
+    					wgs.type = "start";
+    				} else if (i == status.path.size() - 1) {
+    					wgs.type = "end";
+    				} else {
+    					wgs.type = "gps";
+    				}
+    			}
+    			record.duration = (status.path.get(status.path.size() - 1).absTime - status.path.get(0).absTime);
     			
-    			HealthGraphClient.JsonWGS84 lastLocation = null;
+    			Util.Point lastLocation = null;
     		
     			float[] distance = new float[1];
-    			for (HealthGraphClient.JsonWGS84 location : record.path) {
+    			for (Util.Point location : status.path) {
     				if (lastLocation != null) {
     					Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
     							location.latitude, location.longitude,
@@ -521,7 +526,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		
     			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
     				public Void doInThread() throws Exception {
-    					FileManager.writeFile(mRecordDir, summary.getBasename(), record);
+    					FileManager.writeJson(mRecordDir, summary.getBasename(), record);
     					return null;
     				}
     				public void onFinish(Exception error, Void value) {
