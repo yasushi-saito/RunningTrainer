@@ -6,6 +6,7 @@
   </string-array>
 
   <string-array name="display_type">
+    <item>None</item>
     <item>Total distance</item>
     <item>Total elapsed</item>
     <item>Average pace since the start of the activity</item>
@@ -13,10 +14,10 @@
     <item>Lap distance</item>
     <item>Lap elapsed</item>
     <item>Lap pace</item>
-    <item>None</item>
   </string-array>
 
   <string-array name="display_type_values">
+    <item>none</item>
     <item>total_distance</item>
     <item>total_duration</item>
     <item>total_pace</item>
@@ -24,7 +25,6 @@
     <item>lap_distance</item>
     <item>lap_duration</item>
     <item>lap_pace</item>
-    <item>none</item>
   </string-array>
 
   <string-array name="time_intervals">

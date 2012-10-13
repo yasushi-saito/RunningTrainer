@@ -9,13 +9,17 @@ package com.ysaito.runningtrainer;
  */
 
 /**
+ * TODO: slow down. Pause speakouts.
+ * TODO: X sign in the workout should be ic_menu_delete
+ * TODO: garbage in the workout text
+ * TODO: elevation gain and loss should be in feets, not miles
  * TODO: enable/disable dependent settings
  * TODO: satellite/map view mode value should be process-global.
- * TODO: center map on lap click.
  * TODO: smooth GPS readouts and reduce sampling rate
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * TODO: automatic syncing of records on reconnect and/or token authorization
  * TODO: show runkeeper sync status somewhere
+ * TODO: run syncer as a Service.
  * TODO: sync all. 
  * TODO: show some indicator when runkeeper communication is happening
  * TODO: reliably check if TTS voice data has been downloaded.
@@ -60,16 +64,23 @@ public class MainActivity extends Activity {
 		tab.setFragment(fragment);
 	}
 
-	public Fragment appendTab(String tabText, Fragment fragment) {
+	private void appendTab(String tabText, Fragment fragment) {
+		// Check if the tab already exists. This shouldn't be necessary in principle, but
+		// I've found that sometimes onCreate() is called twice w/ tabs already in place.
+		final ActionBar bar = getActionBar();
+		for (int i = 0; i < bar.getTabCount(); ++i) {
+			ActionBar.Tab tab = bar.getTabAt(i);
+			if (tab.getText().equals(tabText)) {
+				return;
+			}
+		}
+		
 		ActionBar.Tab tab = getActionBar().newTab();
 		MyTabListener listener = new MyTabListener(this, fragment);
 		mTabs.put(tabText, listener);
 		tab.setText(tabText);
 		tab.setTabListener(listener);
-		final ActionBar bar = getActionBar();
 		bar.addTab(tab);
-
-		return fragment;
 	}
 
 	@Override public void onDestroy() { 
@@ -94,7 +105,6 @@ public class MainActivity extends Activity {
                 
         appendTab("Record", findOrCreateFragment("com.ysaito.runningtrainer.RecordingFragment"));
         appendTab("Log", findOrCreateFragment("com.ysaito.runningtrainer.RecordListFragment"));
-        // appendTab("Workout", findOrCreateFragment("com.ysaito.runningtrainer.WorkoutEditorFragment"));
         appendTab("Workout", findOrCreateFragment("com.ysaito.runningtrainer.WorkoutListFragment"));
         appendTab("Setting", findOrCreateFragment("com.ysaito.runningtrainer.SettingsFragment"));
 

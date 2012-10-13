@@ -23,7 +23,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -32,7 +31,6 @@ import android.widget.TextView;
  *
  */
 public class RecordListFragment extends ListFragment {
-	@SuppressWarnings("unused")
 	private static final String TAG = "RecordListFragment";
 	
 	private File mRecordDir;

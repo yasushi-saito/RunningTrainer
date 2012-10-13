@@ -75,8 +75,8 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         	}
         }
 
-        public void setCurrentLocation(JsonWGS84 location, double accuracy) {
-        	mCurrentLocation = new GeoPoint((int)(location.latitude * 1e6), (int)(location.longitude * 1e6));
+        public void setCurrentLocation(double latitude, double longitude, double accuracy) {
+        	mCurrentLocation = new GeoPoint((int)(latitude * 1e6), (int)(longitude * 1e6));
         	mCurrentAccuracy = accuracy;
         }
         
@@ -334,11 +334,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         // Define a listener that responds to location updates
         mLocationListener = new LocationListener() {
     		public void onLocationChanged(Location location) {
-    			JsonWGS84 wgs = new JsonWGS84();
-    			wgs.latitude = location.getLatitude();
-    			wgs.longitude = location.getLongitude();
-    			wgs.altitude = location.getAltitude();
-    			mMapOverlay.setCurrentLocation(wgs, location.getAccuracy());
+    			mMapOverlay.setCurrentLocation(location.getLatitude(), location.getLongitude(), location.getAccuracy());
     			mMapView.invalidate();
 			}
 			public void onProviderDisabled(String provider) { }
@@ -496,10 +492,15 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     				wgs.latitude = point.latitude;
     				wgs.longitude = point.longitude;
     				wgs.altitude = point.altitude;
+    				wgs.timestamp = point.absTime - status.startTime;
     				if (i == 0) {
     					wgs.type = "start";
     				} else if (i == status.path.size() - 1) {
     					wgs.type = "end";
+    				} else if (point.type == Util.PauseType.PAUSE_STARTED) {
+    					wgs.type = "pause";
+    				} else if (point.type == Util.PauseType.PAUSE_ENDED) {
+    					wgs.type = "resume";
     				} else {
     					wgs.type = "gps";
     				}

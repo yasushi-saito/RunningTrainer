@@ -11,6 +11,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -18,6 +19,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ArrayAdapter;
+import android.widget.BaseAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -39,30 +42,67 @@ public class WorkoutListFragment extends ListFragment {
 	
 	
 	static final String NEW_WORKOUT = "+ New Workout";
-	private static class MyAdapter extends ArrayAdapter<FileManager.ParsedFilename> {
-		public MyAdapter(Context activity) {
-			super(activity, android.R.layout.simple_list_item_1);
+	
+	private class MyAdapter extends BaseAdapter {
+    	private final LayoutInflater mInflater;
+    	private final ArrayList<FileManager.ParsedFilename> mRecords = new ArrayList<FileManager.ParsedFilename>();
+    	
+    	public MyAdapter(Context context) { 
+    		mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE); 
+    	}
+
+		public View getView(final int position, View convertView, ViewGroup parent) {
+	   		View layout;
+    		if (convertView == null) {
+    			layout = (View)mInflater.inflate(R.layout.workout_list_row, parent, false);
+    		} else {
+    			layout = (View)convertView;
+    		}
+			final TextView view = (TextView)layout.findViewById(R.id.workout_list_row_name);
+			final FileManager.ParsedFilename f = (FileManager.ParsedFilename)getItem(position);
+			final StringBuilder b = new StringBuilder();
+			final String name = f.getString(FileManager.KEY_WORKOUT_NAME, "unknown");
+			b.append(name);
+			view.setText(b.toString());
+			
+			final ImageView deleteView = (ImageView)layout.findViewById(R.id.workout_list_row_delete);
+			if (name.equals(NEW_WORKOUT)) {
+				deleteView.setVisibility(View.GONE);
+			} else {
+				deleteView.setVisibility(View.VISIBLE);
+				deleteView.setOnClickListener(new View.OnClickListener() {
+					public void onClick(View v) {
+						// TODO Auto-generated method stub
+						deleteWorkoutAtPosition(position);
+					}
+				});
+			}
+			return layout;
 		}
 
+		public int getCount() {
+			return mRecords.size();
+		}
+
+		public Object getItem(int position) {
+			// TODO Auto-generated method stub
+			if (position < 0 || position >= mRecords.size()) return null;
+			return mRecords.get(position);
+		}
+
+		public long getItemId(int position) {
+			return position;
+		}
+    	
 		public void reset(ArrayList<FileManager.ParsedFilename> newRecords) {
-			clear();
+			mRecords.clear();
+			mRecords.addAll(newRecords);
 			final FileManager.ParsedFilename newWorkout = new FileManager.ParsedFilename();
 			newWorkout.putLong(FileManager.KEY_WORKOUT_ID, -1);
 			newWorkout.putString(FileManager.KEY_WORKOUT_NAME, NEW_WORKOUT);
-			addAll(newRecords);
-			add(newWorkout);
-			notifyDataSetChanged();
-		}
-
-		@Override
-		public View getView(int position, View convertView, ViewGroup parent) {
-			final TextView view = (TextView) super.getView(position, convertView, parent);
-			final FileManager.ParsedFilename f = this.getItem(position);
+			mRecords.add(newWorkout);
 			
-			StringBuilder b = new StringBuilder();
-			b.append(f.getString(FileManager.KEY_WORKOUT_NAME, "unknown"));
-			view.setText(b.toString());
-			return view;
+			notifyDataSetChanged();
 		}
 	};
 
@@ -140,7 +180,7 @@ public class WorkoutListFragment extends ListFragment {
 	
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
-		final FileManager.ParsedFilename f = mAdapter.getItem(position);
+		final FileManager.ParsedFilename f = (FileManager.ParsedFilename)mAdapter.getItem(position);
 		if (f == null) return;
 		if (f.getString(FileManager.KEY_WORKOUT_NAME, "unknown").equals(NEW_WORKOUT)) {
 			JsonWorkout workout = new JsonWorkout();
@@ -210,32 +250,36 @@ public class WorkoutListFragment extends ListFragment {
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
-		final FileManager.ParsedFilename summary = mAdapter.getItem(info.position);
 
 		switch (item.getItemId()) {
 		case R.id.workout_list_delete:
-			// Read the workout file so that we can save it it in mUndos.
-			FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
-				public JsonWorkout doInThread() throws Exception {
-					JsonWorkout workout = FileManager.readJson(mWorkoutDir, summary.getBasename(), JsonWorkout.class);
-					FileManager.deleteFile(mWorkoutDir, summary.getBasename());
-					return workout;
-				}
-				public void onFinish(Exception e, JsonWorkout workout) {
-					if (e != null) {
-						Util.error(mActivity, "Failed to delete " + summary.getBasename() + ": " + e);
-					} else {
-						if (workout != null) {
-							// workout==null if the file was corrupt or something. It's ok not create an undo entry in such case
-							UndoEntry undo = new UndoEntry(summary.getBasename(), workout);
-							mUndos.push(undo);
-						}
-						startListing();
-					}
-				}
-			});
+			deleteWorkoutAtPosition(info.position);
 			return true;
 		}
 		return super.onContextItemSelected(item);
+	}
+
+	private void deleteWorkoutAtPosition(int position) {
+		final FileManager.ParsedFilename summary = (FileManager.ParsedFilename)mAdapter.getItem(position);
+		// Read the workout file so that we can save it it in mUndos.
+		FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
+			public JsonWorkout doInThread() throws Exception {
+				JsonWorkout workout = FileManager.readJson(mWorkoutDir, summary.getBasename(), JsonWorkout.class);
+				FileManager.deleteFile(mWorkoutDir, summary.getBasename());
+				return workout;
+			}
+			public void onFinish(Exception e, JsonWorkout workout) {
+				if (e != null) {
+					Util.error(mActivity, "Failed to delete " + summary.getBasename() + ": " + e);
+				} else {
+					if (workout != null) {
+						// workout==null if the file was corrupt or something. It's ok not create an undo entry in such case
+						UndoEntry undo = new UndoEntry(summary.getBasename(), workout);
+						mUndos.push(undo);
+					}
+					startListing();
+				}
+			}
+		});
 	}
 }

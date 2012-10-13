@@ -357,7 +357,9 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	private final float SCREEN_DENSITY = getContext().getResources().getDisplayMetrics().scaledDensity;
 	private final float SCREEN_WIDTH = getContext().getResources().getDisplayMetrics().widthPixels;
 	private final float HORIZONTAL_INDENT_PER_LEVEL = 20 * SCREEN_DENSITY;
-	private Bitmap BITMAP_REMOVE = BitmapFactory.decodeResource(getResources(), android.R.drawable.ic_delete);
+	private final float TEXT_SIZE = 22 * SCREEN_DENSITY;
+	
+	private Bitmap BITMAP_REMOVE = BitmapFactory.decodeResource(getResources(), android.R.drawable.ic_menu_delete);
 	
 	private class PlaceholderDuringMove implements Element {
 		private float mWidth = 0.0f;
@@ -491,24 +493,29 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		}
 		
 		public void draw(Canvas canvas, float x, float y) {
-			mPaint.setTextSize(24 * SCREEN_DENSITY);
-			mPaint.setColor(0xffc0ffc0);
+			mPaint.reset();
+			mPaint.setTextSize(TEXT_SIZE);
+			mPaint.setColor(0xff405040);
 			mPaint.setStyle(Paint.Style.FILL);
 
 			// Remember the rectangle for future calls to isSelected() 
 			mLastBoundingBox.left = x;
-			mLastBoundingBox.right = x + getWidth();
+			mLastBoundingBox.right = x + getWidth() - 3.0f * SCREEN_DENSITY;
 			mLastBoundingBox.top = y;
 			mLastBoundingBox.bottom = y + 36 * SCREEN_DENSITY;
-			canvas.drawRect(mLastBoundingBox, mPaint);
+			canvas.drawRoundRect(mLastBoundingBox, 3.0f * SCREEN_DENSITY, 3.0f * SCREEN_DENSITY, mPaint);
+			mPaint.setColor(0xffe0e0e0);
+			mPaint.setStyle(Paint.Style.STROKE);
+			canvas.drawRoundRect(mLastBoundingBox, 3.0f * SCREEN_DENSITY, 3.0f * SCREEN_DENSITY, mPaint);
 			
+			
+			mPaint.setStyle(Paint.Style.FILL);
 			final StringBuilder b = mTmpStringBuilder;
 			b.setLength(0);
 			JsonWorkout.addIntervalToDisplayStringTo(mDuration, mDistance, mFastTargetPace, mSlowTargetPace, b);
 			Log.d(TAG, "TEXT: " + b.toString());
-			mPaint.setColor(0xff000000);
+			mPaint.setColor(0xffffffff);
 			canvas.drawText(b.toString(), x + 2 * SCREEN_DENSITY, y + 25 * SCREEN_DENSITY, mPaint);
-			mPaint.setAlpha(128);
 			canvas.drawBitmap(BITMAP_REMOVE, x + getWidth() - 30 * SCREEN_DENSITY, y, mPaint);
 		}
 	}
@@ -621,18 +628,28 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		}
 
 		public void draw(Canvas canvas, float x, float y) {
-			mPaint.setTextSize(24 * SCREEN_DENSITY);
+			mPaint.reset();
+			mPaint.setTextSize(TEXT_SIZE);
 
-			mPaint.setColor(0xffffc0c0);
+			mPaint.setColor(0xff504040);
 			mPaint.setStyle(Paint.Style.FILL);
-			canvas.drawRect(x, y, x + getWidth(), y + 36 * SCREEN_DENSITY, mPaint);
-			mPaint.setColor(0xff000000);
+			
+			RectF thisRect = new RectF(x, y, x + getWidth() - 3 * SCREEN_DENSITY, y + 36 * SCREEN_DENSITY);
+			mPaint.setColor(0xff504040);
+			mPaint.setStyle(Paint.Style.FILL);
+			canvas.drawRoundRect(thisRect, 3.0f * SCREEN_DENSITY, 3.0f * SCREEN_DENSITY, mPaint);
+			
+			mPaint.setColor(0xffe0e0e0);
+			mPaint.setStyle(Paint.Style.STROKE);
+			canvas.drawRoundRect(thisRect, 3.0f * SCREEN_DENSITY, 3.0f * SCREEN_DENSITY, mPaint);
+			
+			mPaint.setStyle(Paint.Style.FILL);
+			mPaint.setColor(0xffffffff);
 			canvas.drawText(String.format("Repeat %d times", mRepeats), x + 2 * SCREEN_DENSITY, y + 25 * SCREEN_DENSITY, mPaint);
 			
-			mPaint.setAlpha(128);
 			canvas.drawBitmap(BITMAP_REMOVE, x + getWidth() - 30 * SCREEN_DENSITY, y, mPaint);
 			mLastBoundingBox.left = x;
-			mLastBoundingBox.right = x + getWidth();
+			mLastBoundingBox.right = thisRect.right;
 			mLastBoundingBox.top = y;
 
 			y += 48 * SCREEN_DENSITY;

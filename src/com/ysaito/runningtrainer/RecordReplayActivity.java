@@ -277,7 +277,7 @@ public class RecordReplayActivity extends MapActivity {
     public void setRecord(JsonActivity record) {
     	mRecord = record;
     	mMapOverlay.setPath(record.path);
-    	Util.RescaleMapView(mMapView, mMapOverlay.getPoints());
+    	Util.rescaleMapView(mMapView, mMapOverlay.getPoints());
     	mMapView.invalidate();
     	mLapListAdapter.setRecord(record);
     	updateStatsViews();

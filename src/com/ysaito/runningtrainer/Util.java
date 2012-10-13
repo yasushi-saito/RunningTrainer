@@ -89,10 +89,20 @@ public class Util {
 	}
 		
 	public static class Point {
-		double absTime;
-		double latitude;
-		double longitude;
-		double altitude;
+		public Point(PauseType t, double time, double lat, double lon, double alt) {
+			type = t;
+			absTime = time;
+			latitude = lat;
+			longitude = lon;
+			altitude = alt;
+		}
+		
+		// Note: type is never PAUSE_CONTINUING -- during pause, no Point entry is emit.
+		final PauseType type;  
+		final double absTime;
+		final double latitude;
+		final double longitude;
+		final double altitude;
 	}
 	
 	public static class PathAggregatorResult {
@@ -125,7 +135,7 @@ public class Util {
 		private boolean mPaused = false;
 		private double mPauseEndTime = -1.0;
 		
-		public static final double PAUSE_DETECTION_WINDOW_SECONDS = 10.0; 
+		public static final double PAUSE_DETECTION_WINDOW_SECONDS = 4.0; 
 		public static final double PAUSE_MAX_DISTANCE = 5.0;
 		public static final double JUMP_DETECTION_MIN_PACE = 1.5 * 60 / 1000.0;
 		/**
@@ -144,7 +154,6 @@ public class Util {
 						latitude, longitude, mTmp);
 				double pace = (absTime - lastLocation.absTime) / mTmp[0];
 				if (pace < JUMP_DETECTION_MIN_PACE) {
-					Log.d(TAG, "PACE=" + pace + " " + JUMP_DETECTION_MIN_PACE);
 					// Large jump detected. Ignore the GPS reading.
 					r.absTime = absTime;
 					r.pauseType = (mPaused ? PauseType.RUNNING : PauseType.PAUSE_CONTINUING);
@@ -173,6 +182,7 @@ public class Util {
 							mPaused = true;
 							// Remove all the elements after the @p location, since they are part of the pause
 							while (mPath.size() > i + 1) mPath.remove(mPath.size() - 1);
+							mPath.add(new Point(PauseType.PAUSE_STARTED, location.absTime, location.latitude, location.longitude, location.altitude));
 							r.pauseType = Util.PauseType.PAUSE_STARTED;
 							r.absTime = location.absTime;
 							return r;
@@ -194,11 +204,6 @@ public class Util {
 				mPauseEndTime = absTime;
 				// Fallthrough
 			}
-			Point wgs = new Point();
-			wgs.latitude = latitude;
-			wgs.longitude = longitude;
-			wgs.altitude = altitude;
-			wgs.absTime = absTime;
 
 			if (mPath.size() > 0) {
 				Point lastLocation = mPath.get(mPath.size() - 1);
@@ -208,7 +213,7 @@ public class Util {
 				r.deltaDistance = mTmp[0];
 			}
 			r.absTime = absTime;
-			mPath.add(wgs);
+			mPath.add(new Point(r.pauseType, absTime, latitude, longitude, altitude));
 			return r;
 		}
 		
@@ -416,7 +421,7 @@ public class Util {
 		return d / (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0);
 	}
 	
-	static public void RescaleMapView(MapView mapView, ArrayList<GeoPoint> points) {
+	static public void rescaleMapView(MapView mapView, ArrayList<GeoPoint> points) {
 		if (points.size() == 0) return;
 		
 		int minLat = Integer.MAX_VALUE;
@@ -471,6 +476,7 @@ public class Util {
 				lap.location = location;
 				laps.add(lap);
 				lastLap = thisLap;
+				Log.d(TAG, "LAP: " + lap.distance + "/" + lap.elapsedSeconds);
 			}
 		}
 		return laps;

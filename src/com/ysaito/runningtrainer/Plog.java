@@ -1,8 +1,10 @@
 package com.ysaito.runningtrainer;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -112,6 +114,25 @@ public class Plog {
 	
 	public static void Init(Context context, double flushInterval) {
 		mBuffer = new Buffer(FileManager.getLogDir(context), flushInterval);
+		// Read and dump the system log contents. This will catch the stack trace of
+		// any previous crash of this process, if any. This is needed, because starting
+		// from Jellybean, a log-cat app cannot see other app's logs.
+		readSystemLog();
+	}
+
+	private static void readSystemLog() {
+		try {
+			Process process = Runtime.getRuntime().exec("logcat -d");
+			BufferedReader bufferedReader = new BufferedReader(
+					new InputStreamReader(process.getInputStream()));
+			String line;
+			while ((line = bufferedReader.readLine()) != null) {
+				mBuffer.add("LC", line);
+			}
+			bufferedReader.close();
+		} catch (IOException e) {
+			Log.e(TAG, "logcat: " + e);
+		}
 	}
 	
 	public static File getLogFile() { return mBuffer.getLogFile(); }

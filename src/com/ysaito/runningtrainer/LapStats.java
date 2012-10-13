@@ -31,9 +31,6 @@ class LapStats {
 	// Cumulative distance of points in path[0..mLastPathSegment].
 	private double mDistance = 0;
     	
-	// Tmp used to compute distance between two GeoPoints.
-	private final float[] mTmp = new float[1];
-    	
 	/** 
 	 * Remember up to last 10 seconds worth of GPS measurements.
 	 */
@@ -147,7 +144,7 @@ class LapStats {
 		if (mLastTimestamp < 0.0) {
 		} else {
 			mDistance += deltaDistance;
-			mRecentEvents.addLast(new Event(mTmp[0], absTime));
+			mRecentEvents.addLast(new Event(deltaDistance, absTime));
 
 			// Drop events that are more than 30 seconds old. But keep at least one record so that	
 			// if the user stops moving, we can still display the current pace.
