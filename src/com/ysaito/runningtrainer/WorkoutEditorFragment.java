@@ -8,6 +8,9 @@ import com.ysaito.runningtrainer.FileManager.ParsedFilename;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -25,6 +28,34 @@ public class WorkoutEditorFragment extends Fragment {
 	// TODO: make the code more resilient to corrupt workouts.
 	public void setWorkout(JsonWorkout w) { 
 		mWorkout = new JsonWorkout(w);
+	}
+	
+	@Override public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		Plog.d(TAG, "onCreate");
+		setHasOptionsMenu(true);
+	}
+
+	@Override
+    public void onCreateOptionsMenu (Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.workout_editor_options_menu, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+	
+	@Override
+	public void onPrepareOptionsMenu (Menu menu) {
+		super.onPrepareOptionsMenu(menu);
+		menu.findItem(R.id.workout_editor_undo).setEnabled(mCanvas.hasUndo());
+	}	
+		
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.workout_editor_undo:
+			mCanvas.undo();
+			return true;
+		}
+		return false;
 	}
 	
 	@Override 
@@ -77,13 +108,6 @@ public class WorkoutEditorFragment extends Fragment {
         	}
         });
         
-        button = (Button)view.findViewById(R.id.cancel_button);
-        button.setOnClickListener(new Button.OnClickListener() {
-        	public void onClick(View v) {
-
-        	}
-        });
-        
         button = (Button)view.findViewById(R.id.new_interval_button);
         button.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
@@ -125,5 +149,6 @@ public class WorkoutEditorFragment extends Fragment {
 		((MainActivity)getActivity()).unregisterOnBackPressedListener(mOnBackPressedListener);
 		super.onPause();
 	}
+	
 }	
 

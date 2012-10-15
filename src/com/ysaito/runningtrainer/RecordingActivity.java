@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
+import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
 import com.google.android.maps.Overlay;
 import com.google.android.maps.Projection;
@@ -37,7 +38,7 @@ import android.widget.Toast;
 public class RecordingActivity extends MapActivity implements RecordingService.StatusListener {
     static final String TAG = "Recording";
 
-    void startGpsService(JsonWorkout workout) {
+    void startBackgroundService(JsonWorkout workout) {
     	// Establish a connection with the service.  We use an explicit
     	// class name because we want a specific service implementation that
     	// we know will be running in our own process (and thus won't be
@@ -142,7 +143,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		mDisplayType = displayType;
     	}
     	
-    	public void update(LapStats totalStats, LapStats lapStats) {
+    	public void update(LapStats totalStats, LapStats lapStats, boolean paused) {
     		String value = "";
     		String title = "";
     		
@@ -177,6 +178,11 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		}
     		mValueView.setVisibility(View.VISIBLE);
     		mTitleView.setVisibility(View.VISIBLE);
+    		if (paused) {
+    			mValueView.setTextColor(0xff505050);
+    		} else {
+    			mValueView.setTextColor(0xff90ff90);
+    		}
     		mValueView.setText(value);
     		mTitleView.setText(title);
     	}
@@ -197,7 +203,6 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     private boolean mTransitioning = false;
 
     private LapStats mTotalStats = null;
-    ArrayList<Util.Point> mLastReportedPath = null;
     
 
     // Implements RecodingService.StatusListener
@@ -208,7 +213,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     // Implements RecodingService.StatusListener
     public void onStatusUpdate(
     		RecordingService.State newState,
-    		RecordingService.Status status) {
+    		RecordingService.Status newStatus) {
     	if (newState == RecordingService.State.RESET) {
     		mStartStopButton.setText(R.string.start);
     		mLapButton.setEnabled(false);
@@ -226,21 +231,22 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		}
     		mWorkoutListSpinner.setVisibility(View.GONE);
     	}        
-        if (status != null) {
-        	mLastReportedPath = status.path;
-        	mMapOverlay.updatePath(status.startTime, status.path);
-        	mTotalStats = status.totalStats;
+        if (newStatus != null) {
+        	mMapOverlay.updatePath(newStatus.startTime, newStatus.path);
+        	mTotalStats = newStatus.totalStats;
         	mMapView.invalidate();
         	for (int i = 0; i < mStatsViews.length; ++i) {
-        		mStatsViews[i].update(status.totalStats, status.lapStats);
+        		mStatsViews[i].update(newStatus.totalStats, newStatus.lapStats,
+        				(newState == RecordingService.State.AUTO_PAUSED ||
+        				newState == RecordingService.State.USER_PAUSED));
         	}
-        	if (status.currentInterval != null) {
+        	if (newStatus.currentInterval != null) {
         		StringBuilder b = new StringBuilder(); 
         		JsonWorkout.addIntervalToDisplayStringTo(
-        				status.currentInterval.duration, 
-        				status.currentInterval.distance, 
-        				status.currentInterval.fastTargetPace, 
-        				status.currentInterval.slowTargetPace, b);
+        				newStatus.currentInterval.duration, 
+        				newStatus.currentInterval.distance, 
+        				newStatus.currentInterval.fastTargetPace, 
+        				newStatus.currentInterval.slowTargetPace, b);
         		mWorkoutTitle.setText(b.toString());
         	} else {
         		mWorkoutTitle.setText("No workout set");
@@ -330,11 +336,14 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     
     @Override public void onResume() {
     	super.onResume();
-    	Log.d(TAG, "RESUME");
         // Define a listener that responds to location updates
         mLocationListener = new LocationListener() {
     		public void onLocationChanged(Location location) {
     			mMapOverlay.setCurrentLocation(location.getLatitude(), location.getLongitude(), location.getAccuracy());
+    			
+    			MapController controller = mMapView.getController();
+    			GeoPoint point = new GeoPoint((int)(location.getLatitude() * 1e6), (int)(location.getLongitude() * 1e6));
+    			controller.animateTo(point);
     			mMapView.invalidate();
 			}
 			public void onProviderDisabled(String provider) { }
@@ -362,7 +371,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         
         final LapStats emptyLapStats = new LapStats(); 
         for (int i = 0; i < mStatsViews.length; ++i) {
-        	mStatsViews[i].update(emptyLapStats, emptyLapStats);
+        	mStatsViews[i].update(emptyLapStats, emptyLapStats, true);
         }
 
     	startListWorkouts();
@@ -424,7 +433,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     private void startOrStopWithWorkout(JsonWorkout workout) {
     	RecordingService gpsService = RecordingService.getSingleton(); 
     	if (gpsService == null) {
-    		startGpsService(workout);
+    		startBackgroundService(workout);
     	} else {
     		gpsService.onStartStopButtonPress();
     	}

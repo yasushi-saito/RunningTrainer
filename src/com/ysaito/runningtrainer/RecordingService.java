@@ -22,7 +22,6 @@ import android.os.Looper;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
 import android.util.Log;
-import android.widget.Toast;
 
 /**
  * Background service that runs while a recording is ongoing
@@ -347,7 +346,6 @@ public class RecordingService extends Service {
         mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
 		mId = mInstanceSeq++;
-		Toast.makeText(this, toString() + ": Created", Toast.LENGTH_LONG).show();
 		Log.d(TAG, toString() + ": Created");
 		
 		// Define a listener that responds to location updates
@@ -467,7 +465,6 @@ public class RecordingService extends Service {
 		Log.d(TAG, toString() + ": Destroyed");
 		mStarted = false;
 		updateTimer();
-		Toast.makeText(this, toString() + ": Stopped", Toast.LENGTH_LONG).show();
 		mLocationManager.removeUpdates(mLocationListener);
 		mSingleton = null;
 	}
@@ -539,14 +536,14 @@ public class RecordingService extends Service {
 		if (mStarted) {
 			double now = System.currentTimeMillis() / 1000.0;
 			if (mPath.getPath().size() == 0) {
-				mPath.addLocation(now, 100.0, 100.0, 0);
+				mPath.addLocation(now, 38.00, -120.0, 0);
 			} else {
 				Util.Point lastWgs = mPath.getPath().get(mPath.getPath().size() - 1);
 				double latitude, longitude;
 				if (mNumFakeInputs % 25 == 0) {
 					// Simulate a jump in GPS reading
-					latitude = 200.0;
-					longitude = 200.0;
+					latitude = 39.0;
+					longitude = -121.0;
 				} else if (mNumFakeInputs % 20 > 10) {
 					latitude = lastWgs.latitude + 0.0001;
 					longitude = lastWgs.longitude;

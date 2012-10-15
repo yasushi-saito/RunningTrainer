@@ -10,8 +10,6 @@ package com.ysaito.runningtrainer;
 
 /**
  * TODO: slow down. Pause speakouts.
- * TODO: X sign in the workout should be ic_menu_delete
- * TODO: garbage in the workout text
  * TODO: elevation gain and loss should be in feets, not miles
  * TODO: enable/disable dependent settings
  * TODO: satellite/map view mode value should be process-global.
@@ -23,8 +21,10 @@ package com.ysaito.runningtrainer;
  * TODO: sync all. 
  * TODO: show some indicator when runkeeper communication is happening
  * TODO: reliably check if TTS voice data has been downloaded.
- * TODO: undo of workout edits.
  * TODO: remove the stats view row when none of the views show anything
+ * TODO: change the workout editor so that the interval moves inside a repeat more reliably
+ * TODO: current time readout
+ * TODO: in workout editor canvas, set a reasonable default interval spec
  */
 import java.util.HashMap;
 
@@ -41,21 +41,26 @@ import android.view.Window;
 
 public class MainActivity extends Activity {
 	static final String TAG = "Main";
+
+	// Tab name (eg, "WORKOUT") to the tab listener
 	private final HashMap<String, MyTabListener> mTabs = new HashMap<String, MyTabListener>();
+	
+	// Class name -> Fragment instance. Used to detach all background fragments reliably.
+	private final HashMap<String, Fragment> mFragments = new HashMap<String, Fragment>();
 	
 	public Fragment findOrCreateFragment(String className) {
 		final FragmentManager manager = getFragmentManager();
 		Fragment fragment = manager.findFragmentByTag(className);
-
-		FragmentTransaction ft = manager.beginTransaction();
+		
 		if (fragment == null) {
 		    fragment = Fragment.instantiate(this, className, null);
+		    FragmentTransaction ft = manager.beginTransaction();
 			ft.add(android.R.id.content, fragment, className);
+			ft.detach(fragment);
+			ft.commit();
 		} 
-		
-		// Detach the fragment from the screen just in case it's already running.
-		ft.detach(fragment);
-		ft.commit();
+		mFragments.remove(className);
+		mFragments.put(className, fragment);
 		return fragment;
 	}
 
@@ -158,12 +163,12 @@ public class MainActivity extends Activity {
     	}
     	super.onBackPressed();
     }
-    
+
     public static class MyTabListener implements ActionBar.TabListener {
-        private final Activity mActivity;
+        private final MainActivity mActivity;
         private Fragment mFragment = null;
 
-        public MyTabListener(Activity activity, Fragment fragment) {
+        public MyTabListener(MainActivity activity, Fragment fragment) {
         	mActivity = activity;
         	mFragment = fragment;
         }
@@ -178,11 +183,16 @@ public class MainActivity extends Activity {
         }
         
         public void onTabSelected(Tab tab, FragmentTransaction ft) {
+        	for (HashMap.Entry<String, Fragment> entry : mActivity.mFragments.entrySet()) {
+        		Fragment frag = entry.getValue();
+        		if (frag != mFragment) ft.detach(frag);
+        	}
+        	
         	ft.attach(mFragment);
         }
 
         public void onTabUnselected(Tab tab, FragmentTransaction ft) {
-        	ft.detach(mFragment);
+        	// ft.detach(mFragment);
         }
 
         public void onTabReselected(Tab tab, FragmentTransaction ft) {

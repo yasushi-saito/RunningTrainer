@@ -135,8 +135,8 @@ public class Util {
 		private boolean mPaused = false;
 		private double mPauseEndTime = -1.0;
 		
-		public static final double PAUSE_DETECTION_WINDOW_SECONDS = 4.0; 
-		public static final double PAUSE_MAX_DISTANCE = 5.0;
+		public static final double PAUSE_DETECTION_WINDOW_SECONDS = 10.0; 
+		public static final double PAUSE_MAX_DISTANCE = 4.0;
 		public static final double JUMP_DETECTION_MIN_PACE = 1.5 * 60 / 1000.0;
 		/**
 		 * @param timestamp Number of seconds elapsed since the start of the activity (not adjusted for pause time)

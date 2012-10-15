@@ -1,5 +1,6 @@
 package com.ysaito.runningtrainer;
 import java.util.ArrayList;
+import java.util.Stack;
 
 import kankan.wheel.widget.WheelView;
 import kankan.wheel.widget.adapters.ArrayWheelAdapter;
@@ -78,11 +79,11 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		"7:00",	"7:05", "7:10", "7:15", "7:20", "7:25", "7:30", "7:35", "7:40", "7:45", "7:50", "7:55", 
 		"8:00",	"8:05", "8:10", "8:15", "8:20", "8:25", "8:30", "8:35", "8:40", "8:45", "8:50", "8:55", 
 		"9:00",	"9:05", "9:10", "9:15", "9:20", "9:25", "9:30", "9:35", "9:40", "9:45", "9:50", "9:55", 
-		"10:00", "10:05", "10:10", "10:15", "10:20", "10:25", "10:30", "10:35", "10:40", "10:45", "10:50", "10:55", 
-		"11:00", "11:05", "11:10", "11:15", "11:20", "11:25", "11:30", "11:35", "11:40", "11:45", "11:50", "11:55", 
-		"12:00", "12:05", "12:10", "12:15", "12:20", "12:25", "12:30", "12:35", "12:40", "12:45", "12:50", "12:55", 
-		"13:00", "13:05", "13:10", "13:15", "13:20", "13:25", "13:30", "13:35", "13:40", "13:45", "13:50", "13:55", 
-		"14:00", "14:05", "14:10", "14:15", "14:20", "14:25", "14:30", "14:35", "14:40", "14:45", "14:50", "14:55", 
+		"10:00", "10:15", "10:30", "10:45",
+		"11:00", "11:15", "11:30", "11:45",
+		"12:00", "12:15", "12:30", "12:45",
+		"13:00", "13:15", "13:30", "13:45", 
+		"14:00", "14:15", "14:30", "14:45", 
 		"15:00", "15:30", "16:00", "16:30", "17:00", "18:00", "18:30", "19:00", "19:30", "20:00", 
 		"20:30", "21:00", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "24:00", "24:30",
 		"25:00", "25:30", "26:00", "26:30", "27:00", "28:00", "98:30", "29:00", "29:30", "30:00", 
@@ -94,14 +95,14 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	private final static String[] WHEEL_DURATION_STRINGS = new String[] {
 		"0:05", "0:10", "0:15", "0:20", "0:25", "0:30", "0:35", "0:40", "0:45", "0:50", "0:55", 
 		"1:00",	"1:05", "1:10", "1:15", "1:20", "1:25", "1:30", "1:35", "1:40", "1:45", "1:50", "1:55", 
-		"2:00",	"2:10", "2:15", "2:30", "2:45", 
-		"3:00",	"3:10", "3:15", "3:30", "3:45", 
-		"4:00",	"4:10", "4:15", "4:30", "4:45", 
-		"5:00",	"5:10", "5:15", "5:30", "5:45", 
-		"6:00",	"6:10", "6:15", "6:30", "6:45", 
-		"7:00",	"7:10", "7:15", "7:30", "7:45", 
-		"8:00",	"8:10", "8:15", "8:30", "8:45", 
-		"9:00",	"9:10", "9:15", "9:30", "9:45", 
+		"2:00",	"2:15", "2:30", "2:45", 
+		"3:00",	"3:15", "3:30", "3:45", 
+		"4:00",	"4:15", "4:30", "4:45", 
+		"5:00",	"5:15", "5:30", "5:45", 
+		"6:00",	"6:15", "6:30", "6:45", 
+		"7:00",	"7:15", "7:30", "7:45", 
+		"8:00",	"8:15", "8:30", "8:45", 
+		"9:00",	"9:15", "9:30", "9:45", 
 		"10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
 		"15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30",
 		"20:00", "20:30", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "24:00", "24:30",
@@ -295,7 +296,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			mParentView = parentView;
 			mElem = elem; 
 		}
-	    
+		
 	    @Override
 	    public Dialog onCreateDialog(Bundle savedInstanceState) {
 	    	View v = getActivity().getLayoutInflater().inflate(R.layout.repeats_dialog, null);
@@ -346,12 +347,14 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	private interface Element {
 		public Repeats getParent();
 		public void setParent(Repeats p);
+		public boolean equals(Element other);
 		
 		public void draw(Canvas canvas, float x, float y);
 		public float getHeight();
 		public float getWidth();
 		public RectF getLastBoundingBox();
 		public JsonWorkout toWorkout();
+		public Element clone(Repeats parent);
 	}
 
 	private final float SCREEN_DENSITY = getContext().getResources().getDisplayMetrics().scaledDensity;
@@ -360,13 +363,29 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	private final float TEXT_SIZE = 22 * SCREEN_DENSITY;
 	
 	private Bitmap BITMAP_REMOVE = BitmapFactory.decodeResource(getResources(), android.R.drawable.ic_menu_delete);
-	
+
 	private class PlaceholderDuringMove implements Element {
 		private float mWidth = 0.0f;
 		private float mHeight = 0.0f;
 		
-		private final RectF mLastBoundingBox = new RectF(-1.0f, -1.0f, -1.0f, -1.0f);
+		private RectF mLastBoundingBox = new RectF(-1.0f, -1.0f, -1.0f, -1.0f);
 		private Repeats mParent = null;
+
+		public boolean equals(Element other) {
+			if (!(other instanceof PlaceholderDuringMove)) return false;
+			PlaceholderDuringMove m = (PlaceholderDuringMove)other;
+			return mWidth == m.mWidth && mHeight == m.mHeight &&
+					mLastBoundingBox.equals(m.mLastBoundingBox);
+		}
+		
+		public Element clone(Repeats parent) {
+			PlaceholderDuringMove c = new PlaceholderDuringMove();
+			c.mWidth = mWidth;
+			c.mHeight = mHeight;
+			c.mLastBoundingBox = new RectF(mLastBoundingBox);
+			c.mParent = parent;
+			return c;
+		}
 		
 		public void setDimension(float width, float height) { 
 			mWidth = width;
@@ -431,6 +450,27 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public Repeats getParent() { return mParent; };
 		public void setParent(Repeats p) { mParent = p; }
 
+		public boolean equals(Element other) {
+			if (!(other instanceof Interval)) return false;
+			Interval m = (Interval)other;
+			return mDuration== m.mDuration &&
+					mDistance == m.mDistance &&
+					mFastTargetPace == m.mFastTargetPace &&
+					mSlowTargetPace == m.mSlowTargetPace &&					
+					mLastBoundingBox.equals(m.mLastBoundingBox);
+		}
+		
+		public Element clone(Repeats parent) {
+			Interval c = new Interval();
+			c.mDuration = mDuration;
+			c.mDistance = mDistance;
+			c.mFastTargetPace = mFastTargetPace;
+			c.mSlowTargetPace = mSlowTargetPace;			
+			c.mLastBoundingBox = new RectF(mLastBoundingBox);
+			c.mParent = parent;
+			return c;
+		}
+		
 		public JsonWorkout toWorkout() { 
 			JsonWorkout w = new JsonWorkout();
 			w.type = JsonWorkout.TYPE_INTERVAL;
@@ -534,6 +574,30 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public final Element getChild(int i) { return mEntries.get(i); }
 		public final ArrayList<Element> getChildren() { return mEntries; }
 
+		public boolean equals(Element other) {
+			if (!(other instanceof Repeats)) return false;
+			Repeats m = (Repeats)other;
+			if (mRepeats != m.mRepeats || 
+					mEntries.size() != m.mEntries.size() ||
+					!mLastBoundingBox.equals(m.mLastBoundingBox)) {
+				return false;
+			}
+			for (int i = 0; i < m.mEntries.size(); ++i) {
+				if (!m.mEntries.get(i).equals(mEntries.get(i))) return false;
+			}
+			return true;
+		}
+		
+		public Element clone(Repeats parent) {
+			Repeats c = new Repeats(mRepeats);
+			c.mLastBoundingBox = new RectF(mLastBoundingBox);
+			c.mParent = parent;
+			for (Element child : mEntries) {
+				c.mEntries.add(child.clone(c));
+			}
+			return c;
+		}
+		
 		public JsonWorkout toWorkout() { 
 			JsonWorkout w = new JsonWorkout();
 			w.type = JsonWorkout.TYPE_REPEATS;
@@ -670,8 +734,17 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		return y >= bbox.top + height / 2 && y < bbox.bottom + height / 2;
 	}
 
+	public boolean hasUndo() { return !mUndos.empty(); }
+	
+	private Stack<Repeats> mUndos = new Stack<Repeats>();
 	private Repeats mRoot = new Repeats(1);
 
+	public void undo() {
+		if (mUndos.empty()) return;
+		Repeats newRoot =  mUndos.pop();
+		mRoot = newRoot;
+		invalidate();
+	}
 	private Element fromWorkout(JsonWorkout workout) {
 		if (workout.type == JsonWorkout.TYPE_REPEATS) {
 			Repeats r = new Repeats(workout.repeats);
@@ -696,51 +769,26 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	public WorkoutCanvasView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		setOnTouchListener(this);
-
-		Interval interval = new Interval();
-		interval.mDistance = Util.METERS_PER_MILE;
-		interval.mFastTargetPace = -1.0;
-		interval.mSlowTargetPace = 330 / Util.METERS_PER_MILE;
-		mRoot.append(interval);
-
-		interval = new Interval();
-		interval.mDuration = 300;
-		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
-		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
-		mRoot.append(interval);
-
-		Repeats r = new Repeats(95);
-
-		interval = new Interval();
-		interval.mDuration = 300;
-		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
-		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
-		r.append(interval);
-
-		interval = new Interval();
-		interval.mDuration = 250;
-		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
-		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
-		r.append(interval);
-		mRoot.append(r);
-
-		interval = new Interval();
-		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
-		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
-		mRoot.append(interval);
 	}
 
+	public void addUndo() {
+		if (!mUndos.empty() && mUndos.peek().equals(mRoot)) return; 
+		mUndos.push((Repeats)mRoot.clone(null));
+	}
+	
 	public void addNewInterval() {
 		Interval interval = new Interval();
 		interval.mDistance = Util.METERS_PER_MILE;
 		interval.mFastTargetPace = 400/ Util.METERS_PER_MILE;
 		interval.mSlowTargetPace = 430 / Util.METERS_PER_MILE;
+		addUndo();
 		mRoot.append(interval);
 		invalidate();
 	}
 
 	public void addNewRepeats() {
 		Repeats repeats = new Repeats(5);
+		addUndo();
 		mRoot.append(repeats);
 		invalidate();
 	}
@@ -749,7 +797,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	// onTouch processing
 	//
 	private Element mSelectedElement;
-	
+
 	// The touch location on the DOWN event
 	private float mTouchStartX, mTouchStartY;
 	
@@ -768,6 +816,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		final int action = event.getAction();
 		final double now = System.currentTimeMillis() / 1000.0;
 		if (action == MotionEvent.ACTION_DOWN) {
+			addUndo();
 			mSelectedElement = findElementAtPoint(mRoot, event.getX(), event.getY());
 			if (mSelectedElement != null) {
 				RectF rect = mSelectedElement.getLastBoundingBox();
