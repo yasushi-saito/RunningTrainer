@@ -20,6 +20,19 @@ public class UtilTest extends InstrumentationTestCase {
 		assertEquals("155 kilometers", Util.distanceToSpeechText(155555.0));
 	}
 	
+	public void testDurationFromString() {
+		assertEquals(Util.durationFromString("0:00"), 0.0);
+		assertEquals(Util.durationFromString("0:10"), 10.0);
+		assertEquals(Util.durationFromString("10:10"), 610.0);		
+	}
+
+	public void testPaceFromString() {
+		Settings.unit = Settings.Unit.METRIC;
+		assertEquals(Util.paceFromString("0:00"), 0.0);
+		assertEquals(Util.paceFromString("0:10"), 10.0);
+		assertEquals(Util.paceFromString("10:10"), 610.0);		
+	}
+	
 	public void testPathAggregator() {
 		Util.PathAggregator aggr = new Util.PathAggregator();
 		Util.PathAggregatorResult r = aggr.addLocation(0.0, 100.0, 100.0, 0.0);

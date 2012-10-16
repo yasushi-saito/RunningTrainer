@@ -19,6 +19,10 @@ public class Util {
 	static final String TAG = "Util";
 	static final double METERS_PER_MILE = 1609.34;
 	static final boolean ASSERT_ENABLED = true;
+
+	static public final double INFINITE_PACE = 999999.0;
+	static public final double INFINITE_DURATION = 999999.0;
+	static public final double INFINITE_DISTANCE = 999999.0;
 	
 	public static interface SingletonInitializer<T> {
 		public T createSingleton();
@@ -168,7 +172,7 @@ public class Util {
 				// (2) every GPS report in the last 10 seconds is within 5 meters of the current location.
 				//
 				// The condition (1) is needed to pausing too often when GPS is noisy.
-				if (absTime >= mPauseEndTime + PAUSE_DETECTION_WINDOW_SECONDS) {
+				if (Settings.autoPauseDetection && absTime >= mPauseEndTime + PAUSE_DETECTION_WINDOW_SECONDS) {
 					for (int i = mPath.size() - 1; i >= 0; --i) {
 						final Point location = mPath.get(i);
 						Location.distanceBetween(location.latitude, location.longitude,
@@ -267,9 +271,11 @@ public class Util {
 			b.append(minutes);
 			b.append(minutes > 1 ? " minutes" : "minute");
 		}
-		b.append(" ");
-		b.append(seconds);
-		b.append(seconds > 1 ? " seconds" : "second");
+		if (seconds > 0) {
+			b.append(" ");
+			b.append(seconds);
+			b.append(seconds > 1 ? " seconds" : "second");
+		}
 		return b.toString();
 	}
 
@@ -294,6 +300,7 @@ public class Util {
 	}
 	
 	static public String durationToString(double secondsD) {
+		if (secondsD >= INFINITE_DURATION) return "∞";
 		final long seconds = (long)secondsD;
 		if (seconds < 3600) {
 			return String.format("%02d:%02d",
@@ -317,6 +324,8 @@ public class Util {
 	 * @return the number of seconds. -1 on error.
 	 */
 	static public double durationFromString(String s) {
+		if (s.equals("∞")) return INFINITE_DURATION;
+		
 		try {
 			int hour = 0;
 			int min = 0;
@@ -351,6 +360,7 @@ public class Util {
 	}
 
 	static public String distanceToString(double meters) {
+		if (meters >= INFINITE_DISTANCE) return "∞";
 		if (Settings.unit == Settings.Unit.US) {
 			return String.format("%.2f", meters / METERS_PER_MILE);
 		} else {
@@ -363,6 +373,7 @@ public class Util {
 	 * The unit is extracted from @p settings. Return -1.0 on error.
 	 */
 	static public double distanceFromString(String s) {
+		if (s.equals("∞")) return INFINITE_DISTANCE;
 		try {
 			double multiplier = (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0);
 			return Double.parseDouble(s) * multiplier;
@@ -395,6 +406,7 @@ public class Util {
 	}
 	
 	static public String paceToString(double secondsPerMeter) {
+		if (secondsPerMeter >= INFINITE_PACE) return "∞";
 		long seconds;
 		if (Settings.unit == Settings.Unit.US) {
 			seconds = (long)(secondsPerMeter * METERS_PER_MILE);
@@ -416,6 +428,7 @@ public class Util {
 	 * Returns a regative value on parse error.
 	 */
 	static public double paceFromString(String s) {
+		if (s.equals("∞")) return INFINITE_PACE;
 		final double d = durationFromString(s);
 		if (d < 0.0) return d;
 		return d / (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0);

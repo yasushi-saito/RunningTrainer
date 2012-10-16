@@ -7,19 +7,16 @@ public class JsonWorkout implements Serializable {
 	
 	static public final int REPEAT_FOREVER = 999999;
 	static public final double NO_FAST_TARGET_PACE = 0.0;
-	static public final double NO_SLOW_TARGET_PACE = 999999.0;
-	static public final double INFINITE_DURATION = 999999.0;
-	static public final double INFINITE_DISTANCE = 999999.0;
 	
 	static public boolean hasFastTargetPace(double pace) {
-		return pace > NO_FAST_TARGET_PACE;
+		return pace > 0.0;
 	}
 	static public boolean hasSlowTargetPace(double pace) {
-		return pace < NO_SLOW_TARGET_PACE;
+		return pace < Util.INFINITE_PACE;
 	}
 
 	public static String workoutToSpeechText(JsonWorkout workout) {
-		StringBuilder b = new StringBuilder("Workout for ");
+		StringBuilder b = new StringBuilder("Workout;<150>;for ");
 		if (workout.distance >= 0) {
 			b.append(Util.distanceToSpeechText(workout.distance));
 		} else if (workout.duration >= 0) {
@@ -27,7 +24,7 @@ public class JsonWorkout implements Serializable {
 		} else {
 			b.append("Until Lap");
 		}
-		b.append(" ");
+		b.append(";<300>;");  // 300ms pause
 		if (!hasFastTargetPace(workout.fastTargetPace) && !hasSlowTargetPace(workout.slowTargetPace)) {
 			b.append("No pace target");
 		} else {
@@ -37,7 +34,7 @@ public class JsonWorkout implements Serializable {
 				b.append(Util.paceToString(workout.fastTargetPace));
 			}
 			if (hasSlowTargetPace(workout.slowTargetPace)) {
-				b.append(" to ");
+				b.append(";<150>;to ");
 				b.append(Util.paceToString(workout.slowTargetPace));
 			}
 		}
@@ -48,7 +45,7 @@ public class JsonWorkout implements Serializable {
 	 * Produce a human-readable interval description string and append it to
 	 * @p builder. 
 	 */
-	public static void addIntervalToDisplayStringTo(
+	public static void intervalToDisplayString(
 			double duration, double distance, double fastPace, double slowPace,
 			StringBuilder builder) {
 		if (distance >= 0) {
@@ -64,17 +61,9 @@ public class JsonWorkout implements Serializable {
 		if (!hasFastTargetPace(fastPace) && !hasSlowTargetPace(slowPace)) {
 			builder.append("No target");
 		} else {
-			if (hasFastTargetPace(fastPace)) {
-				builder.append(Util.paceToString(fastPace));
-			} else {
-				builder.append("-");
-			}
+			builder.append(Util.paceToString(fastPace));
 			builder.append(" to ");
-			if (hasSlowTargetPace(slowPace)) {
-				builder.append(Util.paceToString(slowPace));
-			} else {
-				builder.append("-");
-			}
+			builder.append(Util.paceToString(slowPace));
 		}
 	}
 	
@@ -160,6 +149,6 @@ public class JsonWorkout implements Serializable {
 	public double distance = -1.0;
 	
 	// The fast and slow ends of the pace range.
-	public double fastTargetPace = NO_FAST_TARGET_PACE;
-	public double slowTargetPace = NO_SLOW_TARGET_PACE;
+	public double fastTargetPace = 0.0;
+	public double slowTargetPace = Util.INFINITE_PACE;
 }

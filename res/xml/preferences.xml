@@ -19,6 +19,11 @@
        android:key="fake_gps"
        android:title="Fake GPS" />
 
+   <CheckBoxPreference
+       android:defaultValue="true"
+       android:key="auto_pause_detection"
+       android:title="Automatic pause detection" />
+   
   <PreferenceScreen
     android:key="pref_key_display_settings"
     android:title="Display settings" >

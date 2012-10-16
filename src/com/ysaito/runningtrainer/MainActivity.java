@@ -9,6 +9,8 @@ package com.ysaito.runningtrainer;
  */
 
 /**
+ * TODO: show GPS strength
+ * TODO: during interval training, read the pace out when too fast or too slow.
  * TODO: slow down. Pause speakouts.
  * TODO: elevation gain and loss should be in feets, not miles
  * TODO: enable/disable dependent settings
@@ -18,8 +20,8 @@ package com.ysaito.runningtrainer;
  * TODO: automatic syncing of records on reconnect and/or token authorization
  * TODO: show runkeeper sync status somewhere
  * TODO: run syncer as a Service.
+ * TODO: pause detection should take GPS accuracy into account.
  * TODO: sync all. 
- * TODO: show some indicator when runkeeper communication is happening
  * TODO: reliably check if TTS voice data has been downloaded.
  * TODO: remove the stats view row when none of the views show anything
  * TODO: change the workout editor so that the interval moves inside a repeat more reliably

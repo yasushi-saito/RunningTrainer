@@ -50,6 +50,7 @@ public class Settings {
 	static public SpeechTypes speakTimeTypes = new SpeechTypes();	
 	static public SpeechTypes speakOnLapTypes = new SpeechTypes();		
 	static public boolean fakeGps;
+	static public boolean autoPauseDetection;	
 	private static SharedPreferences mPrefs;
 	private static SharedPreferences.OnSharedPreferenceChangeListener mListener;
 	private static Context mContext;
@@ -130,6 +131,8 @@ public class Settings {
 			}
 		} else if (key.equals("fake_gps")) {
 			fakeGps = mPrefs.getBoolean(key, false);
+		} else if (key.equals("auto_pause_detection")) {
+			autoPauseDetection = mPrefs.getBoolean(key, false);
 		} else if (key.equals("autolap_distance_interval")) {
 			autoLapDistanceInterval = Double.parseDouble(mPrefs.getString("autolap_distance_interval", "0"));
 		} else if (key.equals("speak_time_interval")) {

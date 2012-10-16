@@ -242,7 +242,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         	}
         	if (newStatus.currentInterval != null) {
         		StringBuilder b = new StringBuilder(); 
-        		JsonWorkout.addIntervalToDisplayStringTo(
+        		JsonWorkout.intervalToDisplayString(
         				newStatus.currentInterval.duration, 
         				newStatus.currentInterval.distance, 
         				newStatus.currentInterval.fastTargetPace, 

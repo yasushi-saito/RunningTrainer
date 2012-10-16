@@ -30,41 +30,29 @@ import android.widget.RadioButton;
 public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	static private final String TAG = "WorkoutCanvasView";
 
-	private static Double[] durationsFromStrings(String[] list, double valueForInfinity) {
+	private static Double[] durationsFromStrings(String[] list) {
 		Double[] values = new Double[list.length];
 		for (int i = 0; i < list.length; ++i) {
-			if (list[i].equals("∞")) {
-				values[i] = valueForInfinity;
-			} else {
-				values[i] = (double)Util.durationFromString(list[i]);
-				if (values[i] < 0) Util.crash(null, "Failed to parse " + list[i]);
-			}
+			values[i] = (double)Util.durationFromString(list[i]);
+			if (values[i] < 0) Util.crash(null, "Failed to parse " + list[i]);
 		}
 		return values;
 	}
 
-	private static Double[] pacesFromStrings(String[] list, double valueForInfinity) {
+	private static Double[] pacesFromStrings(String[] list) {
 		Double[] values = new Double[list.length];
 		for (int i = 0; i < list.length; ++i) {
-			if (list[i].equals("∞")) {
-				values[i] = valueForInfinity;
-			} else {
-				values[i] = (double)Util.paceFromString(list[i]);
-				if (values[i] < 0) Util.crash(null, "Failed to parse " + list[i]);
-			}
+			values[i] = (double)Util.paceFromString(list[i]);
+			if (values[i] < 0) Util.crash(null, "Failed to parse " + list[i]);
 		}
 		return values;
 	}
 	
-	private static Double[] distancesFromStrings(String[] list, double valueForInfinity) {
+	private static Double[] distancesFromStrings(String[] list) {
 		Double[] values = new Double[list.length];
 		for (int i = 0; i < list.length; ++i) {
-			if (list[i].equals("∞")) {
-				values[i] = valueForInfinity;
-			} else {
-				values[i] = Util.distanceFromString(list[i]);
-				if (values[i] < 0) Util.crash(null, "Failed to parse " + list[i]);
-			}
+			values[i] = Util.distanceFromString(list[i]);
+			if (values[i] < 0) Util.crash(null, "Failed to parse " + list[i]);
 		}
 		return values;
 	}
@@ -90,7 +78,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		"40:00", "45:00", "50:00", 
 		"∞"
 	};
-	private final static Double[] WHEEL_PACE_VALUES = pacesFromStrings(WHEEL_PACE_STRINGS, JsonWorkout.NO_SLOW_TARGET_PACE);
+	private final static Double[] WHEEL_PACE_VALUES = pacesFromStrings(WHEEL_PACE_STRINGS);
 	
 	private final static String[] WHEEL_DURATION_STRINGS = new String[] {
 		"0:05", "0:10", "0:15", "0:20", "0:25", "0:30", "0:35", "0:40", "0:45", "0:50", "0:55", 
@@ -117,7 +105,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		"7:00:00", "7:15:00", "7:30:00", "7:45:00",							
 		"∞"
 	};
-	private final static Double[] WHEEL_DURATION_VALUES = durationsFromStrings(WHEEL_DURATION_STRINGS, JsonWorkout.INFINITE_DURATION);
+	private final static Double[] WHEEL_DURATION_VALUES = durationsFromStrings(WHEEL_DURATION_STRINGS);
 	
 	private final static String[] WHEEL_DISTANCE_STRINGS = new String[]{
 		"0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9",
@@ -135,7 +123,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		"90", "91", "92", "93", "94", "95", "96", "97", "98", "99",
 		"∞"
 	};
-	private final static Double[] WHEEL_DISTANCE_VALUES = distancesFromStrings(WHEEL_DISTANCE_STRINGS, JsonWorkout.INFINITE_DISTANCE);
+	private final static Double[] WHEEL_DISTANCE_VALUES = distancesFromStrings(WHEEL_DISTANCE_STRINGS);
 
 	private final static int findClosestIndex(double value, Double[] candidates) {
 		double  minDiff = 99999999.0;
@@ -496,12 +484,12 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 				duration = Util.durationFromString(durationStr);
 				if (duration < 0.0) throw new Exception("Failed to parse duration " + durationStr);
 			}
-			double fastTargetPace = JsonWorkout.NO_FAST_TARGET_PACE;
+			double fastTargetPace = 0.0;
 			if (!fastTargetPaceStr.isEmpty()) {
 				fastTargetPace = Util.paceFromString(fastTargetPaceStr);
 				if (fastTargetPace < 0.0) throw new Exception("Failed to parse pace " + fastTargetPaceStr);
 			}
-			double slowTargetPace = JsonWorkout.NO_SLOW_TARGET_PACE;
+			double slowTargetPace = Util.INFINITE_PACE;
 			if (!slowTargetPaceStr.isEmpty()) {
 				slowTargetPace = Util.paceFromString(slowTargetPaceStr);
 				if (slowTargetPace < 0.0) throw new Exception("Failed to parse pace " + fastTargetPaceStr);
@@ -552,8 +540,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			mPaint.setStyle(Paint.Style.FILL);
 			final StringBuilder b = mTmpStringBuilder;
 			b.setLength(0);
-			JsonWorkout.addIntervalToDisplayStringTo(mDuration, mDistance, mFastTargetPace, mSlowTargetPace, b);
-			Log.d(TAG, "TEXT: " + b.toString());
+			JsonWorkout.intervalToDisplayString(mDuration, mDistance, mFastTargetPace, mSlowTargetPace, b);
 			mPaint.setColor(0xffffffff);
 			canvas.drawText(b.toString(), x + 2 * SCREEN_DENSITY, y + 25 * SCREEN_DENSITY, mPaint);
 			canvas.drawBitmap(BITMAP_REMOVE, x + getWidth() - 30 * SCREEN_DENSITY, y, mPaint);

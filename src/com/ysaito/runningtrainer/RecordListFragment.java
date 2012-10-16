@@ -166,11 +166,18 @@ public class RecordListFragment extends ListFragment {
 		startListing();
 	}
 
+	private int mNumBackgroundTasksRunning = 0;
 	private void startBusyThrob() {
-		getActivity().setProgressBarIndeterminateVisibility(true);
+		if (mNumBackgroundTasksRunning == 0) {
+			getActivity().setProgressBarIndeterminateVisibility(true);
+		}
+		++mNumBackgroundTasksRunning;
 	}
 	private void stopBusyThrob() {
-		getActivity().setProgressBarIndeterminateVisibility(false);
+		--mNumBackgroundTasksRunning;
+		if (mNumBackgroundTasksRunning == 0) {
+			getActivity().setProgressBarIndeterminateVisibility(false);
+		}
 	}
 	
 	private void startListing() {

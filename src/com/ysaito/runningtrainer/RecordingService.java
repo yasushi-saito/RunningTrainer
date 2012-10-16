@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -231,12 +233,12 @@ public class RecordingService extends Service {
     			if (text != null) {
     				double nowSeconds = System.currentTimeMillis() / 1000.0;
     				if (!text.equals(mLastPaceAlertText)) {
-    					speak(text, null);
+    					speak(text + ";<300>;" + Util.paceToSpeechText(pace), null);
     					mLastPaceAlertText = text;
     					mLastPaceAlertTime = nowSeconds;
     					mLastPaceAlertIntervalSeconds = 5.0;
     				} else if (mLastPaceAlertTime + mLastPaceAlertIntervalSeconds < nowSeconds) {
-    					speak(text, null);
+    					speak(text + ";<300>;" + Util.paceToSpeechText(pace), null);
     					mLastPaceAlertText = text;
     					mLastPaceAlertTime = nowSeconds;
     					mLastPaceAlertIntervalSeconds = Math.min(
@@ -387,8 +389,8 @@ public class RecordingService extends Service {
         		mTtsReady = true;
         		mTts.setLanguage(Locale.US);
         		if (mQueuedSpeechRequests.size() > 0) {
-        			for (String s : mQueuedSpeechRequests) {
-        				speak(s, null);
+        			for (String r : mQueuedSpeechRequests) {
+        				speak(r, null);
         			}
         			mQueuedSpeechRequests.clear();
         		}
@@ -417,6 +419,9 @@ public class RecordingService extends Service {
 	private interface SpeakDoneListener {
 		public void onDone();
 	}
+	
+	private static final Pattern RE_PAUSE = Pattern.compile("^<([0-9]+)>$");
+	
 	/**
 	 * Speak "text". If @p listener != null, invoke listener.onDone() after utterance is made.
 	 *
@@ -432,7 +437,19 @@ public class RecordingService extends Service {
 		if (!mTtsReady) {
 			mQueuedSpeechRequests.add(text);
 		} else {
-			mTts.speak(text, TextToSpeech.QUEUE_ADD, params);
+			String[] tokens = text.split(";");
+			for (int i = 0; i < tokens.length; ++i) {
+				String token = tokens[i];
+				Matcher m = RE_PAUSE.matcher(token);
+				if (m.matches()) {
+					int pauseMillis = Integer.parseInt(m.group(1));
+					mTts.playSilence(pauseMillis, TextToSpeech.QUEUE_ADD, 
+							(i == tokens.length - 1 ? params : null));
+				} else {
+					mTts.speak(token, TextToSpeech.QUEUE_ADD, 
+							(i == tokens.length - 1 ? params : null));
+				}
+			}
 		}
 	}
 

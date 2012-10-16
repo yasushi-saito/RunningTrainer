@@ -40,7 +40,6 @@ public class WorkoutListFragment extends ListFragment {
 	}
 	private Stack<UndoEntry> mUndos = new Stack<UndoEntry>();
 	
-	
 	static final String NEW_WORKOUT = "+ New Workout";
 	
 	private class MyAdapter extends BaseAdapter {
@@ -153,15 +152,29 @@ public class WorkoutListFragment extends ListFragment {
 		startListing();
 	}
 	
+	private int mNumBackgroundTasksRunning = 0;
+	private void startBusyThrob() {
+		if (mNumBackgroundTasksRunning == 0) {
+			getActivity().setProgressBarIndeterminateVisibility(true);
+		}
+		++mNumBackgroundTasksRunning;
+	}
+	private void stopBusyThrob() {
+		--mNumBackgroundTasksRunning;
+		if (mNumBackgroundTasksRunning == 0) {
+			getActivity().setProgressBarIndeterminateVisibility(false);
+		}
+	}
+	
+	
 	private void startListing() {
-		getActivity().setProgressBarIndeterminateVisibility(true);
-		
+		startBusyThrob();
 		FileManager.runAsync(new FileManager.AsyncRunner<ArrayList<FileManager.ParsedFilename>>() {
 			public ArrayList<FileManager.ParsedFilename> doInThread() throws Exception {
 				return FileManager.listFiles(mWorkoutDir);
 			}
 			public void onFinish(Exception error, ArrayList<ParsedFilename> files) {
-				getActivity().setProgressBarIndeterminateVisibility(false);
+				stopBusyThrob();
 				if (files == null) {
 					files = new ArrayList<FileManager.ParsedFilename>();
 				}
