@@ -726,6 +726,10 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 	private Stack<Repeats> mUndos = new Stack<Repeats>();
 	private Repeats mRoot = new Repeats(1);
 
+	public void saveAndExit() {
+		
+	}
+	
 	public void undo() {
 		if (mUndos.empty()) return;
 		Repeats newRoot =  mUndos.pop();

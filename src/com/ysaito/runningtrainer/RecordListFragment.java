@@ -27,8 +27,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 /**
- * Activity that lists available game logs.
- *
+ * A fragment that displays list of completed activities. Clicking on the activity name will display
+ * a RecordReplayFragment, which contains MapView and the lap stats.
  */
 public class RecordListFragment extends ListFragment {
 	private static final String TAG = "RecordListFragment";
@@ -54,13 +54,13 @@ public class RecordListFragment extends ListFragment {
 
     	public void sort(Comparator<FileManager.ParsedFilename> comparator) {
     		Collections.sort(mRecords, comparator);
+			notifyDataSetChanged();
     	}
     	
 		public void reset(ArrayList<FileManager.ParsedFilename> newRecords) {
 			mRecords.clear();
 			mRecords.addAll(newRecords);
 			sort(COMPARE_BY_START_TIME);
-			notifyDataSetChanged();
 		}
 
 		public View getView(final int position, View convertView, ViewGroup parent) {

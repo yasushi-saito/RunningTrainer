@@ -18,7 +18,7 @@
             android:layout_marginRight="5dip"
             android:background="@drawable/start_stop_button"
             android:text="New"
-            android:textSize="16sp" />
+            android:textSize="18sp" />
 
         <Button
             android:id="@+id/new_repeats_button"
@@ -29,18 +29,7 @@
             android:layout_weight="1"
             android:background="@drawable/start_stop_button"
             android:text="Repeats"
-            android:textSize="16sp" />
-
-        <Button
-            android:id="@+id/save_button"
-            android:layout_weight="1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="5dip"
-            android:layout_marginRight="5dip"
-            android:background="@drawable/start_stop_button"
-            android:text="Save"
-            android:textSize="16sp" />
+            android:textSize="18sp" />
 
     </LinearLayout>
 

@@ -10,8 +10,6 @@ package com.ysaito.runningtrainer;
 
 /**
  * TODO: show GPS strength
- * TODO: during interval training, read the pace out when too fast or too slow.
- * TODO: slow down. Pause speakouts.
  * TODO: elevation gain and loss should be in feets, not miles
  * TODO: enable/disable dependent settings
  * TODO: satellite/map view mode value should be process-global.

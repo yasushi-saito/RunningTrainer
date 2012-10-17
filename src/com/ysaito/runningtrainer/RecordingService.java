@@ -199,7 +199,12 @@ public class RecordingService extends Service {
     // Used to perform auto lapping.
     private long mLapStartDistance = 0;
 
-    private String mLastPaceAlertText = null;
+    private static final String ON_TARGET = "On target";
+    private static final String FASTER = "Faster";
+    private static final String SLOWER = "Slower";
+    private static final double MIN_PACE_ALERT_INTERVAL_SECONDS = 10.0;
+    
+    private String mLastPaceAlertText = ON_TARGET;
     private double mLastPaceAlertTime = 0.0;
     private double mLastPaceAlertIntervalSeconds = 5.0;
     
@@ -223,33 +228,31 @@ public class RecordingService extends Service {
     			newLap = true;
     		} else {
     			final double pace = mLapStats.getPace();
-    			String text = null;
+    			String text = ON_TARGET;
     			if (pace > currentWorkout.slowTargetPace) {
-    				text = "Faster";
+    				text = FASTER;
     			} else if (pace != 0.0 && pace < currentWorkout.fastTargetPace) {
     				// Pace==0.0 if no movement. Shut up in that case
-    				text = "Slower";
+    				text = SLOWER;
     			} 
-    			if (text != null) {
-    				double nowSeconds = System.currentTimeMillis() / 1000.0;
-    				if (!text.equals(mLastPaceAlertText)) {
+    			double nowSeconds = System.currentTimeMillis() / 1000.0;
+    			if (text != mLastPaceAlertText) {
+    				if (mLastPaceAlertTime + MIN_PACE_ALERT_INTERVAL_SECONDS < nowSeconds) {
     					speak(text + ";<300>;" + Util.paceToSpeechText(pace), null);
     					mLastPaceAlertText = text;
     					mLastPaceAlertTime = nowSeconds;
-    					mLastPaceAlertIntervalSeconds = 5.0;
-    				} else if (mLastPaceAlertTime + mLastPaceAlertIntervalSeconds < nowSeconds) {
+    					mLastPaceAlertIntervalSeconds = MIN_PACE_ALERT_INTERVAL_SECONDS; 
+    				}
+    			} else if (text == ON_TARGET) {
+    				;
+    			} else {
+    				if (mLastPaceAlertTime + mLastPaceAlertIntervalSeconds < nowSeconds) {
     					speak(text + ";<300>;" + Util.paceToSpeechText(pace), null);
     					mLastPaceAlertText = text;
     					mLastPaceAlertTime = nowSeconds;
     					mLastPaceAlertIntervalSeconds = Math.min(
     							mLastPaceAlertIntervalSeconds * 1.5,
     							30.0);
-    				}
-    			} else {
-    				if (mLastPaceAlertText != null) {
-    					// Speak "on target" just once
-    					speak("On target", null);
-    					mLastPaceAlertText = null;
     				}
     			}
     		}

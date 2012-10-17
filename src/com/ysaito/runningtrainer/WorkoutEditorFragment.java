@@ -54,8 +54,48 @@ public class WorkoutEditorFragment extends Fragment {
 		case R.id.workout_editor_undo:
 			mCanvas.undo();
 			return true;
+		case R.id.workout_editor_save:
+			saveAndExit();
+			return true;
 		}
 		return false;
+	}
+
+	private final void saveAndExit() { 
+		final long workoutId = mWorkout.id;
+		final JsonWorkout newWorkout = mCanvas.getWorkout();
+		
+		// the workout will be of "Repeats" type, so make it into a "Root" type
+		// TODO: this probably isn't necessary.
+		newWorkout.type = JsonWorkout.TYPE_REPEATS;
+		newWorkout.repeats = 1; 
+		newWorkout.name = mWorkoutNameEditor.getText().toString();
+		newWorkout.id = workoutId;
+
+		final ParsedFilename newF = new ParsedFilename();
+		newF.putLong(FileManager.KEY_WORKOUT_ID, newWorkout.id);
+		newF.putString(FileManager.KEY_WORKOUT_NAME, FileManager.sanitizeString(newWorkout.name));
+		final String newBasename = newF.getBasename();
+		
+		FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
+			public Void doInThread() throws Exception {
+				FileManager.writeJson(mWorkoutDir, newBasename, newWorkout);
+				
+				// Delete the old file(s) for the same workout
+				ArrayList<ParsedFilename> files = FileManager.listFiles(mWorkoutDir);
+				for (FileManager.ParsedFilename other : files) {
+					if (other.getLong(FileManager.KEY_WORKOUT_ID, -1) == workoutId &&
+							!other.getBasename().equals(newBasename)) {
+						FileManager.deleteFile(mWorkoutDir, other.getBasename());
+					}
+				}
+				return null;
+			}
+			public void onFinish(Exception error, Void unused) {
+				if (error != null) Util.error(getActivity(), "Failed to delete old files: " + error);
+				showWorkoutListFragment();
+			}
+		});
 	}
 	
 	@Override 
@@ -68,47 +108,7 @@ public class WorkoutEditorFragment extends Fragment {
 		mWorkoutNameEditor = (EditText)view.findViewById(R.id.edit_workout_name);
         mCanvas = (WorkoutCanvasView)view.findViewById(R.id.canvas);
 
-        Button button = (Button)view.findViewById(R.id.save_button);
-        button.setOnClickListener(new Button.OnClickListener() {
-        	public void onClick(View v) {
-        		final long workoutId = mWorkout.id;
-        		final JsonWorkout newWorkout = mCanvas.getWorkout();
-		
-        		// the workout will be of "Repeats" type, so make it into a "Root" type
-        		// TODO: this probably isn't necessary.
-        		newWorkout.type = JsonWorkout.TYPE_REPEATS;
-        		newWorkout.repeats = 1; 
-        		newWorkout.name = mWorkoutNameEditor.getText().toString();
-        		newWorkout.id = workoutId;
-
-        		final ParsedFilename newF = new ParsedFilename();
-        		newF.putLong(FileManager.KEY_WORKOUT_ID, newWorkout.id);
-        		newF.putString(FileManager.KEY_WORKOUT_NAME, FileManager.sanitizeString(newWorkout.name));
-        		final String newBasename = newF.getBasename();
-
-        		FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
-					public Void doInThread() throws Exception {
-						FileManager.writeJson(mWorkoutDir, newBasename, newWorkout);
-						
-						// Delete the old file(s) for the same workout
-						ArrayList<ParsedFilename> files = FileManager.listFiles(mWorkoutDir);
-						for (FileManager.ParsedFilename other : files) {
-							if (other.getLong(FileManager.KEY_WORKOUT_ID, -1) == workoutId &&
-									!other.getBasename().equals(newBasename)) {
-								FileManager.deleteFile(mWorkoutDir, other.getBasename());
-							}
-						}
-						return null;
-					}
-					public void onFinish(Exception error, Void unused) {
-						if (error != null) Util.error(getActivity(), "Failed to delete old files: " + error);
-						showWorkoutListFragment();
-					}
-        		});
-        	}
-        });
-        
-        button = (Button)view.findViewById(R.id.new_interval_button);
+        Button button = (Button)view.findViewById(R.id.new_interval_button);
         button.setOnClickListener(new Button.OnClickListener() {
         	public void onClick(View v) {
         		mCanvas.addNewInterval();

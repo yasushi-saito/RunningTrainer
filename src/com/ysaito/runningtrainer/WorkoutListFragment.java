@@ -40,8 +40,6 @@ public class WorkoutListFragment extends ListFragment {
 	}
 	private Stack<UndoEntry> mUndos = new Stack<UndoEntry>();
 	
-	static final String NEW_WORKOUT = "+ New Workout";
-	
 	private class MyAdapter extends BaseAdapter {
     	private final LayoutInflater mInflater;
     	private final ArrayList<FileManager.ParsedFilename> mRecords = new ArrayList<FileManager.ParsedFilename>();
@@ -65,17 +63,13 @@ public class WorkoutListFragment extends ListFragment {
 			view.setText(b.toString());
 			
 			final ImageView deleteView = (ImageView)layout.findViewById(R.id.workout_list_row_delete);
-			if (name.equals(NEW_WORKOUT)) {
-				deleteView.setVisibility(View.GONE);
-			} else {
-				deleteView.setVisibility(View.VISIBLE);
-				deleteView.setOnClickListener(new View.OnClickListener() {
-					public void onClick(View v) {
-						// TODO Auto-generated method stub
-						deleteWorkoutAtPosition(position);
-					}
-				});
-			}
+			deleteView.setVisibility(View.VISIBLE);
+			deleteView.setOnClickListener(new View.OnClickListener() {
+				public void onClick(View v) {
+					// TODO Auto-generated method stub
+					deleteWorkoutAtPosition(position);
+				}
+			});
 			return layout;
 		}
 
@@ -96,11 +90,6 @@ public class WorkoutListFragment extends ListFragment {
 		public void reset(ArrayList<FileManager.ParsedFilename> newRecords) {
 			mRecords.clear();
 			mRecords.addAll(newRecords);
-			final FileManager.ParsedFilename newWorkout = new FileManager.ParsedFilename();
-			newWorkout.putLong(FileManager.KEY_WORKOUT_ID, -1);
-			newWorkout.putString(FileManager.KEY_WORKOUT_NAME, NEW_WORKOUT);
-			mRecords.add(newWorkout);
-			
 			notifyDataSetChanged();
 		}
 	};
@@ -195,28 +184,18 @@ public class WorkoutListFragment extends ListFragment {
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		final FileManager.ParsedFilename f = (FileManager.ParsedFilename)mAdapter.getItem(position);
 		if (f == null) return;
-		if (f.getString(FileManager.KEY_WORKOUT_NAME, "unknown").equals(NEW_WORKOUT)) {
-			JsonWorkout workout = new JsonWorkout();
-			workout.id = System.currentTimeMillis() / 1000;
-			workout.name = "Unnamed Workout";
-			workout.type = JsonWorkout.TYPE_REPEATS;
-			workout.repeats = 1;
-			workout.children = new JsonWorkout[0];
-			startWorkoutEditor(workout);
-		} else {
-			FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
-				public JsonWorkout doInThread() throws Exception {
-					return FileManager.readJson(mWorkoutDir, f.getBasename(), JsonWorkout.class);
+		FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
+			public JsonWorkout doInThread() throws Exception {
+				return FileManager.readJson(mWorkoutDir, f.getBasename(), JsonWorkout.class);
+			}
+			public void onFinish(Exception error, JsonWorkout workout) {
+				if (error != null) {
+					Util.error(mActivity,  "Failed to read file : " + f.getBasename() + ": " + error);
+					return;
 				}
-				public void onFinish(Exception error, JsonWorkout workout) {
-					if (error != null) {
-						Util.error(mActivity,  "Failed to read file : " + f.getBasename() + ": " + error);
-						return;
-					}
-					startWorkoutEditor(workout);
-				}
-			});
-		}
+				startWorkoutEditor(workout);
+			}
+		});
 	}
 	
 	@Override
@@ -228,6 +207,16 @@ public class WorkoutListFragment extends ListFragment {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
+		case R.id.workout_list_new: {
+			JsonWorkout workout = new JsonWorkout();
+			workout.id = System.currentTimeMillis() / 1000;
+			workout.name = "Unnamed Workout";
+			workout.type = JsonWorkout.TYPE_REPEATS;
+			workout.repeats = 1;
+			workout.children = new JsonWorkout[0];
+			startWorkoutEditor(workout);
+			break;
+		}
 		case R.id.workout_list_undo:
 			if (mUndos.empty()) break;
 			final UndoEntry undo = mUndos.pop();
