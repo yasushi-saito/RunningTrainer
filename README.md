@@ -1,4 +1,4 @@
 RunningTrainer
 ==============
 
-running trainer
+running trainer.
