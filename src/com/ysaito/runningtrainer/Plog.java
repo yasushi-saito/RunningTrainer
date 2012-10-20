@@ -112,12 +112,14 @@ public class Plog {
 	
 	private static Buffer mBuffer;
 	
-	public static void Init(Context context, double flushInterval) {
-		mBuffer = new Buffer(FileManager.getLogDir(context), flushInterval);
-		// Read and dump the system log contents. This will catch the stack trace of
-		// any previous crash of this process, if any. This is needed, because starting
-		// from Jellybean, a log-cat app cannot see other app's logs.
-		readSystemLog();
+	public static void init(Context context) {
+		if (mBuffer == null) {
+			mBuffer = new Buffer(FileManager.getLogDir(context), 4.0);
+			// Read and dump the system log contents. This will catch the stack trace of
+			// any previous crash of this process, if any. This is needed, because starting
+			// from Jellybean, a log-cat app cannot see other app's logs.
+			readSystemLog();
+		}
 	}
 
 	private static void readSystemLog() {

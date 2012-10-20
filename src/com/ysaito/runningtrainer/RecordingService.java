@@ -347,6 +347,7 @@ public class RecordingService extends Service {
 	@Override
 	public void onCreate() {
     	Plog.d(TAG, "onCreate");
+    	Plog.init(getApplicationContext());
 		Settings.Initialize(getApplicationContext());
         mNM = (NotificationManager)getSystemService(NOTIFICATION_SERVICE);
 
@@ -535,7 +536,7 @@ public class RecordingService extends Service {
 	        mNM.notify(1, notification);
 			updateTimer();
 		}
-		return START_STICKY;
+		return START_NOT_STICKY;
 	}
 	
 	private void onGpsLocationUpdate(long now, Location newLocation) {

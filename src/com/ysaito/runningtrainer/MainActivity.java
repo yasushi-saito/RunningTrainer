@@ -81,7 +81,7 @@ public class MainActivity extends Activity {
 		}
 		
 		ActionBar.Tab tab = getActionBar().newTab();
-		MyTabListener listener = new MyTabListener(this, fragment);
+		MyTabListener listener = new MyTabListener(this, tabText, fragment);
 		mTabs.put(tabText, listener);
 		tab.setText(tabText);
 		tab.setTabListener(listener);
@@ -97,7 +97,7 @@ public class MainActivity extends Activity {
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
-    	Plog.Init(this, 8.0);
+    	Plog.init(getApplicationContext());
     	Plog.d(TAG, "onCreate");
     	super.onCreate(savedInstanceState);
     	
@@ -166,10 +166,12 @@ public class MainActivity extends Activity {
 
     public static class MyTabListener implements ActionBar.TabListener {
         private final MainActivity mActivity;
+        private final String mName;
         private Fragment mFragment = null;
-
-        public MyTabListener(MainActivity activity, Fragment fragment) {
+        
+        public MyTabListener(MainActivity activity, String name, Fragment fragment) {
         	mActivity = activity;
+        	mName = name;
         	mFragment = fragment;
         }
 
@@ -179,10 +181,12 @@ public class MainActivity extends Activity {
         	ft.detach(mFragment);
 			ft.attach(fragment);
 			ft.commit();
+			Plog.d(TAG, "TabSetFragment[" + mName + "]: " + mFragment.toString() + "->" + fragment.toString());
         	mFragment = fragment;
         }
         
         public void onTabSelected(Tab tab, FragmentTransaction ft) {
+			Plog.d(TAG, "TabSelected[" + mName + "]");
         	for (HashMap.Entry<String, Fragment> entry : mActivity.mFragments.entrySet()) {
         		Fragment frag = entry.getValue();
         		if (frag != mFragment) ft.detach(frag);
@@ -192,13 +196,11 @@ public class MainActivity extends Activity {
         }
 
         public void onTabUnselected(Tab tab, FragmentTransaction ft) {
+        	Plog.d(TAG, "TabUnselected[" + mName + "]");
         	// ft.detach(mFragment);
         }
 
         public void onTabReselected(Tab tab, FragmentTransaction ft) {
         }
     }
-
-    
-
 }
