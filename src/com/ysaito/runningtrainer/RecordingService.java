@@ -328,7 +328,7 @@ public class RecordingService extends Service {
 	private double mStartTime = -1.0;
 	
 	// List of gps points recorded so far.
-	private Util.PathAggregator mPath = null;
+	private PathAggregator mPath = null;
 	
 	// Stats since the beginning of the activity. */
 	private LapStats mTotalStats = null;
@@ -501,7 +501,7 @@ public class RecordingService extends Service {
 		} else {
 			JsonWorkout workout = (JsonWorkout)intent.getSerializableExtra("workout");
 			speak("started", null);
-			mPath = new Util.PathAggregator();
+			mPath = new PathAggregator(Settings.autoPauseDetection, Settings.smoothGps);
 			mTotalStats = new LapStats();
 			mLapStats = new LapStats();
 			mStartTime = System.currentTimeMillis() / 1000.0;
@@ -541,7 +541,7 @@ public class RecordingService extends Service {
 	
 	private void onGpsLocationUpdate(long now, Location newLocation) {
 		if (mStarted) {
-			Util.PathAggregatorResult result = mPath.addLocation(
+			PathAggregator.Result result = mPath.addLocation(
 					System.currentTimeMillis() / 1000.0,
 					newLocation.getLatitude(),
 					newLocation.getLongitude(),
@@ -572,7 +572,7 @@ public class RecordingService extends Service {
 					latitude = lastWgs.latitude;
 					longitude = lastWgs.longitude;
 				}
-				Util.PathAggregatorResult result = mPath.addLocation(now, latitude, longitude, lastWgs.altitude);
+				PathAggregator.Result result = mPath.addLocation(now, latitude, longitude, lastWgs.altitude);
 				Log.d(TAG, "ADD: " + latitude + " " + lastWgs.latitude + " r=" + result);
 				handleResult(result);
 				++mNumFakeInputs;
@@ -581,7 +581,7 @@ public class RecordingService extends Service {
 		}
 	}
 
-	private void handleResult(Util.PathAggregatorResult result) {
+	private void handleResult(PathAggregator.Result result) {
 		if (result.pauseType == Util.PauseType.RUNNING) {
 			mTotalStats.onGpsUpdate(result.absTime, result.deltaDistance);
 			mLapStats.onGpsUpdate(result.absTime, result.deltaDistance);

@@ -19,4 +19,19 @@ public class JsonActivity {
     public Boolean post_to_facebook;
     public Boolean post_to_twitter;
     public Boolean detect_pauses;
+    
+    public JsonActivity() { }
+    public JsonActivity(JsonActivity other) {
+    	type = other.type;
+    	equipment = other.equipment;
+    	start_time = other.start_time;
+    	total_distance = other.total_distance;
+    	duration = other.duration;
+    	notes = other.notes;
+    	path = new JsonWGS84[other.path.length];
+    	for (int i = 0; i < other.path.length; ++i) path[i] = new JsonWGS84(other.path[i]);
+    	post_to_facebook = other.post_to_facebook;
+    	post_to_twitter = other.post_to_twitter;
+    	detect_pauses = other.detect_pauses;
+    }
 }

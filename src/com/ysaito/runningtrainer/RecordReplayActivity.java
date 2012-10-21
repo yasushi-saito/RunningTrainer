@@ -15,6 +15,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -275,7 +276,36 @@ public class RecordReplayActivity extends MapActivity {
     public boolean isRouteDisplayed() { return false; }
     
     public void setRecord(JsonActivity record) {
-    	mRecord = record;
+    	Log.d(TAG, "SMOOTH2: " + Settings.smoothGps);
+    	if (Settings.smoothGps) {
+    		PathAggregator aggr = new PathAggregator(false /* no detect pauses*/, true /* smooth*/);
+    		double totalDistance = 0.0;
+    		for (JsonWGS84 point : record.path) {
+    			PathAggregator.Result result = aggr.addLocation(point.timestamp, point.latitude, point.longitude, point.altitude);
+    			totalDistance += result.deltaDistance;
+    		}
+    		mRecord = new JsonActivity(record);
+    		
+    		ArrayList<Util.Point> smoothedPath = aggr.getPath();
+    		mRecord.path = new JsonWGS84[smoothedPath.size()];
+    		double startTime = smoothedPath.get(0).absTime; 
+    		for (int i = 0; i < smoothedPath.size(); ++i) {
+    			JsonWGS84.PathMode mode;
+    			if (i == 0) {
+    				mode = JsonWGS84.PathMode.START;
+    			} else if (i == smoothedPath.size() - 1) {
+    				mode = JsonWGS84.PathMode.END;
+    			} else {
+    				mode = JsonWGS84.PathMode.MIDDLE;
+    			}
+    			mRecord.path[i] = JsonWGS84.fromPoint(smoothedPath.get(i), startTime, mode);
+    		}
+    		Log.d(TAG, "SMOOTH: " + totalDistance + "->" + mRecord.total_distance);
+    		mRecord.total_distance = totalDistance;
+    	} else {
+    		mRecord = record;
+    		Log.d(TAG, "NOSMOOTH: " + mRecord.total_distance);
+    	}
     	mMapOverlay.setPath(record.path);
     	Util.rescaleMapView(mMapView, mMapOverlay.getPoints());
     	mMapView.invalidate();

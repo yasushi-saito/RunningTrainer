@@ -17,7 +17,6 @@ import android.widget.Button;
 import android.widget.EditText;
 
 public class WorkoutEditorFragment extends Fragment {
-	@SuppressWarnings("unused")
 	private final String TAG = "WorkoutEditor";
 	private File mWorkoutDir;
 	private EditText mWorkoutNameEditor;

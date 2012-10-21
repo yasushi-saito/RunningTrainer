@@ -506,24 +506,15 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     			// Copy the path entries out
     			record.path = new JsonWGS84[status.path.size()];
     			for (int i = 0; i < status.path.size(); ++i) {
-    				JsonWGS84 wgs = new JsonWGS84();
-    				Util.Point point = status.path.get(i);
-    				record.path[i] = wgs;
-    				wgs.latitude = point.latitude;
-    				wgs.longitude = point.longitude;
-    				wgs.altitude = point.altitude;
-    				wgs.timestamp = point.absTime - status.startTime;
+    				JsonWGS84.PathMode mode;
     				if (i == 0) {
-    					wgs.type = "start";
+    					mode = JsonWGS84.PathMode.START;
     				} else if (i == status.path.size() - 1) {
-    					wgs.type = "end";
-    				} else if (point.type == Util.PauseType.PAUSE_STARTED) {
-    					wgs.type = "pause";
-    				} else if (point.type == Util.PauseType.PAUSE_ENDED) {
-    					wgs.type = "resume";
+    					mode = JsonWGS84.PathMode.END;
     				} else {
-    					wgs.type = "gps";
+    					mode = JsonWGS84.PathMode.MIDDLE;
     				}
+    				record.path[i] = JsonWGS84.fromPoint(status.path.get(i), status.startTime, mode);
     			}
     			record.duration = (status.path.get(status.path.size() - 1).absTime - status.path.get(0).absTime);
     			

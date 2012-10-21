@@ -24,6 +24,11 @@
        android:key="auto_pause_detection"
        android:title="Automatic pause detection" />
    
+   <CheckBoxPreference
+       android:defaultValue="true"
+       android:key="smooth_gps"
+       android:title="Smooth GPS values" />
+   
   <PreferenceScreen
     android:key="pref_key_display_settings"
     android:title="Display settings" >

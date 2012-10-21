@@ -50,7 +50,8 @@ public class Settings {
 	static public SpeechTypes speakTimeTypes = new SpeechTypes();	
 	static public SpeechTypes speakOnLapTypes = new SpeechTypes();		
 	static public boolean fakeGps;
-	static public boolean autoPauseDetection;	
+	static public boolean autoPauseDetection;
+	static public boolean smoothGps;
 	private static SharedPreferences mPrefs;
 	private static SharedPreferences.OnSharedPreferenceChangeListener mListener;
 	private static Context mContext;
@@ -82,6 +83,8 @@ public class Settings {
 			for (int i = 0; i < 6; ++i) onChange("display" + i);
 			onChange("autolap_distance_interval");
 			onChange("fake_gps");
+			onChange("smooth_gps");
+			onChange("auto_pause_detection");
 			onChange("speak_distance_interval");
 			onChange("speak_distance_total_distance");
 			onChange("speak_distance_total_duration");
@@ -133,6 +136,8 @@ public class Settings {
 			fakeGps = mPrefs.getBoolean(key, false);
 		} else if (key.equals("auto_pause_detection")) {
 			autoPauseDetection = mPrefs.getBoolean(key, false);
+		} else if (key.equals("smooth_gps")) {
+			smoothGps = mPrefs.getBoolean(key, false);
 		} else if (key.equals("autolap_distance_interval")) {
 			autoLapDistanceInterval = Double.parseDouble(mPrefs.getString("autolap_distance_interval", "0"));
 		} else if (key.equals("speak_time_interval")) {

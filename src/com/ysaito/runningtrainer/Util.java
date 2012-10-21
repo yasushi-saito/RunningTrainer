@@ -109,126 +109,6 @@ public class Util {
 		final double altitude;
 	}
 	
-	public static class PathAggregatorResult {
-		public PauseType pauseType;
-		
-		// The number of meters moved since the last call to addLocation. >0 only when pauseType == {RUNNING,PAUSE_ENDED}
-		public double deltaDistance;
-		
-		// If pauseType=={RUNNING, PAUSE_ENDED}, the current duration, as the # of wall seconds since 1970/1/1
-		// If pauseType==PAUSE_CONTINUING, the value is 0.
-		//
-		// If pauseType==PAUSE_STARTED, this is the time pause started, as the # of wall seconds since 1970/1/1
-		// The pause-start time may be in the past.
-		public double absTime;
-		
-		@Override public String toString() {
-			String t = "";
-			if (pauseType == PauseType.RUNNING) t = "running";
-			if (pauseType == PauseType.PAUSE_STARTED) t = "pause_started";
-			if (pauseType == PauseType.PAUSE_CONTINUING) t = "pause_continuing";			
-			if (pauseType == PauseType.PAUSE_ENDED) t = "pause_ended";						
-			return String.format("pause=%s delta=%f time=%f", t, deltaDistance, absTime);
-		}
-	}
-		
-	static public class PathAggregator {
-		private float[] mTmp = new float[1];
-		private final ArrayList<Point> mPath = new ArrayList<Point>();
-		
-		private boolean mPaused = false;
-		private double mPauseEndTime = -1.0;
-		
-		public static final double PAUSE_DETECTION_WINDOW_SECONDS = 10.0; 
-		public static final double PAUSE_MAX_DISTANCE = 4.0;
-		public static final double JUMP_DETECTION_MIN_PACE = 1.5 * 60 / 1000.0;
-		/**
-		 * @param timestamp Number of seconds elapsed since the start of the activity (not adjusted for pause time)
-		 */
-		public PathAggregatorResult addLocation(
-			double absTime, double latitude, double longitude, double altitude) {
-			PathAggregatorResult r = new PathAggregatorResult();
-			r.pauseType = Util.PauseType.RUNNING;
-
-			if (mPath.size() == 0) {
-				mPauseEndTime = absTime;
-			} else {
-				Point lastLocation = mPath.get(mPath.size() - 1);
-				Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
-						latitude, longitude, mTmp);
-				double pace = (absTime - lastLocation.absTime) / mTmp[0];
-				if (pace < JUMP_DETECTION_MIN_PACE) {
-					// Large jump detected. Ignore the GPS reading.
-					r.absTime = absTime;
-					r.pauseType = (mPaused ? PauseType.RUNNING : PauseType.PAUSE_CONTINUING);
-					r.deltaDistance = 0.0;
-					return r;
-				}
-			}
-
-			if (!mPaused) {
-				// Currently in running mode. Detect a pause when:
-				// (1) at least 10 seconds passed since the last resumption. 
-				// (2) every GPS report in the last 10 seconds is within 5 meters of the current location.
-				//
-				// The condition (1) is needed to pausing too often when GPS is noisy.
-				if (Settings.autoPauseDetection && absTime >= mPauseEndTime + PAUSE_DETECTION_WINDOW_SECONDS) {
-					for (int i = mPath.size() - 1; i >= 0; --i) {
-						final Point location = mPath.get(i);
-						Location.distanceBetween(location.latitude, location.longitude,
-								latitude, longitude, mTmp);
-						final double distance = mTmp[0];
-						if (distance >= PAUSE_MAX_DISTANCE) {
-							// The user moved. 
-							break;
-						}
-						if (absTime - location.absTime >= PAUSE_DETECTION_WINDOW_SECONDS) {
-							mPaused = true;
-							// Remove all the elements after the @p location, since they are part of the pause
-							while (mPath.size() > i + 1) mPath.remove(mPath.size() - 1);
-							mPath.add(new Point(PauseType.PAUSE_STARTED, location.absTime, location.latitude, location.longitude, location.altitude));
-							r.pauseType = Util.PauseType.PAUSE_STARTED;
-							r.absTime = location.absTime;
-							return r;
-						}
-					}
-				}
-			} else  {
-				// Currently paused. Detect resumption.
-				Point lastLocation = mPath.get(mPath.size() - 1);
-				Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
-						latitude, longitude, mTmp);
-				final double distance = mTmp[0];
-				if (distance < PAUSE_MAX_DISTANCE) {
-					r.pauseType = Util.PauseType.PAUSE_CONTINUING;
-					return r;
-				} 
-				r.pauseType = Util.PauseType.PAUSE_ENDED;
-				mPaused = false;
-				mPauseEndTime = absTime;
-				// Fallthrough
-			}
-
-			if (mPath.size() > 0) {
-				Point lastLocation = mPath.get(mPath.size() - 1);
-				Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
-						latitude, longitude,
-						mTmp);
-				r.deltaDistance = mTmp[0];
-			}
-			r.absTime = absTime;
-			mPath.add(new Point(r.pauseType, absTime, latitude, longitude, altitude));
-			return r;
-		}
-		
-		/**
-		 * Return the list of locations visited during the activity, in time series order. 
-		 * Locations during pauses are removed.
-		 */
-		public ArrayList<Point> getPath() { 
-			return mPath; 
-		}
-	}
 
 	/**
 	 * Crash the program after displaying a message
@@ -489,7 +369,6 @@ public class Util {
 				lap.location = location;
 				laps.add(lap);
 				lastLap = thisLap;
-				Log.d(TAG, "LAP: " + lap.distance + "/" + lap.elapsedSeconds);
 			}
 		}
 		return laps;

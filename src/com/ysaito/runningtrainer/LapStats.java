@@ -3,11 +3,9 @@ package com.ysaito.runningtrainer;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 
-import android.location.Location;
 import android.util.Log;
 
 class LapStats {
-	@SuppressWarnings("unused")
 	private final String TAG = "LapStats";
 
 	// If mPauseCount > 0, we are currently in paused state. This not a enum, so that we can account
@@ -17,9 +15,6 @@ class LapStats {
 	// The time this lap started. Millisecs since 1970/1/1
 	private final double mLapStartTimeSeconds;
 	
-	// The time the activity started. Millisecs since 1970/1/1
-	private double mRecordStartTimeSeconds = 0.0;
-
 	// The last time "Resume" button was pressed. == mStartTime if resume was never pressed. Millisecs since 1970/1/1.
 	private double mLastResumeTime = 0.0;
 	
