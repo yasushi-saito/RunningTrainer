@@ -58,6 +58,7 @@ public class MainActivity extends Activity {
 		if (fragment == null) {
 		    fragment = Fragment.instantiate(this, className, null);
 		    FragmentTransaction ft = manager.beginTransaction();
+		    Plog.d(TAG, "New frag:" + fragment.toString());
 			ft.add(android.R.id.content, fragment, className);
 			ft.detach(fragment);
 			ft.commit();
@@ -99,7 +100,6 @@ public class MainActivity extends Activity {
 	@Override public void onPause() { super.onPause(); Plog.d(TAG, "onPause"); }
 	
 	private GpsStatusView mGpsStatusView;
-	private View mGpsTitleView;
 	
 	/**
 	 * 
@@ -108,10 +108,8 @@ public class MainActivity extends Activity {
 	public void setGpsStatus(double accuracy) {
 		if (accuracy >= GpsStatusView.HIDE_GPS_VIEW) {
 			mGpsStatusView.setVisibility(View.GONE);
-			mGpsTitleView.setVisibility(View.GONE);
 		} else {
 			mGpsStatusView.setVisibility(View.VISIBLE);
-			mGpsTitleView.setVisibility(View.VISIBLE);
 			mGpsStatusView.setAccuracy(accuracy);
 		}
 	}
@@ -130,7 +128,6 @@ public class MainActivity extends Activity {
         View barView = getLayoutInflater().inflate(
         		R.layout.action_bar_layout, null);
         mGpsStatusView = (GpsStatusView)barView.findViewById(R.id.action_bar_gps_status);
-        mGpsTitleView = barView.findViewById(R.id.action_bar_gps_title);
         setGpsStatus(GpsStatusView.HIDE_GPS_VIEW);
         
         bar.setCustomView(barView, 
@@ -226,10 +223,14 @@ public class MainActivity extends Activity {
         public void onTabSelected(Tab tab, FragmentTransaction ft) {
 			Plog.d(TAG, "TabSelected[" + mName + "]");
         	for (HashMap.Entry<String, Fragment> entry : mActivity.mFragments.entrySet()) {
-        		Fragment frag = entry.getValue();
-        		if (frag != mFragment) ft.detach(frag);
+        		Fragment fragment = entry.getValue();
+        		if (fragment != mFragment) {
+        			Plog.d(TAG, "Frag(detach):" + fragment.toString());
+        			ft.detach(fragment);
+        		}
         	}
         	
+        	Plog.d(TAG, "Frag(attach):" + mFragment.toString());
         	ft.attach(mFragment);
         }
 

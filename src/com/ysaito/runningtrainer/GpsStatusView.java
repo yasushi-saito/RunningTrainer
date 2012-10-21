@@ -46,6 +46,11 @@ public class GpsStatusView extends View {
 		final int width = this.getWidth();
 		final int height = this.getHeight();
 
+		mPaint.setTextSize(10 * SCREEN_DENSITY);
+		mPaint.setColor(0xffffffff);
+		mPaint.setStyle(Paint.Style.FILL);
+		canvas.drawText("GPS", 0, 10 * SCREEN_DENSITY, mPaint);
+		
 		if (mAccuracyMeters >= GPS_DISABLED) {
 			mPaint.setColor(0xffff0000);
 			mPaint.setStyle(Paint.Style.FILL);
@@ -53,26 +58,28 @@ public class GpsStatusView extends View {
 			return;
 		}
 		
+		float gap = width / 25;
 		if (mAccuracyMeters >= NO_GPS_STATUS) {
 			mPaint.setColor(0xffff0000);
 			mPaint.setStyle(Paint.Style.FILL);
-			canvas.drawRect(0, height, width / 6, height - height / 6, mPaint);
+			canvas.drawRect(gap, height, width / 5, height - height / 5, mPaint);
 			return;
 		}
 		mPaint.setColor(0xff00ff00);
 		mPaint.setStyle(Paint.Style.FILL);
-		canvas.drawRect(0, height, width * 1 / 6, height - height / 6, mPaint);
+		canvas.drawRect(0, height, width * 1 / 5, height - height / 5, mPaint);
 		
+		if (mAccuracyMeters <= 30.0) {
+			canvas.drawRect(width * 1 / 5 + gap, height, width * 2 / 5 , height - height * 2 / 5, mPaint);
+		}
 		if (mAccuracyMeters <= 20.0) {
+			canvas.drawRect(width * 2 / 5 + gap, height, width * 3 / 5 , height - height * 3 / 5, mPaint);
 		}
-		if (mAccuracyMeters <= 10.0) {
-			canvas.drawRect(width * 2 / 10, 0, width * 3 / 10, height, mPaint);
+		if (mAccuracyMeters <= 12.0) {
+			canvas.drawRect(width * 3 / 5 + gap, height, width * 4 / 5 , height - height * 4 / 5, mPaint);
 		}
-		if (mAccuracyMeters <= 5.0) {
-			canvas.drawRect(width * 3 / 10, 0, width * 4 / 10, height, mPaint);
-		}
-		if (mAccuracyMeters <= 3.0) {
-			canvas.drawRect(width * 4 / 10, 0, width * 5 / 10, height, mPaint);
+		if (mAccuracyMeters <= 6.0) {
+			canvas.drawRect(width * 4 / 5 + gap, height, width * 5 / 5 , height - height * 5 / 5, mPaint);
 		}
 		mPaint.setTextSize(TEXT_SIZE);
 		mPaint.setColor(0xff405040);

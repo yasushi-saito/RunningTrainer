@@ -4,17 +4,9 @@
     android:layout_height="wrap_content"
     android:layout_gravity="center_vertical" >
     
-    <TextView
-        android:text="GPS"
-        android:id="@+id/action_bar_gps_title" 
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-	    android:layout_gravity="center_vertical"
-            />
-
     <com.ysaito.runningtrainer.GpsStatusView
         android:id="@+id/action_bar_gps_status" 
-        android:layout_width="60dip"
+        android:layout_width="40dip"
         android:layout_height="30dip"
 	    android:layout_gravity="center_vertical"
         />
