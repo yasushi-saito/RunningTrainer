@@ -1,6 +1,8 @@
 package com.ysaito.runningtrainer;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
@@ -15,7 +17,15 @@ public class GpsStatusView extends View {
 	//
 	private final Paint mPaint = new Paint();
 	
+	// Remove the GPS view (set, e.g., in workout editor mode) 
+	public static final double HIDE_GPS_VIEW = 999999.0;
+	
+	// GPS is disabled by the user
+	public static final double GPS_DISABLED = 99999.0;
+	
+	// GPS is enabled, but fix has not been obtained 
 	public static final double NO_GPS_STATUS = 9999.0;
+	
 	private double mAccuracyMeters = NO_GPS_STATUS;
 	
 	public GpsStatusView(Context context, AttributeSet attrs) {
@@ -30,28 +40,38 @@ public class GpsStatusView extends View {
 	private final float SCREEN_DENSITY = getContext().getResources().getDisplayMetrics().scaledDensity;
 	private final float TEXT_SIZE = 12 * SCREEN_DENSITY;
 	
+	private Bitmap BITMAP_DISABLED = BitmapFactory.decodeResource(getResources(), android.R.drawable.ic_menu_close_clear_cancel);
+	
 	@Override public void onDraw(Canvas canvas) {
 		final int width = this.getWidth();
 		final int height = this.getHeight();
+
+		if (mAccuracyMeters >= GPS_DISABLED) {
+			mPaint.setColor(0xffff0000);
+			mPaint.setStyle(Paint.Style.FILL);
+			canvas.drawBitmap(BITMAP_DISABLED, 0, 0, mPaint);
+			return;
+		}
 		
 		if (mAccuracyMeters >= NO_GPS_STATUS) {
 			mPaint.setColor(0xffff0000);
 			mPaint.setStyle(Paint.Style.FILL);
-			canvas.drawRect(0, 0, width / 10, height, mPaint);
+			canvas.drawRect(0, height, width / 6, height - height / 6, mPaint);
 			return;
 		}
 		mPaint.setColor(0xff00ff00);
 		mPaint.setStyle(Paint.Style.FILL);
-		if (mAccuracyMeters >= 20.0) {
-			canvas.drawRect(width / 10, 0, width * 2 / 10, height, mPaint);
+		canvas.drawRect(0, height, width * 1 / 6, height - height / 6, mPaint);
+		
+		if (mAccuracyMeters <= 20.0) {
 		}
-		if (mAccuracyMeters >= 10.0) {
+		if (mAccuracyMeters <= 10.0) {
 			canvas.drawRect(width * 2 / 10, 0, width * 3 / 10, height, mPaint);
 		}
-		if (mAccuracyMeters >= 5.0) {
+		if (mAccuracyMeters <= 5.0) {
 			canvas.drawRect(width * 3 / 10, 0, width * 4 / 10, height, mPaint);
 		}
-		if (mAccuracyMeters >= 3.0) {
+		if (mAccuracyMeters <= 3.0) {
 			canvas.drawRect(width * 4 / 10, 0, width * 5 / 10, height, mPaint);
 		}
 		mPaint.setTextSize(TEXT_SIZE);

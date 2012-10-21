@@ -86,7 +86,7 @@ public class RecordingFragment extends MapWrapperFragment {
 	@Override
 	public void onPause() {
 		super.onPause();
-		mActivity.hideGpsStatus();
+		mActivity.setGpsStatus(GpsStatusView.HIDE_GPS_VIEW);
 	}
 	
 	protected Class<?> getActivityClass() {

@@ -340,6 +340,12 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     	mMainActivity = mainActivity;
     }
     
+    
+    // TODO: remove
+    public void onGpsAccuracyUpdate(double accuracy) {
+    	mMainActivity.setGpsStatus(accuracy);
+    }
+    
     @Override public void onResume() {
     	super.onResume();
     	mMainActivity.setGpsStatus(mLastReportedGpsAccuracy);
@@ -357,8 +363,14 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     			mLastReportedGpsAccuracy = location.getAccuracy();
     			mMainActivity.setGpsStatus(mLastReportedGpsAccuracy);
 			}
-			public void onProviderDisabled(String provider) { }
-			public void onProviderEnabled(String provider) { }
+			public void onProviderDisabled(String provider) {
+				mLastReportedGpsAccuracy = GpsStatusView.GPS_DISABLED;
+    			mMainActivity.setGpsStatus(mLastReportedGpsAccuracy);
+			}
+			public void onProviderEnabled(String provider) { 
+				mLastReportedGpsAccuracy = GpsStatusView.NO_GPS_STATUS;
+    			mMainActivity.setGpsStatus(mLastReportedGpsAccuracy);
+			}
 			public void onStatusChanged(String provider, int status, Bundle extras) {
 			}        
         };

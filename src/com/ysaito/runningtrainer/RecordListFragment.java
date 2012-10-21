@@ -130,6 +130,15 @@ public class RecordListFragment extends ListFragment {
 		setHasOptionsMenu(true);
 	}
 	
+    @Override
+    public View onCreateView(
+    		LayoutInflater inflater, 
+    		ViewGroup container,
+            Bundle savedInstanceState) {
+    	Plog.d(TAG, "onCreateView");
+    	return super.onCreateView(inflater,  container, savedInstanceState);
+    }
+    
 	@Override
     public void onCreateOptionsMenu (Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.record_list_options_menu, menu);

@@ -62,6 +62,9 @@ public class RecordingService extends Service {
     	 */
     	public void onStatusUpdate(State state, Status status);
     	public void onError(String message);
+    	
+    	// TODO: this is just for testing. remove once GpsStatusView debugging is done.
+    	public void onGpsAccuracyUpdate(double meters);
     }
     
     /*
@@ -578,6 +581,24 @@ public class RecordingService extends Service {
 				++mNumFakeInputs;
 				updateStats(LapType.KEEP_CURRENT_LAP_IF_POSSIBLE);
 			}
+			int n = mNumFakeInputs;
+			double accuracy = GpsStatusView.GPS_DISABLED;
+			if (n % 7 == 0) {
+				accuracy = GpsStatusView.GPS_DISABLED;				
+			} else if (n % 7 == 1) {
+				accuracy = GpsStatusView.NO_GPS_STATUS;
+			} else if (n % 7 == 2) {
+				accuracy = 100.0;
+			} else if (n % 7 == 3) {
+				accuracy = 25.0;
+			} else if (n % 7 == 4) {
+				accuracy = 12.0;
+			} else if (n % 7 == 5) {
+				accuracy = 7.0;
+			} else {
+				accuracy = 5.0;
+			}
+			mListener.onGpsAccuracyUpdate(accuracy);
 		}
 	}
 

@@ -106,14 +106,14 @@ public class MainActivity extends Activity {
 	 * @param accuracy GPS accuracy, in meters. Pass NO_GPS_STATUS if GPS is not available 
 	 */
 	public void setGpsStatus(double accuracy) {
-		mGpsStatusView.setVisibility(View.VISIBLE);
-		mGpsTitleView.setVisibility(View.VISIBLE);
-		mGpsStatusView.setAccuracy(accuracy);
-	}
-	
-	public void hideGpsStatus() {
-		mGpsStatusView.setVisibility(View.GONE);
-		mGpsTitleView.setVisibility(View.GONE);
+		if (accuracy >= GpsStatusView.HIDE_GPS_VIEW) {
+			mGpsStatusView.setVisibility(View.GONE);
+			mGpsTitleView.setVisibility(View.GONE);
+		} else {
+			mGpsStatusView.setVisibility(View.VISIBLE);
+			mGpsTitleView.setVisibility(View.VISIBLE);
+			mGpsStatusView.setAccuracy(accuracy);
+		}
 	}
 	
     @Override
@@ -131,7 +131,7 @@ public class MainActivity extends Activity {
         		R.layout.action_bar_layout, null);
         mGpsStatusView = (GpsStatusView)barView.findViewById(R.id.action_bar_gps_status);
         mGpsTitleView = barView.findViewById(R.id.action_bar_gps_title);
-        hideGpsStatus();
+        setGpsStatus(GpsStatusView.HIDE_GPS_VIEW);
         
         bar.setCustomView(barView, 
         		new ActionBar.LayoutParams(

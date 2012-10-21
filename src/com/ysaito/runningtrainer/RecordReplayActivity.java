@@ -276,7 +276,6 @@ public class RecordReplayActivity extends MapActivity {
     public boolean isRouteDisplayed() { return false; }
     
     public void setRecord(JsonActivity record) {
-    	Log.d(TAG, "SMOOTH2: " + Settings.smoothGps);
     	if (Settings.smoothGps) {
     		PathAggregator aggr = new PathAggregator(false /* no detect pauses*/, true /* smooth*/);
     		double totalDistance = 0.0;
@@ -300,7 +299,6 @@ public class RecordReplayActivity extends MapActivity {
     			}
     			mRecord.path[i] = JsonWGS84.fromPoint(smoothedPath.get(i), startTime, mode);
     		}
-    		Log.d(TAG, "SMOOTH: " + totalDistance + "->" + mRecord.total_distance);
     		mRecord.total_distance = totalDistance;
     	} else {
     		mRecord = record;
