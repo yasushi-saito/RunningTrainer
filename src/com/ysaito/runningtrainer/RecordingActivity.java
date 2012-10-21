@@ -333,9 +333,17 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         }
     }
 
+    private MainActivity mMainActivity;
+    private double mLastReportedGpsAccuracy = GpsStatusView.NO_GPS_STATUS; 
+    
+    public void setMainActivity(MainActivity mainActivity) {
+    	mMainActivity = mainActivity;
+    }
     
     @Override public void onResume() {
     	super.onResume();
+    	mMainActivity.setGpsStatus(mLastReportedGpsAccuracy);
+    	
         // Define a listener that responds to location updates
         mLocationListener = new LocationListener() {
     		public void onLocationChanged(Location location) {
@@ -345,6 +353,9 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     			GeoPoint point = new GeoPoint((int)(location.getLatitude() * 1e6), (int)(location.getLongitude() * 1e6));
     			controller.animateTo(point);
     			mMapView.invalidate();
+    			
+    			mLastReportedGpsAccuracy = location.getAccuracy();
+    			mMainActivity.setGpsStatus(mLastReportedGpsAccuracy);
 			}
 			public void onProviderDisabled(String provider) { }
 			public void onProviderEnabled(String provider) { }

@@ -2,19 +2,37 @@ package com.ysaito.runningtrainer;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 
 public class RecordingFragment extends MapWrapperFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
     	setHasOptionsMenu(true);
+    	mActivity = (MainActivity)getActivity();
     }
 
+    private MainActivity mActivity;
     private Menu mMenu = null;
     private MapMode mMapMode = MapMode.MAP;
+
+    @Override
+    public View onCreateView(
+    		LayoutInflater inflater, 
+    		ViewGroup container,
+            Bundle savedInstanceState) {
+    	View view = super.onCreateView(inflater, container, savedInstanceState);
+    	
+    	// The child activity is initialized on the call to onCreateView. Report the identity of the outer activity
+    	// so that it can set the GPS status on the action bar.
+    	((RecordingActivity)getChildActivity()).setMainActivity(mActivity);
+    	return view;
+    }
     
 	@Override
 	public void onPrepareOptionsMenu(Menu menu) {
@@ -59,6 +77,17 @@ public class RecordingFragment extends MapWrapperFragment {
         inflater.inflate(R.menu.recording_options_menu, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
+	
+	@Override
+	public void onResume() {
+		super.onResume();
+	}
+	
+	@Override
+	public void onPause() {
+		super.onPause();
+		mActivity.hideGpsStatus();
+	}
 	
 	protected Class<?> getActivityClass() {
 		return RecordingActivity.class;

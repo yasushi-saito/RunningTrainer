@@ -11,6 +11,7 @@ import com.ysaito.runningtrainer.FileManager.ParsedFilename;
 import android.app.ListFragment;
 import android.content.Context;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.Log;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -75,11 +76,14 @@ public class RecordListFragment extends ListFragment {
 			
 			StringBuilder b = new StringBuilder();
 			b.append(Util.dateToString(f.getLong(FileManager.KEY_START_TIME, 0)));
-			b.append(" ");
+			b.append(" (");
+			b.append(Util.durationToString(f.getLong(FileManager.KEY_DURATION, 0)));
+			b.append(")<br><b>");
 			b.append(Util.distanceToString(f.getLong(FileManager.KEY_DISTANCE, 0)));
-			b.append("  ");
+			b.append("</b> ");
 			b.append(Util.distanceUnitString());
-			view.setText(b.toString());
+			
+			view.setText(Html.fromHtml(b.toString()));
 			if (f.getString(FileManager.KEY_RUNKEEPER_PATH, null) == null) {
 				view.setTextColor(0xffff0000);
 			} else {

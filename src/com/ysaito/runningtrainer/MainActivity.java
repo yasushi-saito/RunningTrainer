@@ -29,6 +29,7 @@ package com.ysaito.runningtrainer;
 import java.util.HashMap;
 
 import android.app.ActionBar;
+import android.app.ActionBar.LayoutParams;
 import android.app.ActionBar.Tab;
 import android.app.Activity;
 import android.app.Fragment;
@@ -36,7 +37,9 @@ import android.app.FragmentManager;
 import android.os.Bundle;
 import android.app.FragmentTransaction;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
+import android.view.View;
 import android.view.Window;
 
 public class MainActivity extends Activity {
@@ -95,6 +98,24 @@ public class MainActivity extends Activity {
 	@Override public void onResume() { super.onResume(); Plog.d(TAG, "onResume"); }
 	@Override public void onPause() { super.onPause(); Plog.d(TAG, "onPause"); }
 	
+	private GpsStatusView mGpsStatusView;
+	private View mGpsTitleView;
+	
+	/**
+	 * 
+	 * @param accuracy GPS accuracy, in meters. Pass NO_GPS_STATUS if GPS is not available 
+	 */
+	public void setGpsStatus(double accuracy) {
+		mGpsStatusView.setVisibility(View.VISIBLE);
+		mGpsTitleView.setVisibility(View.VISIBLE);
+		mGpsStatusView.setAccuracy(accuracy);
+	}
+	
+	public void hideGpsStatus() {
+		mGpsStatusView.setVisibility(View.GONE);
+		mGpsTitleView.setVisibility(View.GONE);
+	}
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	Plog.init(getApplicationContext());
@@ -105,6 +126,23 @@ public class MainActivity extends Activity {
         requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS); 
         
         final ActionBar bar = getActionBar();
+
+        View barView = getLayoutInflater().inflate(
+        		R.layout.action_bar_layout, null);
+        mGpsStatusView = (GpsStatusView)barView.findViewById(R.id.action_bar_gps_status);
+        mGpsTitleView = barView.findViewById(R.id.action_bar_gps_title);
+        hideGpsStatus();
+        
+        bar.setCustomView(barView, 
+        		new ActionBar.LayoutParams(
+        		LayoutParams.WRAP_CONTENT, 
+        		LayoutParams.WRAP_CONTENT,
+        		Gravity.LEFT | Gravity.CENTER_VERTICAL));
+                   
+        final int change = bar.getDisplayOptions() ^ ActionBar.DISPLAY_SHOW_CUSTOM;
+        bar.setDisplayOptions(change, ActionBar.DISPLAY_SHOW_CUSTOM | ActionBar.DISPLAY_USE_LOGO);
+        
+        
         bar.setNavigationMode(ActionBar.NAVIGATION_MODE_TABS);
         bar.setDisplayOptions(0, ActionBar.DISPLAY_SHOW_TITLE);
                 
