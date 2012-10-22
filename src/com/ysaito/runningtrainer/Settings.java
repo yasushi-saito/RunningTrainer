@@ -52,6 +52,8 @@ public class Settings {
 	static public boolean fakeGps;
 	static public boolean autoPauseDetection;
 	static public boolean smoothGps;
+	static public boolean postToFacebook;
+	static public boolean postToTwitter;
 	private static SharedPreferences mPrefs;
 	private static SharedPreferences.OnSharedPreferenceChangeListener mListener;
 	private static Context mContext;
@@ -85,6 +87,8 @@ public class Settings {
 			onChange("fake_gps");
 			onChange("smooth_gps");
 			onChange("auto_pause_detection");
+			onChange("post_to_facebook");
+			onChange("post_to_twitter");
 			onChange("speak_distance_interval");
 			onChange("speak_distance_total_distance");
 			onChange("speak_distance_total_duration");
@@ -138,6 +142,10 @@ public class Settings {
 			autoPauseDetection = mPrefs.getBoolean(key, false);
 		} else if (key.equals("smooth_gps")) {
 			smoothGps = mPrefs.getBoolean(key, false);
+		} else if (key.equals("post_to_facebook")) {
+			postToFacebook = mPrefs.getBoolean(key, false);
+		} else if (key.equals("post_to_twitter")) {
+			postToTwitter = mPrefs.getBoolean(key, false);
 		} else if (key.equals("autolap_distance_interval")) {
 			autoLapDistanceInterval = Double.parseDouble(mPrefs.getString("autolap_distance_interval", "0"));
 		} else if (key.equals("speak_time_interval")) {

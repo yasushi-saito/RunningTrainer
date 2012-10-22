@@ -598,7 +598,9 @@ public class RecordingService extends Service {
 			} else {
 				accuracy = 5.0;
 			}
-			mListener.onGpsAccuracyUpdate(accuracy);
+			if (mListener != null) {
+				mListener.onGpsAccuracyUpdate(accuracy);
+			}
 		}
 	}
 

@@ -9,7 +9,6 @@ package com.ysaito.runningtrainer;
  */
 
 /**
- * TODO: show GPS strength
  * TODO: elevation gain and loss should be in feets, not miles
  * TODO: enable/disable dependent settings
  * TODO: satellite/map view mode value should be process-global.
@@ -17,6 +16,7 @@ package com.ysaito.runningtrainer;
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * TODO: automatic syncing of records on reconnect and/or token authorization
  * TODO: show runkeeper sync status somewhere
+ * TODO: "post facebook" and "post twitter" settings.
  * TODO: run syncer as a Service.
  * TODO: pause detection should take GPS accuracy into account.
  * TODO: sync all. 
@@ -24,6 +24,7 @@ package com.ysaito.runningtrainer;
  * TODO: remove the stats view row when none of the views show anything
  * TODO: change the workout editor so that the interval moves inside a repeat more reliably
  * TODO: current time readout
+ * TODO: past lap pace readout
  * TODO: in workout editor canvas, set a reasonable default interval spec
  */
 import java.util.HashMap;
@@ -106,12 +107,7 @@ public class MainActivity extends Activity {
 	 * @param accuracy GPS accuracy, in meters. Pass NO_GPS_STATUS if GPS is not available 
 	 */
 	public void setGpsStatus(double accuracy) {
-		if (accuracy >= GpsStatusView.HIDE_GPS_VIEW) {
-			mGpsStatusView.setVisibility(View.GONE);
-		} else {
-			mGpsStatusView.setVisibility(View.VISIBLE);
-			mGpsStatusView.setAccuracy(accuracy);
-		}
+		mGpsStatusView.setAccuracy(accuracy);
 	}
 	
     @Override

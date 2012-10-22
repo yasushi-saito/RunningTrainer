@@ -28,6 +28,16 @@
        android:defaultValue="true"
        android:key="smooth_gps"
        android:title="Smooth GPS values" />
+
+   <CheckBoxPreference
+       android:defaultValue="false"
+       android:key="post_to_facebook"
+       android:title="Post to Facebook" />
+
+   <CheckBoxPreference
+       android:defaultValue="false"
+       android:key="post_to_twitter"
+       android:title="Post to Twitter" />
    
   <PreferenceScreen
     android:key="pref_key_display_settings"

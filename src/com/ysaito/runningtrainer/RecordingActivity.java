@@ -514,7 +514,9 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     			record.type = "Running";  // TODO: allow changing
     			record.start_time = HealthGraphClient.generateStartTimeString(status.startTime);
     			record.notes = "Recorded by RunningTrainer";
-
+    			record.post_to_facebook = Settings.postToFacebook;
+    			record.post_to_twitter = Settings.postToTwitter;
+    			
     			// Copy the path entries out
     			record.path = new JsonWGS84[status.path.size()];
     			for (int i = 0; i < status.path.size(); ++i) {

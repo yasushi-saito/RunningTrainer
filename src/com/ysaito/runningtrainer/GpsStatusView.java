@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
 
@@ -34,11 +35,16 @@ public class GpsStatusView extends View {
 	
 	public void setAccuracy(double meters) {
 		mAccuracyMeters = meters;
-		invalidate();
+		if (mAccuracyMeters >= HIDE_GPS_VIEW) {
+			setVisibility(View.GONE);
+		} else {
+			setVisibility(View.VISIBLE);
+			invalidate();
+		}
 	}
 	
 	private final float SCREEN_DENSITY = getContext().getResources().getDisplayMetrics().scaledDensity;
-	private final float TEXT_SIZE = 12 * SCREEN_DENSITY;
+	private final float TEXT_SIZE = 10 * SCREEN_DENSITY;
 	
 	private Bitmap BITMAP_DISABLED = BitmapFactory.decodeResource(getResources(), android.R.drawable.ic_menu_close_clear_cancel);
 	
@@ -82,8 +88,25 @@ public class GpsStatusView extends View {
 			canvas.drawRect(width * 4 / 5 + gap, height, width * 5 / 5 , height - height * 5 / 5, mPaint);
 		}
 		mPaint.setTextSize(TEXT_SIZE);
-		mPaint.setColor(0xff405040);
+		mPaint.setTypeface(Typeface.DEFAULT_BOLD);
 		mPaint.setStyle(Paint.Style.FILL);
-		canvas.drawText(String.format("%.2f", mAccuracyMeters), 10, height, mPaint);
+		String text = String.format("%dm", (int)mAccuracyMeters);
+		float textWidth = getTextWidth(text, mPaint);
+		float textX = 10;
+		float textY = height;
+		mPaint.setColor(0xa0000000);
+		canvas.drawRect(textX, textY, textX + textWidth, textY - TEXT_SIZE, mPaint);
+
+		mPaint.setColor(0xffffffff);
+		canvas.drawText(text, textX, textY, mPaint);
+		
+	}
+	
+	private static float getTextWidth(String text, Paint paint) {
+		float[] widths = new float[text.length()];
+		paint.getTextWidths(text, widths);
+		float total = 0.0f;
+		for (float w : widths) total += w;
+		return total;
 	}
 }
