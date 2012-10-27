@@ -37,16 +37,15 @@
                  <data android:scheme="ysaito" />
              </intent-filter>
       </activity>
-      
         <activity
             android:name=".RecordingActivity"
-            android:label="@string/title_activity_record" 
-            android:screenOrientation="portrait">
+            android:label="@string/title_activity_record"
+            android:screenOrientation="portrait" >
         </activity>
         <activity
             android:name=".RecordReplayActivity"
-            android:label="@string/title_activity_replay" 
-            android:screenOrientation="portrait">
+            android:label="@string/title_activity_replay"
+            android:screenOrientation="portrait" >
         </activity>
         <service android:enabled="true" android:name=".RecordingService" />
     </application>

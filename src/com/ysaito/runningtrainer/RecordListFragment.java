@@ -211,7 +211,6 @@ public class RecordListFragment extends ListFragment {
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
 		final FileManager.ParsedFilename f = (FileManager.ParsedFilename)mAdapter.getItem(position);
-		Log.d(TAG, "SELECT: " + v.toString());
 		if (f == null) return;
 
 		startBusyThrob();

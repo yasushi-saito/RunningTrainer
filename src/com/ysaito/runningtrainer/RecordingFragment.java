@@ -10,6 +10,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 public class RecordingFragment extends MapWrapperFragment {
+	public RecordingFragment() { super("RecordingFragment"); }
+	
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);

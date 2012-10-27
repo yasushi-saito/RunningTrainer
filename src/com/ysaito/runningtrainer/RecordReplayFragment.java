@@ -15,6 +15,8 @@ public class RecordReplayFragment extends MapWrapperFragment {
     private Menu mMenu = null;
     private MapMode mMapMode = MapMode.MAP;
 	
+	public RecordReplayFragment() { super("RecordReplayFragment"); }
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
@@ -92,13 +94,11 @@ public class RecordReplayFragment extends MapWrapperFragment {
 	};
 	
 	@Override public void onResume() {
-		Log.d(TAG, "REPLAY RESUME");
 		((MainActivity)getActivity()).registerOnBackPressedListener(mOnBackPressedListener);
 		super.onResume();
 	}
 
 	@Override public void onPause() {
-		Log.d(TAG, "REPLAY PAUSE");
 		((MainActivity)getActivity()).unregisterOnBackPressedListener(mOnBackPressedListener);
 		super.onPause();
 	}

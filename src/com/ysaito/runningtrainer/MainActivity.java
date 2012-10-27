@@ -221,12 +221,12 @@ public class MainActivity extends Activity {
         	for (HashMap.Entry<String, Fragment> entry : mActivity.mFragments.entrySet()) {
         		Fragment fragment = entry.getValue();
         		if (fragment != mFragment) {
-        			Plog.d(TAG, "Frag(detach):" + fragment.toString());
+        			Plog.d(TAG, "Frag(detach):" + mName + ": " + fragment.toString());
         			ft.detach(fragment);
         		}
         	}
         	
-        	Plog.d(TAG, "Frag(attach):" + mFragment.toString());
+        	Plog.d(TAG, "Frag(attach):" + mName + ": " + mFragment.toString());
         	ft.attach(mFragment);
         }
 

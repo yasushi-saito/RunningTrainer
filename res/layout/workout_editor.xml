@@ -3,21 +3,55 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
+    <TextView
+        android:id="@+id/title_workout_name"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_marginBottom="5sp"
+        android:layout_marginTop="5sp"
+        android:text="Name: " />
+
+    <EditText
+        android:textSize="22sp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/edit_workout_name"
+        android:layout_toRightOf="@id/title_workout_name"
+        android:layout_alignBaseline="@id/title_workout_name"
+        android:layout_marginBottom="20sp"
+        android:inputType="text"
+        android:text="New Workout" />
+    
     <LinearLayout
         android:id="@+id/workout_editor_button_box"
-        android:orientation="horizontal"
         android:layout_width="fill_parent"
-        android:layout_height="wrap_content" >
+        android:layout_height="wrap_content"
+        android:layout_marginTop="5pt"
+        android:layout_marginBottom="10pt"
+        android:layout_below="@id/edit_workout_name"
+        android:orientation="horizontal" >
+
+       <TextView
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:layout_weight="0"
+           android:text="New: "
+           android:textSize="22sp"
+           android:textStyle="bold" />
 
         <Button
             android:id="@+id/new_interval_button"
             android:layout_weight="1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            
             android:layout_marginLeft="5dip"
             android:layout_marginRight="5dip"
             android:background="@drawable/start_stop_button"
-            android:text="New"
+            android:text="Interval"
             android:textSize="18sp" />
 
         <Button
@@ -33,33 +67,11 @@
 
     </LinearLayout>
 
-    <TextView
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/title_workout_name"
-        android:layout_alignParentLeft="true"
-        android:layout_below="@id/workout_editor_button_box"
-        android:layout_marginBottom="20sp"
-        android:text="Name: " />
-
-    <EditText
-        android:textSize="22sp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/edit_workout_name"
-        android:layout_toRightOf="@id/title_workout_name"
-        android:layout_alignBaseline="@id/title_workout_name"
-        android:layout_marginBottom="20sp"
-        android:inputType="text"
-        android:text="New Workout" />
-    
     <com.ysaito.runningtrainer.WorkoutCanvasView
         android:id="@+id/canvas"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
-        android:layout_below="@id/title_workout_name"
+        android:layout_below="@id/workout_editor_button_box"
     />
 
 </RelativeLayout>

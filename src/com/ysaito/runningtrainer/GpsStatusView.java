@@ -52,7 +52,7 @@ public class GpsStatusView extends View {
 		final int width = this.getWidth();
 		final int height = this.getHeight();
 
-		mPaint.setTextSize(10 * SCREEN_DENSITY);
+		mPaint.setTextSize(8 * SCREEN_DENSITY);
 		mPaint.setColor(0xffffffff);
 		mPaint.setStyle(Paint.Style.FILL);
 		canvas.drawText("GPS", 0, 10 * SCREEN_DENSITY, mPaint);

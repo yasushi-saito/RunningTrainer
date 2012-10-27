@@ -27,7 +27,7 @@ import android.widget.TextView;
 
 public class RecordReplayActivity extends MapActivity {
     @SuppressWarnings("unused")
-	private static final String TAG = "Recording";
+	private static final String TAG = "RecordReplayActivity";
 
     static public class MyOverlay extends Overlay {
         private final ArrayList<GeoPoint> mPoints = new ArrayList<GeoPoint>();
@@ -210,6 +210,7 @@ public class RecordReplayActivity extends MapActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+    	Plog.d(TAG, "onCreate");
         setContentView(R.layout.log_replay);
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.replay_map_view);

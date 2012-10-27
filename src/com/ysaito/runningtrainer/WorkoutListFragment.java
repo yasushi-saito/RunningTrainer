@@ -28,6 +28,7 @@ import android.widget.TextView;
  *
  */
 public class WorkoutListFragment extends ListFragment {
+	private static final String TAG = "WorkoutListFragment";
 	private File mWorkoutDir;
 	private MainActivity mActivity;
 	private MyAdapter mAdapter;
@@ -97,8 +98,18 @@ public class WorkoutListFragment extends ListFragment {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setHasOptionsMenu(true);
+		Plog.d(TAG, "onCreate");
 	}
 	
+    @Override
+    public View onCreateView(
+    		LayoutInflater inflater, 
+    		ViewGroup container,
+            Bundle savedInstanceState) {
+    	Plog.d(TAG, "onCreateView");
+    	return super.onCreateView(inflater,  container, savedInstanceState);
+    }
+    	
 	@Override
     public void onCreateOptionsMenu (Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.workout_list_options_menu, menu);
