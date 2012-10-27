@@ -18,6 +18,8 @@ import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -49,37 +51,35 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     	// Note: this service will stop itself once the recording activity stops (by the user long-pressing the "Stop" button)
     }
 
-    static public class MyOverlay extends Overlay {
-        private ArrayList<GeoPoint> mPoints;
-        private double mCurrentAccuracy; // the latest report on GPS accuracy (meters)
-        private GeoPoint mCurrentLocation;
-        private  double mStartTime = -1.0;
+    public class MyOverlay extends Overlay {
+        private final ArrayList<GeoPoint> mPoints = new ArrayList<GeoPoint>();
+        private double mStartTime = -1.0;
+        private final Paint mPaint = new Paint();
         
-        public MyOverlay() {
-            mPoints = new ArrayList<GeoPoint>();
-        }
-
-    	public void clearPath() {
+        private double mCurrentAccuracy;    // The latest report on GPS accuracy (meters)
+        private GeoPoint mCurrentLocation;  // The last report on GPS location
+        
+    	public final void clearPath() {
     		mPoints.clear();
     		mCurrentLocation = null;
     	}
 
-        public void updatePath(double startTime, ArrayList<Util.Point> path) {
+        public final void updatePath(double startTime, ArrayList<Util.Point> path) {
         	if (startTime != mStartTime) {
         		mStartTime = startTime;
         		mPoints.clear();
         	}
         	while (mPoints.size() < path.size()) {
         		Util.Point point = path.get(mPoints.size());
-        		GeoPoint p = new GeoPoint((int)(point.latitude * 1e6), (int)(point.longitude * 1e6));
-        		mPoints.add(p);
+        		mPoints.add(point.toGeoPoint());
         	}
         }
 
-        public void setCurrentLocation(double latitude, double longitude, double accuracy) {
+        public final void setCurrentLocation(double latitude, double longitude, double accuracy) {
         	mCurrentLocation = new GeoPoint((int)(latitude * 1e6), (int)(longitude * 1e6));
         	mCurrentAccuracy = accuracy;
         }
+
         
         @Override
         public boolean draw(Canvas canvas, MapView mapView, boolean shadow, long when) {
@@ -87,12 +87,12 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
             if (shadow) return v;
             
             Projection projection = mapView.getProjection();
-            Paint paint = new Paint();
-            paint.setAntiAlias(true);
+            mPaint.reset();
+            mPaint.setAntiAlias(true);
             if (mPoints.size() > 0) {
-            	paint.setColor(0xff000080);
-            	paint.setStyle(Paint.Style.STROKE);
-            	paint.setStrokeWidth(5);
+            	mPaint.setColor(0xff000080);
+            	mPaint.setStyle(Paint.Style.STROKE);
+            	mPaint.setStrokeWidth(5);
 
             	if (mPoints.size() > 1) {
             		Path path = new Path();
@@ -106,20 +106,31 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
             				path.lineTo(pointA.x, pointA.y);
             			}
             		}
-            		canvas.drawPath(path, paint);
+            		canvas.drawPath(path, mPaint);
             	}
             }
             if (mCurrentLocation != null) {
             	Point pointA = new Point();
             	projection.toPixels(mCurrentLocation, pointA);
+
+            	final int bHeight = BITMAP_CURRENT_POSITION.getHeight();
+            	final int bWidth = BITMAP_CURRENT_POSITION.getWidth();
             	
-            	paint.setColor(0xff000080);
-            	paint.setStyle(Paint.Style.STROKE);
-            	paint.setStrokeWidth(8);
-            	paint.setColor(0xff0000ff);
-            	
+            	// Draw a semitransparent circle to indicate the accuracy.
             	float radius = Math.max(10.0f, projection.metersToEquatorPixels((float)mCurrentAccuracy));
-            	canvas.drawCircle(pointA.x, pointA.y, radius, paint);
+            	if (radius > bHeight / 3) {
+            		// The circle isn't totally obscured by the "current position" bitmap
+            		mPaint.setStyle(Paint.Style.FILL);
+            		mPaint.setColor(0x200000ff);
+            		canvas.drawCircle(pointA.x, pointA.y, radius, mPaint);
+            		
+            		mPaint.setStyle(Paint.Style.STROKE);
+            		mPaint.setStrokeWidth(2);
+            		mPaint.setColor(0xff0000ff);
+            		canvas.drawCircle(pointA.x, pointA.y, radius, mPaint);
+            	}            	            	
+            	mPaint.reset();
+            	canvas.drawBitmap(BITMAP_CURRENT_POSITION, pointA.x - bWidth / 2.0f, pointA.y - bHeight / 2.0f, mPaint);
             }
             return v;
         }
@@ -143,7 +154,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		mDisplayType = displayType;
     	}
     	
-    	public void update(LapStats totalStats, LapStats lapStats, boolean paused) {
+    	public final void update(LapStats totalStats, LapStats lapStats, boolean paused) {
     		String value = "";
     		String title = "";
     		
@@ -200,11 +211,17 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     private Button mStartStopButton;
     private Button mLapButton;    
 
+    private LocationManager mLocationManager;
+    private LocationListener mLocationListener; 
+
     private boolean mTransitioning = false;
-
     private LapStats mTotalStats = null;
-    
 
+    // List of workout files, under FileManager.getWorkoutDir().
+    // The first entry is always null (corresponds to "no workout").
+    // The i'th entry (i>0) corresponds to the i'th entry in the mWorkoutListSpinner.
+    private ArrayList<String> mWorkoutFiles = new ArrayList<String>();
+    
     // Implements RecodingService.StatusListener
 	public void onError(String message) {
 		showDialog(message);
@@ -254,21 +271,13 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         }
     }
 
-    private LocationManager mLocationManager;
-    private LocationListener mLocationListener; 
-
     @Override public void onPause() {
     	super.onPause();
     	RecordingService.unregisterListener(mThisActivity);
         mLocationManager.removeUpdates(mLocationListener);
     }
 
-    // List of workout files, under FileManager.getWorkoutDir().
-    // The first entry is always null (corresponds to "no workout").
-    // The i'th entry (i>0) corresponds to the i'th entry in the mWorkoutListSpinner.
-    private ArrayList<String> mWorkoutFiles = new ArrayList<String>();
-    
-    private void startListWorkouts() {
+    private final void startListWorkouts() {
     	final File dir = FileManager.getWorkoutDir(this);
     	FileManager.runAsync(new FileManager.AsyncRunner<ArrayList<FileManager.ParsedFilename>>() {
     		public ArrayList<FileManager.ParsedFilename> doInThread() throws Exception {
@@ -292,17 +301,17 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     	});
     }
 
-    void showDialog(String message) {
+    private final void showDialog(String message) {
         DialogFragment newFragment = MyAlertDialogFragment.newInstance(message);
         newFragment.show(getFragmentManager(), "dialog");
     }
 
-    public void doPositiveClick() {
+    public final void doPositiveClick() {
         // Do stuff here.
         Log.i("FragmentAlertDialog", "Positive click!");
     }
     
-    public void doNegativeClick() {
+    public final void doNegativeClick() {
         // Do stuff here.
         Log.i("FragmentAlertDialog", "Negative click!");
     }
@@ -339,7 +348,6 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     public void setMainActivity(MainActivity mainActivity) {
     	mMainActivity = mainActivity;
     }
-    
     
     // TODO: remove
     public void onGpsAccuracyUpdate(double accuracy) {
@@ -384,26 +392,30 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         	mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
         }
 
-        mStatsViews = new StatsView[6];
-        mStatsViews[0] = new StatsView(this, R.id.view0, R.id.view0_title, Settings.viewTypes[0]);
-        mStatsViews[1] = new StatsView(this, R.id.view1, R.id.view1_title, Settings.viewTypes[1]);        
-        mStatsViews[2] = new StatsView(this, R.id.view2, R.id.view2_title, Settings.viewTypes[2]);        
-        mStatsViews[3] = new StatsView(this, R.id.view3, R.id.view3_title, Settings.viewTypes[3]);        
-        mStatsViews[4] = new StatsView(this, R.id.view4, R.id.view4_title, Settings.viewTypes[4]);        
-        mStatsViews[5] = new StatsView(this, R.id.view5, R.id.view5_title, Settings.viewTypes[5]);
-        
+        mStatsViews = new StatsView[] { 
+        		new StatsView(this, R.id.view0, R.id.view0_title, Settings.viewTypes[0]),
+        		new StatsView(this, R.id.view1, R.id.view1_title, Settings.viewTypes[1]),
+        		new StatsView(this, R.id.view2, R.id.view2_title, Settings.viewTypes[2]),
+        		new StatsView(this, R.id.view3, R.id.view3_title, Settings.viewTypes[3]),
+        		new StatsView(this, R.id.view4, R.id.view4_title, Settings.viewTypes[4]),
+        		new StatsView(this, R.id.view5, R.id.view5_title, Settings.viewTypes[5])
+        };
         final LapStats emptyLapStats = new LapStats(); 
         for (int i = 0; i < mStatsViews.length; ++i) {
         	mStatsViews[i].update(emptyLapStats, emptyLapStats, true);
         }
-
     	startListWorkouts();
     	RecordingService.registerListener(mThisActivity);
     }
     
+    private Bitmap BITMAP_CURRENT_POSITION;
+            	
+    
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
+    	
+    	BITMAP_CURRENT_POSITION = BitmapFactory.decodeResource(getResources(), R.drawable.ic_maps_indicator_current_position);
         setContentView(R.layout.recording);
         mThisActivity = this;
         mRecordDir = FileManager.getRecordDir(this);
@@ -449,11 +461,16 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     private String mLastSelectedWorkoutFilename = null;
     private JsonWorkout mLastSelectedWorkout = null;
 
-    public void setMapMode(MapMode mode) {
+    public final void setMapMode(MapMode mode) {
     	mMapView.setSatellite(mode == MapMode.SATTELITE);
     }
     
-    private void startOrStopWithWorkout(JsonWorkout workout) {
+    /**
+     * Called when "start/stop" button is pressed. This method creates the background RecordingService and starts recording if necessary.
+     * 
+     * @param workout The workout chosen by the user. May be null.
+     */
+    private final void startOrStop(JsonWorkout workout) {
     	RecordingService gpsService = RecordingService.getSingleton(); 
     	if (gpsService == null) {
     		startBackgroundService(workout);
@@ -469,10 +486,11 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     	final String workoutFilename = (pos >= 0  && pos < mWorkoutFiles.size() ? mWorkoutFiles.get(pos) : null);
 
     	if (workoutFilename == null) {
-    		startOrStopWithWorkout(null);
+    		startOrStop(null);
     	} else if (mLastSelectedWorkoutFilename != null && mLastSelectedWorkoutFilename.equals(workoutFilename)) {
-    		startOrStopWithWorkout(mLastSelectedWorkout);
+    		startOrStop(mLastSelectedWorkout);
     	} else {
+    		// Read the workout from the sdcard
     		final File dir = FileManager.getWorkoutDir(this);
     		mTransitioning = true;
     		FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
@@ -489,13 +507,13 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     					mLastSelectedWorkoutFilename = workoutFilename;
     					mLastSelectedWorkout = workout;
     				}
-    				startOrStopWithWorkout(workout);
+    				startOrStop(workout);
     			}
 			});
     	}
     }
 
-    private void onResetButtonPress() {
+    private final void onResetButtonPress() {
     	if (mTransitioning) return;
     	
     	mLapButton.setEnabled(false);

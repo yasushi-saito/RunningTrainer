@@ -94,7 +94,7 @@ public class RecordingService extends Service {
     	}
     }
     
-    private State getState() {
+    private final State getState() {
     	if (!mStarted) return State.RESET;
     	if (mUserPaused) return State.USER_PAUSED;
     	if (mAutoPaused) return State.AUTO_PAUSED;
@@ -176,7 +176,7 @@ public class RecordingService extends Service {
     	updateStats(LapType.FORCE_NEW_LAP);
     }
 
-    private void speakStats(Settings.SpeechTypes types) {
+    private final void speakStats(Settings.SpeechTypes types) {
     	if (types.totalDistance)
     		speak("Total distance " + Util.distanceToSpeechText(mTotalStats.getDistance()), null);
     	if (types.totalDuration)
@@ -215,7 +215,8 @@ public class RecordingService extends Service {
     	KEEP_CURRENT_LAP_IF_POSSIBLE,
 		FORCE_NEW_LAP
     }
-    private void updateStats(LapType lapType) {
+    
+    private final void updateStats(LapType lapType) {
     	boolean newLap = (lapType == LapType.FORCE_NEW_LAP);
 
     	final JsonWorkout currentWorkout = getCurrentWorkoutInterval();
@@ -314,7 +315,7 @@ public class RecordingService extends Service {
     	}
     }
 
-    private void notifyError(String message) {
+    private final void notifyError(String message) {
     	if (mListener != null) {
     		mListener.onError(message);
     	}
@@ -347,6 +348,7 @@ public class RecordingService extends Service {
 	@Override public String toString() {
 		return "GpsService[" + mId + "]";
 	}
+	
 	@Override
 	public void onCreate() {
     	Plog.d(TAG, "onCreate");
@@ -433,7 +435,7 @@ public class RecordingService extends Service {
 	 * Speak "text". If @p listener != null, invoke listener.onDone() after utterance is made.
 	 *
 	 */
-	private void speak(String text, SpeakDoneListener listener) {
+	private final void speak(String text, SpeakDoneListener listener) {
 		HashMap<String, String> params = null;
 		if (listener != null) {
 			params = new HashMap<String, String>();
@@ -460,7 +462,7 @@ public class RecordingService extends Service {
 		}
 	}
 
-	private void updateTimer() {
+	private final void updateTimer() {
     	if (mTimer != null) {
     		mTimer.cancel();
     		mTimer.purge();
@@ -542,7 +544,7 @@ public class RecordingService extends Service {
 		return START_NOT_STICKY;
 	}
 	
-	private void onGpsLocationUpdate(long now, Location newLocation) {
+	private final void onGpsLocationUpdate(long now, Location newLocation) {
 		if (mStarted) {
 			PathAggregator.Result result = mPath.addLocation(
 					System.currentTimeMillis() / 1000.0,
@@ -556,7 +558,7 @@ public class RecordingService extends Service {
 
 	private int mNumFakeInputs = 0;
 	
-	private void dofakeGpsLocationUpdate() {
+	private final void dofakeGpsLocationUpdate() {
 		if (mStarted) {
 			double now = System.currentTimeMillis() / 1000.0;
 			if (mPath.getPath().size() == 0) {
@@ -604,7 +606,7 @@ public class RecordingService extends Service {
 		}
 	}
 
-	private void handleResult(PathAggregator.Result result) {
+	private final void handleResult(PathAggregator.Result result) {
 		if (result.pauseType == Util.PauseType.RUNNING) {
 			mTotalStats.onGpsUpdate(result.absTime, result.deltaDistance);
 			mLapStats.onGpsUpdate(result.absTime, result.deltaDistance);
@@ -622,5 +624,4 @@ public class RecordingService extends Service {
 			mAutoPaused = false;
 		}
 	}
-	
 }

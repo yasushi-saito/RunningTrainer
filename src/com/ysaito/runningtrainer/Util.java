@@ -112,10 +112,18 @@ public class Util {
 			longitude = lon;
 			altitude = alt;
 		}
+
+		public final GeoPoint toGeoPoint() {
+			return new GeoPoint((int)(latitude * 1e6), (int)(longitude * 1e6));
+		}
 		
 		// Note: type is never PAUSE_CONTINUING -- during pause, no Point entry is emit.
-		final PauseType type;  
+		final PauseType type;
+		
+		// The walltime the user is at this point 
 		final double absTime;
+		
+		// 3D location
 		final double latitude;
 		final double longitude;
 		final double altitude;
