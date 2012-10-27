@@ -19,7 +19,10 @@ public abstract class MapWrapperFragment extends Fragment {
 	private LocalActivityManager mLocalActivityManager;
 	private Activity mChildActivity = null;
 
-	public MapWrapperFragment(String logTag) { mTag = logTag; }
+	public MapWrapperFragment(String logTag) { 
+		mTag = logTag; 
+		Plog.d(mTag, "construct " + Util.currentStackTrace());
+	}
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {

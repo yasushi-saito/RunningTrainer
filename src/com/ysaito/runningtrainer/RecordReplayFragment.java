@@ -15,7 +15,9 @@ public class RecordReplayFragment extends MapWrapperFragment {
     private Menu mMenu = null;
     private MapMode mMapMode = MapMode.MAP;
 	
-	public RecordReplayFragment() { super("RecordReplayFragment"); }
+	public RecordReplayFragment() { 
+		super("RecordReplayFragment");
+	}
     
     @Override
     public void onCreate(Bundle savedInstanceState) {

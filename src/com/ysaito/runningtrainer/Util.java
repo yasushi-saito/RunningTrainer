@@ -24,6 +24,18 @@ public class Util {
 	static public final double INFINITE_DURATION = 999999.0;
 	static public final double INFINITE_DISTANCE = 999999.0;
 	
+	/**
+	 * @return the current stack trace as a string
+	 */
+	public static String currentStackTrace() {
+		 StringBuilder b = new StringBuilder();
+		 for (StackTraceElement frame : Thread.currentThread().getStackTrace()) {
+			 b.append(frame.toString());
+			 b.append("\n");
+		 }
+		 return b.toString();
+	}
+	
 	public static interface SingletonInitializer<T> {
 		public T createSingleton();
 	}

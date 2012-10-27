@@ -29,6 +29,10 @@ public class WorkoutEditorFragment extends Fragment {
 		mWorkout = new JsonWorkout(w);
 	}
 	
+	public WorkoutEditorFragment() {
+		Plog.d(TAG, "construct " + Util.currentStackTrace());
+	}
+	
 	@Override public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Plog.d(TAG, "onCreate");
@@ -102,6 +106,7 @@ public class WorkoutEditorFragment extends Fragment {
     		LayoutInflater inflater, 
     		ViewGroup container,
             Bundle savedInstanceState) {
+		Plog.d(TAG, "onCreateView");
 		mWorkoutDir = FileManager.getWorkoutDir(getActivity());
 		View view = inflater.inflate(R.layout.workout_editor, container, false);
 		mWorkoutNameEditor = (EditText)view.findViewById(R.id.edit_workout_name);
