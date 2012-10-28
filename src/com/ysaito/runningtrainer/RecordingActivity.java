@@ -18,8 +18,6 @@ import android.app.DialogFragment;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -56,12 +54,12 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         private double mStartTime = -1.0;
         private final Paint mPaint = new Paint();
         
-        private double mCurrentAccuracy;    // The latest report on GPS accuracy (meters)
-        private GeoPoint mCurrentLocation;  // The last report on GPS location
-        
+        private double mCurrentAccuracy = -1.0;    // The latest report on GPS accuracy (meters)
+        private double mCurrentLatitude, mCurrentLongitude;  // The last report on GPS location
+
     	public final void clearPath() {
     		mPoints.clear();
-    		mCurrentLocation = null;
+    		mCurrentAccuracy = -1.0;
     	}
 
         public final void updatePath(double startTime, ArrayList<Util.Point> path) {
@@ -76,7 +74,8 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         }
 
         public final void setCurrentLocation(double latitude, double longitude, double accuracy) {
-        	mCurrentLocation = new GeoPoint((int)(latitude * 1e6), (int)(longitude * 1e6));
+        	mCurrentLatitude = latitude;
+        	mCurrentLongitude = longitude;
         	mCurrentAccuracy = accuracy;
         }
 
@@ -109,30 +108,13 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
             		canvas.drawPath(path, mPaint);
             	}
             }
-            if (mCurrentLocation != null) {
-            	Point pointA = new Point();
-            	projection.toPixels(mCurrentLocation, pointA);
-
-            	final int bHeight = BITMAP_CURRENT_POSITION.getHeight();
-            	final int bWidth = BITMAP_CURRENT_POSITION.getWidth();
-            	
-            	// Draw a semitransparent circle to indicate the accuracy.
-            	float radius = Math.max(10.0f, projection.metersToEquatorPixels((float)mCurrentAccuracy));
-            	if (radius > bHeight / 3) {
-            		// The circle isn't totally obscured by the "current position" bitmap
-            		mPaint.setStyle(Paint.Style.FILL);
-            		mPaint.setColor(0x200000ff);
-            		canvas.drawCircle(pointA.x, pointA.y, radius, mPaint);
-            		
-            		mPaint.setStyle(Paint.Style.STROKE);
-            		mPaint.setStrokeWidth(2);
-            		mPaint.setColor(0xff0000ff);
-            		canvas.drawCircle(pointA.x, pointA.y, radius, mPaint);
-            	}            	            	
-            	mPaint.reset();
-            	canvas.drawBitmap(BITMAP_CURRENT_POSITION, pointA.x - bWidth / 2.0f, pointA.y - bHeight / 2.0f, mPaint);
+            if (mCurrentAccuracy >= 0.0) {
+            	GraphicsUtil.drawCurrentPosition((float)mCurrentLatitude, (float)mCurrentLongitude, (float)mCurrentAccuracy,
+            			canvas, projection, mPaint);
+            	GraphicsUtil.drawStartPoint((float)mCurrentLatitude, (float)mCurrentLongitude, (float)mCurrentAccuracy,
+            			canvas, projection, mPaint);
             }
-            return v;
+              return v;
         }
     }
 
@@ -408,14 +390,11 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     	RecordingService.registerListener(mThisActivity);
     }
     
-    private Bitmap BITMAP_CURRENT_POSITION;
-            	
-    
     @Override
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
     	
-    	BITMAP_CURRENT_POSITION = BitmapFactory.decodeResource(getResources(), R.drawable.ic_maps_indicator_current_position);
+    	GraphicsUtil.maybeInitialize(this);
         setContentView(R.layout.recording);
         mThisActivity = this;
         mRecordDir = FileManager.getRecordDir(this);

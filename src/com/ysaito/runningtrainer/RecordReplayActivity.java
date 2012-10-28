@@ -26,12 +26,11 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 public class RecordReplayActivity extends MapActivity {
-    @SuppressWarnings("unused")
 	private static final String TAG = "RecordReplayActivity";
 
     static public class MyOverlay extends Overlay {
         private final ArrayList<GeoPoint> mPoints = new ArrayList<GeoPoint>();
-        private GeoPoint mHighlight = null;
+        private JsonWGS84 mCurrentLocation = null;
 
         public ArrayList<GeoPoint> getPoints() { return mPoints; }
         
@@ -43,12 +42,8 @@ public class RecordReplayActivity extends MapActivity {
         	}
         }
 
-        public void setHighlight(JsonWGS84 location) {
-        	if (location == null) {
-        		mHighlight = null;
-        	} else {
-        		mHighlight = new GeoPoint((int)(location.latitude * 1e6), (int)(location.longitude * 1e6));
-        	}
+        public void setHighlightLocation(JsonWGS84 location) {
+        	mCurrentLocation = location;
         }
         
         @Override
@@ -100,16 +95,19 @@ public class RecordReplayActivity extends MapActivity {
             		canvas.drawPath(path, paint);
             	}
             }
-            if (mHighlight != null) {
-            	Point point = new Point();
-            	projection.toPixels(mHighlight, point);
+            if (mCurrentLocation != null) {
+            	GraphicsUtil.drawCurrentPosition((float)mCurrentLocation.latitude, (float)mCurrentLocation.longitude, 0.0f, canvas, projection, paint);
+            }
+            if (mPoints.size() > 0) {
+            	GeoPoint start = mPoints.get(0);
+            	GraphicsUtil.drawStartPoint(
+            			(float)(start.getLatitudeE6() / 1e6), (float)(start.getLongitudeE6() / 1e6), 0.0f, canvas, projection, paint);
             	
-            	paint.setColor(0xff000080);
-            	paint.setStyle(Paint.Style.STROKE);
-            	paint.setStrokeWidth(8);
-            	paint.setColor(0xff0000ff);
-            	
-            	canvas.drawCircle(point.x, point.y, 10, paint);
+            }
+            if (mPoints.size() > 1) {
+            	GeoPoint stop = mPoints.get(mPoints.size() - 1);
+            	GraphicsUtil.drawStopPoint(
+            			(float)(stop.getLatitudeE6() / 1e6), (float)(stop.getLongitudeE6() / 1e6), 0.0f, canvas, projection, paint);
             }
             return v;
         }
@@ -211,6 +209,7 @@ public class RecordReplayActivity extends MapActivity {
     public void onCreate(Bundle savedInstanceState) {
     	super.onCreate(savedInstanceState);
     	Plog.d(TAG, "onCreate");
+    	GraphicsUtil.maybeInitialize(this);
         setContentView(R.layout.log_replay);
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.replay_map_view);
@@ -225,9 +224,9 @@ public class RecordReplayActivity extends MapActivity {
 			public void onItemClick(AdapterView<?> parent, View v, int position, long id) {
 				final Util.LapSummary lap = (Util.LapSummary)mLapListAdapter.getItem(position);
 				if (lap == null) {
-					mMapOverlay.setHighlight(null);
+					mMapOverlay.setHighlightLocation(null);
 				} else {
-					mMapOverlay.setHighlight(lap.location);
+					mMapOverlay.setHighlightLocation(lap.location);
 					MapController controller = mMapView.getController();
 					GeoPoint point = new GeoPoint((int)(lap.location.latitude * 1e6), (int)(lap.location.longitude * 1e6));
 					controller.animateTo(point);

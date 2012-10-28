@@ -9,14 +9,16 @@ package com.ysaito.runningtrainer;
  */
 
 /**
+ * TODO: GPS status view should be to the right of the bar.
+ * TODO: the replay screen should show map icon, not just a circle
  * TODO: elevation gain and loss should be in feets, not miles
  * TODO: enable/disable dependent settings
  * TODO: satellite/map view mode value should be process-global.
  * TODO: smooth GPS readouts and reduce sampling rate
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
+ * TODO: workout item name & readout
  * TODO: automatic syncing of records on reconnect and/or token authorization
  * TODO: show runkeeper sync status somewhere
- * TODO: "post facebook" and "post twitter" settings.
  * TODO: run syncer as a Service.
  * TODO: pause detection should take GPS accuracy into account.
  * TODO: sync all. 

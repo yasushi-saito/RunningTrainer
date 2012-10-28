@@ -6,7 +6,12 @@ import java.util.GregorianCalendar;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.location.Location;
 import android.util.Log;
 import android.widget.Toast;
@@ -14,6 +19,7 @@ import android.widget.Toast;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
+import com.google.android.maps.Projection;
 
 public class Util {
 	static final String TAG = "Util";
@@ -393,5 +399,4 @@ public class Util {
 		}
 		return laps;
 	}
-	
 }
