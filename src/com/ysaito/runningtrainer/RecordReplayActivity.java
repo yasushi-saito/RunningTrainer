@@ -30,8 +30,9 @@ public class RecordReplayActivity extends MapActivity {
 
     static public class MyOverlay extends Overlay {
         private final ArrayList<GeoPoint> mPoints = new ArrayList<GeoPoint>();
+        private final Paint mPaint = new Paint();
         private JsonWGS84 mCurrentLocation = null;
-
+        
         public ArrayList<GeoPoint> getPoints() { return mPoints; }
         
         public void setPath(JsonWGS84[] path) {
@@ -52,62 +53,22 @@ public class RecordReplayActivity extends MapActivity {
             if (shadow) return v;
             
             Projection projection = mapView.getProjection();
-            Paint paint = new Paint();
-            paint.setAntiAlias(true);
-            
-            if (mPoints.size() > 0) {
-            	paint.setColor(0xff000080);
-            	paint.setStyle(Paint.Style.STROKE);
-            	paint.setStrokeWidth(5);
+            mPaint.setAntiAlias(true);
 
-            	if (mPoints.size() > 1) {
-            		Path path = new Path();
-            		Point lastPoint = new Point();
-            		projection.toPixels(mPoints.get(0), lastPoint);
-            		
-            		Point lastSegmentEndpoint = null; 
-            		final int maxHeight= mapView.getHeight();
-            		final int maxWidth = mapView.getWidth();
-            		
-            		for (int i = 1; i < mPoints.size(); i++) {
-            			GeoPoint geoPoint = mPoints.get(i);
-            			Point point = new Point();
-            			projection.toPixels(geoPoint, point);
-            			
-            			// Draw the line from mPoints[i-1] .. mPoints[i] if either of
-            			// the endpoints are in the view.
-            			boolean drawLine = false;
-            			drawLine |= (
-            					lastPoint.x >= 0 && lastPoint.x < maxWidth &&
-            					lastPoint.y >= 0 && lastPoint.y < maxHeight);
-            			drawLine |= (
-            					point.x >= 0 && point.x < maxWidth &&
-            					point.y >= 0 && point.y < maxHeight);
-            			if (drawLine) {
-            				if (lastSegmentEndpoint != lastPoint) {
-            					path.moveTo(lastPoint.x, lastPoint.y);
-            				}
-            				path.lineTo(point.x, point.y);
-            				lastSegmentEndpoint = point;
-            			}
-            			lastPoint = point;
-            		}
-            		canvas.drawPath(path, paint);
-            	}
-            }
+            GraphicsUtil.drawPath(mPoints, mapView.getWidth(), mapView.getHeight(), canvas, projection, mPaint);
             if (mCurrentLocation != null) {
-            	GraphicsUtil.drawCurrentPosition((float)mCurrentLocation.latitude, (float)mCurrentLocation.longitude, 0.0f, canvas, projection, paint);
+            	GraphicsUtil.drawCurrentPosition((float)mCurrentLocation.latitude, (float)mCurrentLocation.longitude, 0.0f, canvas, projection, mPaint);
             }
             if (mPoints.size() > 0) {
             	GeoPoint start = mPoints.get(0);
             	GraphicsUtil.drawStartPoint(
-            			(float)(start.getLatitudeE6() / 1e6), (float)(start.getLongitudeE6() / 1e6), 0.0f, canvas, projection, paint);
+            			(float)(start.getLatitudeE6() / 1e6), (float)(start.getLongitudeE6() / 1e6), canvas, projection, mPaint);
             	
             }
             if (mPoints.size() > 1) {
             	GeoPoint stop = mPoints.get(mPoints.size() - 1);
             	GraphicsUtil.drawStopPoint(
-            			(float)(stop.getLatitudeE6() / 1e6), (float)(stop.getLongitudeE6() / 1e6), 0.0f, canvas, projection, paint);
+            			(float)(stop.getLatitudeE6() / 1e6), (float)(stop.getLongitudeE6() / 1e6), canvas, projection, mPaint);
             }
             return v;
         }

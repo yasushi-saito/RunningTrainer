@@ -79,7 +79,6 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         	mCurrentAccuracy = accuracy;
         }
 
-        
         @Override
         public boolean draw(Canvas canvas, MapView mapView, boolean shadow, long when) {
             boolean v = super.draw(canvas, mapView, shadow, when);
@@ -88,33 +87,18 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
             Projection projection = mapView.getProjection();
             mPaint.reset();
             mPaint.setAntiAlias(true);
-            if (mPoints.size() > 0) {
-            	mPaint.setColor(0xff000080);
-            	mPaint.setStyle(Paint.Style.STROKE);
-            	mPaint.setStrokeWidth(5);
-
-            	if (mPoints.size() > 1) {
-            		Path path = new Path();
-            		for (int i = 0; i < mPoints.size(); i++) {
-            			GeoPoint gPointA = mPoints.get(i);
-            			Point pointA = new Point();
-            			projection.toPixels(gPointA, pointA);
-            			if (i == 0) { //This is the start point
-            				path.moveTo(pointA.x, pointA.y);
-            			} else {
-            				path.lineTo(pointA.x, pointA.y);
-            			}
-            		}
-            		canvas.drawPath(path, mPaint);
-            	}
-            }
+            GraphicsUtil.drawPath(mPoints, mapView.getWidth(), mapView.getHeight(), canvas, projection, mPaint);
             if (mCurrentAccuracy >= 0.0) {
             	GraphicsUtil.drawCurrentPosition((float)mCurrentLatitude, (float)mCurrentLongitude, (float)mCurrentAccuracy,
             			canvas, projection, mPaint);
-            	GraphicsUtil.drawStartPoint((float)mCurrentLatitude, (float)mCurrentLongitude, (float)mCurrentAccuracy,
-            			canvas, projection, mPaint);
             }
-              return v;
+            if (mPoints.size() > 0) {
+            	GeoPoint start = mPoints.get(0);
+            	GraphicsUtil.drawStartPoint(
+            			(float)(start.getLatitudeE6() / 1e6), (float)(start.getLongitudeE6() / 1e6), canvas, projection, mPaint);
+            	
+            }
+            return v;
         }
     }
 
