@@ -3,8 +3,8 @@
 
   <ListPreference
       android:defaultValue="US"
-      android:entries="@array/unit"
-      android:entryValues="@array/unit"
+      android:entries="@array/unit_names"
+      android:entryValues="@array/unit_values"
       android:key="unit"
       android:title="@string/unit_of_measurement" />
    <ListPreference
@@ -121,6 +121,10 @@
           android:defaultValue="false"
           android:key="speak_time_lap_duration"
           android:title="Lap duration" />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_time_now"
+          android:title="Current time" />
 
   </PreferenceScreen>
   <PreferenceScreen
@@ -160,6 +164,10 @@
           android:defaultValue="false"
           android:key="speak_distance_lap_duration"
           android:title="Lap duration" />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_distance_now"
+          android:title="Current time" />
      
    </PreferenceScreen>  
    <PreferenceScreen
@@ -189,6 +197,10 @@
            android:defaultValue="false"
            android:key="speak_onlap_lap_duration"
            android:title="Lap duration" />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_onlap_now"
+          android:title="Current time" />
      
   </PreferenceScreen>  
 </PreferenceScreen>

@@ -4,5 +4,5 @@
            android:drawable="@drawable/btn_orange_matte" /> <!-- pressed -->
      <item android:state_focused="true"
            android:drawable="@drawable/btn_orange_matte" /> <!-- focused -->
-     <item android:drawable="@drawable/btn_green_matte" /> <!-- default -->
+     <item android:drawable="@drawable/btn_blue_matte" /> <!-- default -->
  </selector>

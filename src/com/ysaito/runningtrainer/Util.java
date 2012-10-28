@@ -200,12 +200,35 @@ public class Util {
 			return String.format("%d %s", value100 / 100, unit);
 		// Speak up to one digit fraction if the value >= 10
 		if (value100 >= 10 * 100 || value100 % 10 == 0)
-			return String.format("%d.%d %s", value100 / 100, (value100 / 10) % 10, unit);
+			return String.format("%d point %d %s", value100 / 100, (value100 / 10) % 10, unit);
+		
 		// Else speak up to two digits fraction
-		return String.format("%d.%d %s", value100 / 100, value100 % 100, unit);
+		long r = value100 % 100;
+		if (r > 10) {
+			return String.format("%d point %d %s", value100 / 100, r, unit);
+		} else {
+			// "05" will be pronounced "o five"
+			return String.format("%d point o;<10>;%d %s", value100 / 100, r, unit);			
+		}
 	}
 	
-	static public String durationToString(double secondsD) {
+	static final public String timeToSpeechText(double utcSeconds) {
+		GregorianCalendar tmpCalendar = new GregorianCalendar();
+		tmpCalendar.setTimeInMillis((long)(utcSeconds * 1000));
+		
+		int hour = tmpCalendar.get(Calendar.HOUR);
+		if (hour == 0) hour = 12;
+		int minute = tmpCalendar.get(Calendar.MINUTE);
+		if (minute == 0) {
+			return String.format("%d oclock", hour);
+		} else if (minute < 10) {
+			return String.format("%d;<40>;o %d", hour, minute);
+		} else {
+			return String.format("%d;<40>;%d", hour, minute);			
+		}
+	}
+	
+	static final public String durationToString(double secondsD) {
 		if (secondsD >= INFINITE_DURATION) return "∞";
 		final long seconds = (long)secondsD;
 		if (seconds < 3600) {
@@ -229,7 +252,7 @@ public class Util {
 	 *
 	 * @return the number of seconds. -1 on error.
 	 */
-	static public double durationFromString(String s) {
+	static final public double durationFromString(String s) {
 		if (s.equals("∞")) return INFINITE_DURATION;
 		
 		try {
@@ -257,7 +280,7 @@ public class Util {
 		}
 	}
 	
-	static public String distanceUnitString() {
+	static final public String distanceUnitString() {
 		if (Settings.unit == Settings.Unit.US) {
 			return "mile";
 		} else {
@@ -265,7 +288,7 @@ public class Util {
 		}
 	}
 
-	static public String distanceToString(double meters) {
+	static final public String distanceToString(double meters) {
 		if (meters >= INFINITE_DISTANCE) return "∞";
 		if (Settings.unit == Settings.Unit.US) {
 			return String.format("%.2f", meters / METERS_PER_MILE);
@@ -278,7 +301,7 @@ public class Util {
 	 * Given a textual distance string, such as "1.0", return the value in meters.
 	 * The unit is extracted from @p settings. Return -1.0 on error.
 	 */
-	static public double distanceFromString(String s) {
+	static final public double distanceFromString(String s) {
 		if (s.equals("∞")) return INFINITE_DISTANCE;
 		try {
 			double multiplier = (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0);
@@ -288,7 +311,7 @@ public class Util {
 		}
 	}
 	
-	static public String paceUnitString() {
+	static final public String paceUnitString() {
 		if (Settings.unit == Settings.Unit.US) {
 			return "s/mile";
 		} else {
@@ -296,7 +319,7 @@ public class Util {
 		}
 	}
 
-	static public String dateToString(double utcSeconds) {
+	static final public String dateToString(double utcSeconds) {
 		StringBuilder b = new StringBuilder();
 		GregorianCalendar tmpCalendar = new GregorianCalendar();
 		tmpCalendar.setTimeInMillis((long)(utcSeconds * 1000));
@@ -311,7 +334,7 @@ public class Util {
 		return b.toString();
 	}
 	
-	static public String paceToString(double secondsPerMeter) {
+	static final public String paceToString(double secondsPerMeter) {
 		if (secondsPerMeter >= INFINITE_PACE) return "∞";
 		long seconds;
 		if (Settings.unit == Settings.Unit.US) {
@@ -333,14 +356,14 @@ public class Util {
 	 * Given a pace string, such as "7:00", return the numeric value as seconds per meter.
 	 * Returns a regative value on parse error.
 	 */
-	static public double paceFromString(String s) {
+	static final public double paceFromString(String s) {
 		if (s.equals("∞")) return INFINITE_PACE;
 		final double d = durationFromString(s);
 		if (d < 0.0) return d;
 		return d / (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0);
 	}
 	
-	static public void rescaleMapView(MapView mapView, ArrayList<GeoPoint> points) {
+	static final public void rescaleMapView(MapView mapView, ArrayList<GeoPoint> points) {
 		if (points.size() == 0) return;
 		
 		int minLat = Integer.MAX_VALUE;
@@ -360,7 +383,7 @@ public class Util {
 		controller.animateTo(new GeoPoint((minLat + maxLat) / 2, (minLong + maxLong) / 2));
 	}
 
-	static public ArrayList<Util.LapSummary> listLaps(JsonActivity record) {
+	static final public ArrayList<Util.LapSummary> listLaps(JsonActivity record) {
 		final ArrayList<Util.LapSummary> laps = new ArrayList<Util.LapSummary>();
 		double autoLapInterval = Settings.autoLapDistanceInterval;
 		if (autoLapInterval <= 0.0) {

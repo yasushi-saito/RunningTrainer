@@ -41,6 +41,18 @@ public class GraphicsUtil {
 		android.graphics.Point screenPoint = new android.graphics.Point();
 		projection.toPixels(new GeoPoint((int)(latitude * 1e6), (int)(longitude * 1e6)), screenPoint);
 		
+		if (accuracy > bitmap.getHeight() / 4) {
+			paint.setStyle(Paint.Style.FILL);
+			paint.setStrokeWidth(3);
+			paint.setColor(0x300000ff);
+			
+			float radius = Math.max(10.0f, projection.metersToEquatorPixels(accuracy));
+			canvas.drawCircle(screenPoint.x, screenPoint.y, radius, paint);
+
+			paint.setStyle(Paint.Style.STROKE);
+			paint.setColor(0xff0000ff);
+			canvas.drawCircle(screenPoint.x, screenPoint.y, radius, paint);
+		}
 		paint.reset();
 		canvas.drawBitmap(bitmap, screenPoint.x - offsetX, screenPoint.y - offsetY, paint);
 	}
@@ -58,7 +70,7 @@ public class GraphicsUtil {
 	/**
 	 * Draw the googlemap "stop" marker at <latitude, longitude>.
 	 */
-	static public void drawStopPoint(float latitude, float longitude, Canvas canvas, Projection projection, Paint paint) {
+	static final public void drawStopPoint(float latitude, float longitude, Canvas canvas, Projection projection, Paint paint) {
 		internalDraw(latitude, longitude, 0.0f, canvas, projection, paint,
 				BITMAP_STOP,
 				BITMAP_STOP.getWidth() / 2.0f,
@@ -68,7 +80,7 @@ public class GraphicsUtil {
 	/**
 	 * Draw the GPS current position marker at <latitude, longitude>, with @p accuracy meters. 
 	 */
-	static public void drawCurrentPosition(float latitude, float longitude, float accuracy, Canvas canvas, Projection projection, Paint paint) {
+	static final public void drawCurrentPosition(float latitude, float longitude, float accuracy, Canvas canvas, Projection projection, Paint paint) {
 		// Draw a semitransparent circle to indicate the accuracy.
 		internalDraw(latitude, longitude, accuracy, canvas, projection, paint,
 				BITMAP_CURRENT_LOCATION,
@@ -76,7 +88,7 @@ public class GraphicsUtil {
 				BITMAP_CURRENT_LOCATION.getHeight() / 2.0f);
 	}
 	
-	static public void drawPath(ArrayList<GeoPoint> points,
+	static final public void drawPath(ArrayList<GeoPoint> points,
 			int viewWidth, int viewHeight,
 			Canvas canvas, Projection projection, Paint paint) {
 		if (points.size() <= 1) return;

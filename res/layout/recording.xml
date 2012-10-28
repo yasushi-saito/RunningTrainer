@@ -18,7 +18,7 @@
         android:layout_alignParentRight="true"
         android:layout_marginTop="5pt"
         android:text="@string/lap"
-        android:background="@drawable/start_stop_button"/>    
+        android:background="@drawable/lap_button"/>    
 
     <View
         android:id="@+id/strut"

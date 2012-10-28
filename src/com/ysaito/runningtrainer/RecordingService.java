@@ -188,8 +188,10 @@ public class RecordingService extends Service {
     	if (types.lapDistance)
     		speak("Lap distance " + Util.distanceToSpeechText(mLapStats.getDistance()), null);
     	if (types.lapDuration) {
-    		Log.d(TAG, "LAPSTATS: " + mLapStats.getDurationSeconds());
     		speak("Lap time " + Util.durationToSpeechText(mLapStats.getDurationSeconds()), null);
+    	}
+    	if (types.now) {
+    		speak("Current time;<150>;" + Util.timeToSpeechText(System.currentTimeMillis() / 1000), null);
     	}
     	if (types.lapPace)
     		speak("Lap pace " + Util.paceToSpeechText(mLapStats.getPace()), null);
@@ -433,7 +435,12 @@ public class RecordingService extends Service {
 	
 	/**
 	 * Speak "text". If @p listener != null, invoke listener.onDone() after utterance is made.
-	 *
+	 * 
+	 * @p text can contain a pause spec, of form
+	 * 
+	 *    "red fox;<100>;jumped"
+	 * 
+	 *  A pause of 100ms is inserted between "fox" and "jumped"
 	 */
 	private final void speak(String text, SpeakDoneListener listener) {
 		HashMap<String, String> params = null;

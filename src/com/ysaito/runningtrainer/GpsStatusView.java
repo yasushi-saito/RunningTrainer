@@ -44,7 +44,7 @@ public class GpsStatusView extends View {
 	}
 	
 	private final float SCREEN_DENSITY = getContext().getResources().getDisplayMetrics().scaledDensity;
-	private final float TEXT_SIZE = 10 * SCREEN_DENSITY;
+	private final float TEXT_SIZE = 8 * SCREEN_DENSITY;
 	
 	private Bitmap BITMAP_DISABLED = BitmapFactory.decodeResource(getResources(), android.R.drawable.ic_menu_close_clear_cancel);
 	
@@ -52,10 +52,11 @@ public class GpsStatusView extends View {
 		final int width = this.getWidth();
 		final int height = this.getHeight();
 
+		mPaint.setTextSize(TEXT_SIZE);
 		mPaint.setTextSize(8 * SCREEN_DENSITY);
 		mPaint.setColor(0xffffffff);
 		mPaint.setStyle(Paint.Style.FILL);
-		canvas.drawText("GPS", 0, 10 * SCREEN_DENSITY, mPaint);
+		canvas.drawText("GPS", 0, TEXT_SIZE, mPaint);
 		
 		if (mAccuracyMeters >= GPS_DISABLED) {
 			mPaint.setColor(0xffff0000);
@@ -99,7 +100,6 @@ public class GpsStatusView extends View {
 
 		mPaint.setColor(0xffffffff);
 		canvas.drawText(text, textX, textY, mPaint);
-		
 	}
 	
 	private static float getTextWidth(String text, Paint paint) {

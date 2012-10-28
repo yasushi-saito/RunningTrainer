@@ -9,8 +9,9 @@ package com.ysaito.runningtrainer;
  */
 
 /**
+ * TODO: the first workout isn't spoken.
+ * TODO: butter button design
  * TODO: GPS status view should be to the right of the bar.
- * TODO: the replay screen should show map icon, not just a circle
  * TODO: elevation gain and loss should be in feets, not miles
  * TODO: enable/disable dependent settings
  * TODO: satellite/map view mode value should be process-global.
@@ -25,7 +26,6 @@ package com.ysaito.runningtrainer;
  * TODO: reliably check if TTS voice data has been downloaded.
  * TODO: remove the stats view row when none of the views show anything
  * TODO: change the workout editor so that the interval moves inside a repeat more reliably
- * TODO: current time readout
  * TODO: past lap pace readout
  * TODO: in workout editor canvas, set a reasonable default interval spec
  */
@@ -116,6 +116,15 @@ public class MainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
     	Plog.init(getApplicationContext());
     	Plog.d(TAG, "onCreate");
+    	if (savedInstanceState != null) {
+    		// TODO: we don't currently handle recreation of fragments gracefully.
+    		// Perhaps explicitly listing all the fragments to be created in this method would help.
+    		//
+    		// E.g.:
+    		// android.app.FragmentManagerImpl.restoreAllState(FragmentManager.java:1718)
+    		// android.app.Activity.onCreate(Activity.java:883)
+    		savedInstanceState.clear();
+    	}
     	super.onCreate(savedInstanceState);
     	
     	Settings.Initialize(getApplicationContext());

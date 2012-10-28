@@ -311,7 +311,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     private MainActivity mMainActivity;
     private double mLastReportedGpsAccuracy = GpsStatusView.NO_GPS_STATUS; 
     
-    public void setMainActivity(MainActivity mainActivity) {
+    public final void setMainActivity(MainActivity mainActivity) {
     	mMainActivity = mainActivity;
     }
     

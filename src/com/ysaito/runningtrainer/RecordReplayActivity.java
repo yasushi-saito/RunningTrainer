@@ -33,9 +33,9 @@ public class RecordReplayActivity extends MapActivity {
         private final Paint mPaint = new Paint();
         private JsonWGS84 mCurrentLocation = null;
         
-        public ArrayList<GeoPoint> getPoints() { return mPoints; }
+        public final ArrayList<GeoPoint> getPoints() { return mPoints; }
         
-        public void setPath(JsonWGS84[] path) {
+        public final void setPath(JsonWGS84[] path) {
         	mPoints.clear();
         	for (JsonWGS84 point : path) {
         		GeoPoint p = new GeoPoint((int)(point.latitude * 1e6), (int)(point.longitude * 1e6));
@@ -43,7 +43,7 @@ public class RecordReplayActivity extends MapActivity {
         	}
         }
 
-        public void setHighlightLocation(JsonWGS84 location) {
+        public final void setHighlightLocation(JsonWGS84 location) {
         	mCurrentLocation = location;
         }
         
@@ -84,7 +84,7 @@ public class RecordReplayActivity extends MapActivity {
     private static class MyAdapter extends BaseAdapter {
     	private final LayoutInflater mInflater;
     	private ArrayList<Util.LapSummary> mLaps = new ArrayList<Util.LapSummary>();
-    		    
+
     	public MyAdapter(Context context) { 
     		mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE); 
     	}
@@ -213,7 +213,10 @@ public class RecordReplayActivity extends MapActivity {
     	super.onBackPressed();
     }
     
-    private void updateStatsViews() {
+    @Override
+    public boolean isRouteDisplayed() { return false; }
+    
+    private final void updateStatsViews() {
     	TextView distanceView = (TextView)findViewById(R.id.replay_distance);
     	TextView durationView = (TextView)findViewById(R.id.replay_duration);
     	TextView paceView = (TextView)findViewById(R.id.replay_pace);    	
@@ -233,10 +236,7 @@ public class RecordReplayActivity extends MapActivity {
     	 }
     }
     
-    @Override
-    public boolean isRouteDisplayed() { return false; }
-    
-    public void setRecord(JsonActivity record) {
+    public final void setRecord(JsonActivity record) {
     	if (Settings.smoothGps) {
     		PathAggregator aggr = new PathAggregator(false /* no detect pauses*/, true /* smooth*/);
     		double totalDistance = 0.0;
