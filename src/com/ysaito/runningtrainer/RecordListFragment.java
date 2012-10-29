@@ -79,7 +79,7 @@ public class RecordListFragment extends ListFragment {
 			b.append(" (");
 			b.append(Util.durationToString(f.getLong(FileManager.KEY_DURATION, 0)));
 			b.append(")<br><b>");
-			b.append(Util.distanceToString(f.getLong(FileManager.KEY_DISTANCE, 0)));
+			b.append(Util.distanceToString(f.getLong(FileManager.KEY_DISTANCE, 0), Util.DistanceUnitType.KM_OR_MILE));
 			b.append("</b> ");
 			b.append(Util.distanceUnitString());
 			

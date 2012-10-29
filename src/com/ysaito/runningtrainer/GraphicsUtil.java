@@ -19,7 +19,7 @@ public class GraphicsUtil {
 	private static float SCREEN_DENSITY;
 	private static float ICON_HEIGHT;
 	
-	static private Bitmap scaleBitmap(Bitmap original) {
+	static private final Bitmap scaleBitmap(Bitmap original) {
 		float scale = ICON_HEIGHT / original.getHeight();
 		Bitmap newBitmap = Bitmap.createScaledBitmap(original, (int)(original.getWidth() * scale), (int)(original.getHeight() * scale), true);
 		if (newBitmap == null) newBitmap = original;  // size didn't change

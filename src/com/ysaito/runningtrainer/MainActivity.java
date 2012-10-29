@@ -6,13 +6,13 @@ package com.ysaito.runningtrainer;
  * CREDITS: http://button-download.com (Creative commons)
  * LOGO: http://openclipart.org/detail/2883/running-pig-by-liftarn
  * 
+ * http://openclipart.org/detail/171405/sports-by-cyberscooty-171405
  */
 
 /**
+ * 
  * TODO: the first workout isn't spoken.
- * TODO: butter button design
- * TODO: GPS status view should be to the right of the bar.
- * TODO: elevation gain and loss should be in feets, not miles
+ * TODO: better button design
  * TODO: enable/disable dependent settings
  * TODO: satellite/map view mode value should be process-global.
  * TODO: smooth GPS readouts and reduce sampling rate
@@ -26,7 +26,6 @@ package com.ysaito.runningtrainer;
  * TODO: reliably check if TTS voice data has been downloaded.
  * TODO: remove the stats view row when none of the views show anything
  * TODO: change the workout editor so that the interval moves inside a repeat more reliably
- * TODO: past lap pace readout
  * TODO: in workout editor canvas, set a reasonable default interval spec
  */
 import java.util.HashMap;

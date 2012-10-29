@@ -61,7 +61,7 @@
 	    
 	    android:layout_marginLeft="5dip"
 	    android:layout_marginRight="5dip"
-	    android:background="@drawable/start_stop_button"
+	    android:background="@drawable/green_button"
 	    android:text="Interval"
 	    android:textSize="18sp" />
 
@@ -72,7 +72,7 @@
             android:layout_marginLeft="5dip"
             android:layout_marginRight="5dip"
             android:layout_weight="1"
-            android:background="@drawable/start_stop_button"
+            android:background="@drawable/blue_button"
             android:text="Repeats"
             android:textSize="18sp" />
 

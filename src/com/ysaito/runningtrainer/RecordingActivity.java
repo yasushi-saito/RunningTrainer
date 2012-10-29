@@ -20,8 +20,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Point;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -120,7 +118,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		mDisplayType = displayType;
     	}
     	
-    	public final void update(LapStats totalStats, LapStats lapStats, boolean paused) {
+    	public final void update(LapStats totalStats, LapStats lapStats, LapStats lastLapStats, boolean paused) {
     		String value = "";
     		String title = "";
     		
@@ -130,7 +128,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     			return;
     		} else if (mDisplayType.equals("total_distance")) {
     			title = "Total " + Util.distanceUnitString();
-    			value = Util.distanceToString(totalStats.getDistance());
+    			value = Util.distanceToString(totalStats.getDistance(), Util.DistanceUnitType.KM_OR_MILE);
     		} else if (mDisplayType.equals("total_duration")) {
     			title = "Total time";
     			value = Util.durationToString(totalStats.getDurationSeconds());
@@ -142,13 +140,20 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     			value = Util.paceToString(totalStats.getCurrentPace());
     		} else if (mDisplayType.equals("lap_distance")) {
     			title = "Lap " + Util.distanceUnitString();
-    			value = Util.distanceToString(lapStats.getDistance());
+    			value = Util.distanceToString(lapStats.getDistance(), Util.DistanceUnitType.KM_OR_MILE);
     		} else if (mDisplayType.equals("lap_duration")) {
     			title = "Lap time";
     			value = Util.durationToString(lapStats.getDurationSeconds());
     		} else if (mDisplayType.equals("lap_pace")) {
     			title = "Lap pace";
     			value = Util.paceToString(lapStats.getPace());
+    		} else if (mDisplayType.equals("last_lap_pace")) {
+    			title = "Last lap pace";
+    			if (lastLapStats == null) {
+    				value = "";
+    			} else {
+    				value = Util.paceToString(lastLapStats.getPace());
+    			}
     		} else {
     			value = "Unknown display type: " + mDisplayType;
     			title = "???";
@@ -195,16 +200,16 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
 
     // Implements RecodingService.StatusListener
     public void onStatusUpdate(
-    		RecordingService.State newState,
-    		RecordingService.Status newStatus) {
-    	if (newState == RecordingService.State.RESET) {
+    		RecordingService.State state,
+    		RecordingService.Status status) {
+    	if (state == RecordingService.State.RESET) {
     		mStartStopButton.setText(R.string.start);
     		mLapButton.setEnabled(false);
     		mWorkoutListSpinner.setVisibility(View.GONE);
     		mWorkoutListSpinner.setVisibility(View.VISIBLE);
     		mWorkoutTitle.setText("Workout: ");
     	} else {
-    		if (newState == RecordingService.State.RUNNING || newState == RecordingService.State.AUTO_PAUSED) {
+    		if (state == RecordingService.State.RUNNING || state == RecordingService.State.AUTO_PAUSED) {
     			mStartStopButton.setText(R.string.pause); 
     			mLapButton.setEnabled(true);
     		} else {
@@ -214,22 +219,22 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		}
     		mWorkoutListSpinner.setVisibility(View.GONE);
     	}        
-        if (newStatus != null) {
-        	mMapOverlay.updatePath(newStatus.startTime, newStatus.path);
-        	mTotalStats = newStatus.totalStats;
+        if (status != null) {
+        	mMapOverlay.updatePath(status.startTime, status.path);
+        	mTotalStats = status.totalStats;
         	mMapView.invalidate();
         	for (int i = 0; i < mStatsViews.length; ++i) {
-        		mStatsViews[i].update(newStatus.totalStats, newStatus.lapStats,
-        				(newState == RecordingService.State.AUTO_PAUSED ||
-        				newState == RecordingService.State.USER_PAUSED));
+        		mStatsViews[i].update(status.totalStats, status.lapStats, status.lastLapStats,
+        				(state == RecordingService.State.AUTO_PAUSED ||
+        				state == RecordingService.State.USER_PAUSED));
         	}
-        	if (newStatus.currentInterval != null) {
+        	if (status.currentInterval != null) {
         		StringBuilder b = new StringBuilder(); 
         		JsonWorkout.intervalToDisplayString(
-        				newStatus.currentInterval.duration, 
-        				newStatus.currentInterval.distance, 
-        				newStatus.currentInterval.fastTargetPace, 
-        				newStatus.currentInterval.slowTargetPace, b);
+        				status.currentInterval.duration, 
+        				status.currentInterval.distance, 
+        				status.currentInterval.fastTargetPace, 
+        				status.currentInterval.slowTargetPace, b);
         		mWorkoutTitle.setText(b.toString());
         	} else {
         		mWorkoutTitle.setText("No workout set");
@@ -368,7 +373,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         };
         final LapStats emptyLapStats = new LapStats(); 
         for (int i = 0; i < mStatsViews.length; ++i) {
-        	mStatsViews[i].update(emptyLapStats, emptyLapStats, true);
+        	mStatsViews[i].update(emptyLapStats, emptyLapStats, emptyLapStats, true);
         }
     	startListWorkouts();
     	RecordingService.registerListener(mThisActivity);

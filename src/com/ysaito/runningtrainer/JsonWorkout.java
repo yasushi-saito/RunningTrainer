@@ -49,7 +49,7 @@ public class JsonWorkout implements Serializable {
 			double duration, double distance, double fastPace, double slowPace,
 			StringBuilder builder) {
 		if (distance >= 0) {
-			builder.append(Util.distanceToString(distance));
+			builder.append(Util.distanceToString(distance, Util.DistanceUnitType.KM_OR_MILE));
 			builder.append(" ");
 			builder.append(Util.distanceUnitString());
 		} else if (duration >= 0) {

@@ -53,6 +53,7 @@ public class RecordingService extends Service {
     	ArrayList<Util.Point> path;
     	LapStats totalStats;
     	LapStats lapStats;
+    	LapStats lastLapStats;
     	JsonWorkout currentInterval;
     }
     public interface StatusListener {
@@ -88,6 +89,7 @@ public class RecordingService extends Service {
     			status.currentInterval = mSingleton.getCurrentWorkoutInterval();
     			status.path = mSingleton.mPath.getPath();
     			status.lapStats = mSingleton.mLapStats;
+    			status.lastLapStats = mSingleton.mLastLapStats;
     			status.totalStats = mSingleton.mTotalStats;
     		}
     		listener.onStatusUpdate(mSingleton.getState(), status);
@@ -117,6 +119,7 @@ public class RecordingService extends Service {
     	}
     	final long curDistance = (long)mTotalStats.getDistance();
     	mLapStartDistance = curDistance;
+    	mLastLapStats = mLapStats;
     	mLapStats = new LapStats();
     }
 
@@ -135,6 +138,7 @@ public class RecordingService extends Service {
     	status.currentInterval = getCurrentWorkoutInterval();
     	status.path = mPath.getPath();
     	status.lapStats = mLapStats;
+    	status.lastLapStats = mLastLapStats;
     	status.totalStats = mTotalStats;
 
     	mTts.stop();  // Discard queued speeches
@@ -310,6 +314,7 @@ public class RecordingService extends Service {
     		status.currentInterval = getCurrentWorkoutInterval();
     		status.path = mPath.getPath();
     		status.lapStats = mLapStats;
+    		status.lastLapStats = mLastLapStats;
     		status.totalStats = mTotalStats;
     	}
     	if (mListener != null) {
@@ -341,6 +346,9 @@ public class RecordingService extends Service {
 	
     // Stats since the start of the last lap
     private LapStats mLapStats = null;
+    
+    // Stats of the last lap. 
+    private LapStats mLastLapStats = null;
     
 	
 	private static int mInstanceSeq = 0;
@@ -516,6 +524,7 @@ public class RecordingService extends Service {
 			mPath = new PathAggregator(Settings.autoPauseDetection, Settings.smoothGps);
 			mTotalStats = new LapStats();
 			mLapStats = new LapStats();
+			mLastLapStats = null;
 			mStartTime = System.currentTimeMillis() / 1000.0;
 			mStarted = true;
 			mUserPaused = false;

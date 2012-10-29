@@ -4,6 +4,10 @@
     android:layout_height="wrap_content"
     android:layout_gravity="center_vertical" >
     
+    <View
+        android:layout_width="15dip"
+        android:layout_height="0dip"
+        />
     <com.ysaito.runningtrainer.GpsStatusView
         android:id="@+id/action_bar_gps_status" 
         android:layout_width="30dip"

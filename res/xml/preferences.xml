@@ -9,7 +9,7 @@
       android:title="@string/unit_of_measurement" />
    <ListPreference
        android:defaultValue="0"
-       android:entries="@array/distance_intervals"
+       android:entries="@array/distance_interval_names"
        android:entryValues="@array/distance_interval_values"
        android:key="autolap_distance_interval"
        android:title="Autolap distance interval" />
@@ -44,42 +44,42 @@
     android:title="Display settings" >
     <ListPreference
         android:defaultValue="total_distance"
-        android:entries="@array/display_type"
+        android:entries="@array/display_type_names"
         android:entryValues="@array/display_type_values"
         android:key="display0"
         android:title="Display 1" />
     />
     <ListPreference
         android:defaultValue="total_duration"
-        android:entries="@array/display_type"
+        android:entries="@array/display_type_names"
         android:entryValues="@array/display_type_values"
         android:key="display1"
         android:title="Display 2" />
     />
     <ListPreference
         android:defaultValue="current_pace"
-        android:entries="@array/display_type"
+        android:entries="@array/display_type_names"
         android:entryValues="@array/display_type_values"
         android:key="display2"
         android:title="Display 3" />
     />
     <ListPreference
         android:defaultValue="lap_distance"
-        android:entries="@array/display_type"
+        android:entries="@array/display_type_names"
         android:entryValues="@array/display_type_values"
         android:key="display3"
         android:title="Display 4" />
     />
     <ListPreference
         android:defaultValue="lap_duration"
-        android:entries="@array/display_type"
+        android:entries="@array/display_type_names"
         android:entryValues="@array/display_type_values"
         android:key="display4"
         android:title="Display 5" />
     />
     <ListPreference
         android:defaultValue="lap_pace"
-        android:entries="@array/display_type"
+        android:entries="@array/display_type_names"
         android:entryValues="@array/display_type_values"
         android:key="display5"
         android:title="Display 6" />
@@ -89,7 +89,7 @@
       android:key="pref_key_time_triggered_readout"
       android:title="Voice readout: time-triggered" >
       <ListPreference
-          android:entries="@array/time_intervals"
+          android:entries="@array/time_interval_names"
           android:entryValues="@array/time_interval_values"
           android:key="speak_time_interval"
           android:title="Time interval" />
@@ -131,7 +131,7 @@
       android:key="pref_key_distance_triggered_readout"
       android:title="Voice readout: distance-triggered" >
       <ListPreference
-          android:entries="@array/distance_intervals"
+          android:entries="@array/distance_interval_names"
           android:entryValues="@array/distance_interval_values"
           android:key="speak_distance_interval"
           android:title="Distance interval" />

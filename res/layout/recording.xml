@@ -9,7 +9,7 @@
         android:layout_alignParentLeft="true"
         android:layout_marginTop="5pt"
         android:text="@string/start"
-        android:background="@drawable/start_stop_button"/>    
+        android:background="@drawable/green_button"/>    
 
     <Button
         style="@style/LargeButton"
@@ -18,7 +18,7 @@
         android:layout_alignParentRight="true"
         android:layout_marginTop="5pt"
         android:text="@string/lap"
-        android:background="@drawable/lap_button"/>    
+        android:background="@drawable/blue_button"/>    
 
     <View
         android:id="@+id/strut"

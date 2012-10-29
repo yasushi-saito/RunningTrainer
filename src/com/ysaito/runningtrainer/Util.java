@@ -24,6 +24,7 @@ import com.google.android.maps.Projection;
 public class Util {
 	static final String TAG = "Util";
 	static final double METERS_PER_MILE = 1609.34;
+	static final double METERS_PER_FEET = 0.3048;
 	static final boolean ASSERT_ENABLED = true;
 
 	static public final double INFINITE_PACE = 999999.0;
@@ -288,12 +289,22 @@ public class Util {
 		}
 	}
 
-	static final public String distanceToString(double meters) {
+	enum DistanceUnitType { KM_OR_MILE, M_OR_FEET };
+	
+	static final public String distanceToString(double meters, DistanceUnitType unitType) {
 		if (meters >= INFINITE_DISTANCE) return "∞";
 		if (Settings.unit == Settings.Unit.US) {
-			return String.format("%.2f", meters / METERS_PER_MILE);
+			if (unitType == DistanceUnitType.KM_OR_MILE) {
+				return String.format("%.2f", meters / METERS_PER_MILE);
+			} else {
+				return String.format("%d", (int)(meters / METERS_PER_FEET));
+			}
 		} else {
-			return String.format("%.2f", meters / 1000.0);
+			if (unitType == DistanceUnitType.KM_OR_MILE) {
+				return String.format("%.2f", meters / 1000.0);
+			} else {
+				return String.format("%d", (int)meters);
+			}
 		}
 	}
 	

@@ -512,7 +512,7 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 		public void draw(Canvas canvas, float x, float y) {
 			mPaint.reset();
 			mPaint.setTextSize(TEXT_SIZE);
-			mPaint.setColor(0xff405040);
+			mPaint.setColor(0xff408040);
 			mPaint.setStyle(Paint.Style.FILL);
 
 			// Remember the rectangle for future calls to isSelected() 
@@ -671,11 +671,8 @@ public class WorkoutCanvasView extends View implements View.OnTouchListener {
 			mPaint.reset();
 			mPaint.setTextSize(TEXT_SIZE);
 
-			mPaint.setColor(0xff504040);
-			mPaint.setStyle(Paint.Style.FILL);
-			
 			RectF thisRect = new RectF(x, y, x + getWidth() - 3 * SCREEN_DENSITY, y + 36 * SCREEN_DENSITY);
-			mPaint.setColor(0xff504040);
+			mPaint.setColor(0xff8080ff);
 			mPaint.setStyle(Paint.Style.FILL);
 			canvas.drawRoundRect(thisRect, 3.0f * SCREEN_DENSITY, 3.0f * SCREEN_DENSITY, mPaint);
 			

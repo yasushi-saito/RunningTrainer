@@ -142,7 +142,7 @@ public class RecordReplayActivity extends MapActivity {
     			final Util.LapSummary lastLap = (position > 0 ? mLaps.get(position - 1) : null);
 
     			distanceView.setHorizontallyScrolling(false);
-    			distanceView.setText(Util.distanceToString(lap.distance));
+    			distanceView.setText(Util.distanceToString(lap.distance, Util.DistanceUnitType.KM_OR_MILE));
 
     			double lastElapsed = (lastLap != null ? lastLap.elapsedSeconds : 0.0);
     			double lastDistance = (lastLap != null ? lastLap.distance : 0.0);
@@ -153,10 +153,10 @@ public class RecordReplayActivity extends MapActivity {
     			paceView.setText(Util.paceToString(pace));
 
     			double v = (lap.elevationGain - (lastLap != null ? lastLap.elevationGain : 0.0));
-    			elevGainView.setText(Util.distanceToString(v));
+    			elevGainView.setText(Util.distanceToString(v, Util.DistanceUnitType.M_OR_FEET));
 
     			v = (lap.elevationLoss - (lastLap != null ? lastLap.elevationLoss : 0.0));
-    			elevLossView.setText(Util.distanceToString(v));
+    			elevLossView.setText(Util.distanceToString(v, Util.DistanceUnitType.M_OR_FEET));
     		}
     		return layout;
     	}
@@ -221,7 +221,7 @@ public class RecordReplayActivity extends MapActivity {
     	TextView durationView = (TextView)findViewById(R.id.replay_duration);
     	TextView paceView = (TextView)findViewById(R.id.replay_pace);    	
 
-    	distanceView.setText(Util.distanceToString(mRecord.total_distance));
+    	distanceView.setText(Util.distanceToString(mRecord.total_distance, Util.DistanceUnitType.KM_OR_MILE));
     	durationView.setText(Util.durationToString((long)mRecord.duration));
     	if (mRecord.total_distance <= 0.0) {
     		paceView.setText("0:00");
