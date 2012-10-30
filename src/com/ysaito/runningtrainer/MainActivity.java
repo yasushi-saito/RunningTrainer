@@ -10,9 +10,9 @@ package com.ysaito.runningtrainer;
  */
 
 /**
- * 
+ *
+ * TODO: undo of "add interval/repeat" start
  * TODO: the first workout isn't spoken.
- * TODO: better button design
  * TODO: enable/disable dependent settings
  * TODO: satellite/map view mode value should be process-global.
  * TODO: smooth GPS readouts and reduce sampling rate

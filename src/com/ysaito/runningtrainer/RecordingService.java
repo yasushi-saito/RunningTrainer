@@ -553,8 +553,7 @@ public class RecordingService extends Service {
 	        notification.setLatestEventInfo(this, "RunningTrainer", 
 	        		"Recording since " + Util.dateToString(System.currentTimeMillis()/1000),
 	        		contentIntent);
-
-	        mNM.notify(1, notification);
+	        startForeground(startId, notification);
 			updateTimer();
 		}
 		return START_NOT_STICKY;
