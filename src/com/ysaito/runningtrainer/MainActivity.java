@@ -14,12 +14,9 @@ package com.ysaito.runningtrainer;
  * TODO: undo of "add interval/repeat" start
  * TODO: the first workout isn't spoken.
  * TODO: enable/disable dependent settings
- * TODO: satellite/map view mode value should be process-global.
- * TODO: smooth GPS readouts and reduce sampling rate
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * TODO: workout item name & readout
  * TODO: automatic syncing of records on reconnect and/or token authorization
- * TODO: show runkeeper sync status somewhere
  * TODO: run syncer as a Service.
  * TODO: pause detection should take GPS accuracy into account.
  * TODO: sync all. 
@@ -27,7 +24,11 @@ package com.ysaito.runningtrainer;
  * TODO: remove the stats view row when none of the views show anything
  * TODO: change the workout editor so that the interval moves inside a repeat more reliably
  * TODO: in workout editor canvas, set a reasonable default interval spec
- */
+
+ * done (incompletely)	
+ * TODO: smooth GPS readouts and reduce sampling rate
+ * TODO: show runkeeper sync status somewhere
+*/
 import java.util.HashMap;
 
 import android.app.ActionBar;

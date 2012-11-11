@@ -12,10 +12,7 @@ import com.google.android.maps.Projection;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Point;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -29,11 +26,11 @@ public class RecordReplayActivity extends MapActivity {
 	private static final String TAG = "RecordReplayActivity";
 
     static public class MyOverlay extends Overlay {
-        private final ArrayList<GeoPoint> mPoints = new ArrayList<GeoPoint>();
+        private final ChunkedArray<GeoPoint> mPoints = new ChunkedArray<GeoPoint>();
         private final Paint mPaint = new Paint();
         private JsonWGS84 mCurrentLocation = null;
         
-        public final ArrayList<GeoPoint> getPoints() { return mPoints; }
+        public final ChunkedArray<GeoPoint> getPoints() { return mPoints; }
         
         public final void setPath(JsonWGS84[] path) {
         	mPoints.clear();
@@ -60,13 +57,13 @@ public class RecordReplayActivity extends MapActivity {
             	GraphicsUtil.drawCurrentPosition((float)mCurrentLocation.latitude, (float)mCurrentLocation.longitude, 0.0f, canvas, projection, mPaint);
             }
             if (mPoints.size() > 0) {
-            	GeoPoint start = mPoints.get(0);
+            	GeoPoint start = mPoints.front();
             	GraphicsUtil.drawStartPoint(
             			(float)(start.getLatitudeE6() / 1e6), (float)(start.getLongitudeE6() / 1e6), canvas, projection, mPaint);
             	
             }
             if (mPoints.size() > 1) {
-            	GeoPoint stop = mPoints.get(mPoints.size() - 1);
+            	GeoPoint stop = mPoints.back();
             	GraphicsUtil.drawStopPoint(
             			(float)(stop.getLatitudeE6() / 1e6), (float)(stop.getLongitudeE6() / 1e6), canvas, projection, mPaint);
             }
@@ -83,7 +80,7 @@ public class RecordReplayActivity extends MapActivity {
     
     private static class MyAdapter extends BaseAdapter {
     	private final LayoutInflater mInflater;
-    	private ArrayList<Util.LapSummary> mLaps = new ArrayList<Util.LapSummary>();
+    	private ChunkedArray<Util.LapSummary> mLaps = new ChunkedArray<Util.LapSummary>();
 
     	public MyAdapter(Context context) { 
     		mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE); 
@@ -96,7 +93,7 @@ public class RecordReplayActivity extends MapActivity {
 
     	public final Util.LapSummary getLapSummary(int index) {
     		if (index < 0 || index >= mLaps.size()) return null;
-    		return mLaps.get(index);
+    		return mLaps.getAtIndex(index);
     	}
     	
     	//
@@ -138,8 +135,8 @@ public class RecordReplayActivity extends MapActivity {
     			--position;
     			if (position < 0 && position >= mLaps.size()) return layout;
 
-    			final Util.LapSummary lap = mLaps.get(position);
-    			final Util.LapSummary lastLap = (position > 0 ? mLaps.get(position - 1) : null);
+    			final Util.LapSummary lap = mLaps.getAtIndex(position);
+    			final Util.LapSummary lastLap = (position > 0 ? mLaps.getAtIndex(position - 1) : null);
 
     			distanceView.setHorizontallyScrolling(false);
     			distanceView.setText(Util.distanceToString(lap.distance, Util.DistanceUnitType.KM_OR_MILE));
@@ -162,8 +159,8 @@ public class RecordReplayActivity extends MapActivity {
     	}
     }
     
-    public void setMapMode(MapMode mode) {
-    	mMapView.setSatellite(mode == MapMode.SATTELITE);
+    public void setMapMode(int mapMode) {
+    	mMapView.setSatellite(mapMode == MapMode.SATTELITE);
     }
     
     @Override
@@ -237,35 +234,8 @@ public class RecordReplayActivity extends MapActivity {
     }
     
     public final void setRecord(JsonActivity record) {
-    	if (Settings.smoothGps) {
-    		PathAggregator aggr = new PathAggregator(false /* no detect pauses*/, true /* smooth*/);
-    		double totalDistance = 0.0;
-    		for (JsonWGS84 point : record.path) {
-    			PathAggregator.Result result = aggr.addLocation(point.timestamp, point.latitude, point.longitude, point.altitude);
-    			totalDistance += result.deltaDistance;
-    		}
-    		mRecord = new JsonActivity(record);
-    		
-    		ArrayList<Util.Point> smoothedPath = aggr.getPath();
-    		mRecord.path = new JsonWGS84[smoothedPath.size()];
-    		double startTime = smoothedPath.get(0).absTime; 
-    		for (int i = 0; i < smoothedPath.size(); ++i) {
-    			JsonWGS84.PathMode mode;
-    			if (i == 0) {
-    				mode = JsonWGS84.PathMode.START;
-    			} else if (i == smoothedPath.size() - 1) {
-    				mode = JsonWGS84.PathMode.END;
-    			} else {
-    				mode = JsonWGS84.PathMode.MIDDLE;
-    			}
-    			mRecord.path[i] = JsonWGS84.fromPoint(smoothedPath.get(i), startTime, mode);
-    		}
-    		mRecord.total_distance = totalDistance;
-    	} else {
-    		mRecord = record;
-    		Log.d(TAG, "NOSMOOTH: " + mRecord.total_distance);
-    	}
-    	mMapOverlay.setPath(record.path);
+    	mRecord = record;
+    	mMapOverlay.setPath(mRecord.path);
     	Util.rescaleMapView(mMapView, mMapOverlay.getPoints());
     	mMapView.invalidate();
     	mLapListAdapter.setRecord(record);

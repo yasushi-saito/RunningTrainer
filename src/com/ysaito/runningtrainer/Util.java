@@ -1,17 +1,11 @@
 package com.ysaito.runningtrainer;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import android.app.Activity;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.location.Location;
 import android.util.Log;
 import android.widget.Toast;
@@ -19,7 +13,6 @@ import android.widget.Toast;
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
-import com.google.android.maps.Projection;
 
 public class Util {
 	static final String TAG = "Util";
@@ -374,7 +367,7 @@ public class Util {
 		return d / (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0);
 	}
 	
-	static final public void rescaleMapView(MapView mapView, ArrayList<GeoPoint> points) {
+	static final public void rescaleMapView(MapView mapView, ChunkedArray<GeoPoint> points) {
 		if (points.size() == 0) return;
 		
 		int minLat = Integer.MAX_VALUE;
@@ -394,8 +387,8 @@ public class Util {
 		controller.animateTo(new GeoPoint((minLat + maxLat) / 2, (minLong + maxLong) / 2));
 	}
 
-	static final public ArrayList<Util.LapSummary> listLaps(JsonActivity record) {
-		final ArrayList<Util.LapSummary> laps = new ArrayList<Util.LapSummary>();
+	static final public ChunkedArray<Util.LapSummary> listLaps(JsonActivity record) {
+		final ChunkedArray<Util.LapSummary> laps = new ChunkedArray<Util.LapSummary>();
 		double autoLapInterval = Settings.autoLapDistanceInterval;
 		if (autoLapInterval <= 0.0) {
 			autoLapInterval = (Settings.unit == Settings.Unit.US ? METERS_PER_MILE : 1000.0);

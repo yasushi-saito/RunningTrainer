@@ -21,7 +21,6 @@ public class RecordingFragment extends MapWrapperFragment {
 
     private MainActivity mActivity;
     private Menu mMenu = null;
-    private MapMode mMapMode = MapMode.MAP;
 
     @Override
     public View onCreateView(
@@ -39,7 +38,7 @@ public class RecordingFragment extends MapWrapperFragment {
 	@Override
 	public void onPrepareOptionsMenu(Menu menu) {
 		super.onPrepareOptionsMenu(menu);
-		if (mMapMode == MapMode.MAP) {
+		if (MapMode.currentMode == MapMode.MAP) {
 			menu.findItem(R.id.recording_map_view).setChecked(true);
 			menu.findItem(R.id.recording_satellite_view).setChecked(false);		
 		} else {
@@ -54,22 +53,22 @@ public class RecordingFragment extends MapWrapperFragment {
 		switch (item.getItemId()) {
 		case R.id.recording_map_view:
 			if (mMenu.findItem(R.id.recording_map_view).isChecked()) {
-				mMapMode = MapMode.SATTELITE;
+				MapMode.currentMode = MapMode.SATTELITE;
 			} else {
-				mMapMode = MapMode.MAP;
+				MapMode.currentMode = MapMode.MAP;
 			}
 			break;
 		case R.id.recording_satellite_view:
 			if (mMenu.findItem(R.id.recording_satellite_view).isChecked()) {
-				mMapMode = MapMode.MAP;
+				MapMode.currentMode = MapMode.MAP;
 			} else {
-				mMapMode = MapMode.SATTELITE;
+				MapMode.currentMode = MapMode.SATTELITE;
 			}
 			break;
 		}
 		Activity child = getChildActivity();
 		if (child != null) {
-			((RecordingActivity)child).setMapMode(mMapMode);
+			((RecordingActivity)child).setMapMode(MapMode.currentMode);
 		}
 		return true;
 	}

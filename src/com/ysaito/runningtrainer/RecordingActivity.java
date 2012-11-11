@@ -48,7 +48,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     }
 
     public class MyOverlay extends Overlay {
-        private final ArrayList<GeoPoint> mPoints = new ArrayList<GeoPoint>();
+        private final ChunkedArray<GeoPoint> mPoints = new ChunkedArray<GeoPoint>();
         private double mStartTime = -1.0;
         private final Paint mPaint = new Paint();
         
@@ -60,15 +60,16 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		mCurrentAccuracy = -1.0;
     	}
 
-        public final void updatePath(double startTime, ArrayList<Util.Point> path) {
+        public final void updatePath(double startTime, ChunkedArray<Util.Point> path) {
+        	if (Util.ASSERT_ENABLED && path.size() != mPoints.size() + 1) {
+        		Util.crash(null, "More than one point added: " + path.size() + ": " + mPoints.size());
+        	}
         	if (startTime != mStartTime) {
         		mStartTime = startTime;
         		mPoints.clear();
         	}
-        	while (mPoints.size() < path.size()) {
-        		Util.Point point = path.get(mPoints.size());
-        		mPoints.add(point.toGeoPoint());
-        	}
+        	Util.Point point = path.back();
+        	mPoints.add(point.toGeoPoint());
         }
 
         public final void setCurrentLocation(double latitude, double longitude, double accuracy) {
@@ -91,7 +92,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
             			canvas, projection, mPaint);
             }
             if (mPoints.size() > 0) {
-            	GeoPoint start = mPoints.get(0);
+            	GeoPoint start = mPoints.front();
             	GraphicsUtil.drawStartPoint(
             			(float)(start.getLatitudeE6() / 1e6), (float)(start.getLongitudeE6() / 1e6), canvas, projection, mPaint);
             	
@@ -429,7 +430,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     private String mLastSelectedWorkoutFilename = null;
     private JsonWorkout mLastSelectedWorkout = null;
 
-    public final void setMapMode(MapMode mode) {
+    public final void setMapMode(int mode) {
     	mMapView.setSatellite(mode == MapMode.SATTELITE);
     }
     
@@ -505,7 +506,8 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     			
     			// Copy the path entries out
     			record.path = new JsonWGS84[status.path.size()];
-    			for (int i = 0; i < status.path.size(); ++i) {
+    			int i = 0;
+    			for (Util.Point point : status.path) { 
     				JsonWGS84.PathMode mode;
     				if (i == 0) {
     					mode = JsonWGS84.PathMode.START;
@@ -514,9 +516,10 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     				} else {
     					mode = JsonWGS84.PathMode.MIDDLE;
     				}
-    				record.path[i] = JsonWGS84.fromPoint(status.path.get(i), status.startTime, mode);
+    				record.path[i] = JsonWGS84.fromPoint(point, status.startTime, mode);
+    				++i;
     			}
-    			record.duration = (status.path.get(status.path.size() - 1).absTime - status.path.get(0).absTime);
+    			record.duration = (status.path.back().absTime - status.path.front().absTime);
     			
     			Util.Point lastLocation = null;
     		

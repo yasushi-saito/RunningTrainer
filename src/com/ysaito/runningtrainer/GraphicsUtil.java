@@ -1,10 +1,7 @@
 package com.ysaito.runningtrainer;
 
-import java.util.ArrayList;
-
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.Projection;
-
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -88,7 +85,8 @@ public class GraphicsUtil {
 				BITMAP_CURRENT_LOCATION.getHeight() / 2.0f);
 	}
 	
-	static final public void drawPath(ArrayList<GeoPoint> points,
+	static final public void drawPath(
+			ChunkedArray<GeoPoint> points,
 			int viewWidth, int viewHeight,
 			Canvas canvas, Projection projection, Paint paint) {
 		if (points.size() <= 1) return;
@@ -99,32 +97,32 @@ public class GraphicsUtil {
 
     	Path path = new Path();
     	android.graphics.Point lastPoint = new android.graphics.Point();
-    	projection.toPixels(points.get(0), lastPoint);
-    		
     	android.graphics.Point lastSegmentEndpoint = null; 
     	
-    	for (int i = 1; i < points.size(); i++) {
-    		GeoPoint geoPoint = points.get(i);
+    	int i = 0;
+    	for (GeoPoint geoPoint : points) {
     		android.graphics.Point point = new android.graphics.Point();
     		projection.toPixels(geoPoint, point);
-    		
-    		// Draw the line from mPoints[i-1] .. mPoints[i] if either of
-    		// the endpoints are in the view.
-    		boolean drawLine = false;
-    		drawLine |= (
-    				lastPoint.x >= 0 && lastPoint.x < viewWidth &&
-    				lastPoint.y >= 0 && lastPoint.y < viewHeight);
-    		drawLine |= (
-    				point.x >= 0 && point.x < viewWidth &&
-    				point.y >= 0 && point.y < viewHeight);
-    		if (drawLine) {
-    			if (lastSegmentEndpoint != lastPoint) {
-    				path.moveTo(lastPoint.x, lastPoint.y);
+    		if (i > 0) {
+    			// Draw the line from mPoints[i-1] .. mPoints[i] if either of
+    			// the endpoints are in the view.
+    			boolean drawLine = false;
+    			drawLine |= (
+    					lastPoint.x >= 0 && lastPoint.x < viewWidth &&
+    					lastPoint.y >= 0 && lastPoint.y < viewHeight);
+    			drawLine |= (
+    					point.x >= 0 && point.x < viewWidth &&
+    					point.y >= 0 && point.y < viewHeight);
+    			if (drawLine) {
+    				if (lastSegmentEndpoint != lastPoint) {
+    					path.moveTo(lastPoint.x, lastPoint.y);
+    				}
+    				path.lineTo(point.x, point.y);
+    				lastSegmentEndpoint = point;
     			}
-    			path.lineTo(point.x, point.y);
-    			lastSegmentEndpoint = point;
     		}
     		lastPoint = point;
+    		++i;
     	}
     	canvas.drawPath(path, paint);
 	}

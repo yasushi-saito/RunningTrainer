@@ -1,12 +1,13 @@
 package com.ysaito.runningtrainer;
 
-import java.util.ArrayList;
+import java.util.Iterator;
 
 import android.location.Location;
 
 import com.ysaito.runningtrainer.Util.PauseType;
 import com.ysaito.runningtrainer.Util.Point;
-import com.ysaito.gpskalmanfilter.GpsKalmanFilter;
+// import com.ysaito.gpskalmanfilter.GpsKalmanFilter;
+import com.ysaito.gpssmoother.GpsSmoother;
 
 public class PathAggregator {
 	public static class Result {
@@ -34,11 +35,11 @@ public class PathAggregator {
 
 	private static class Data {
 		public float[] mTmp;
-		public ArrayList<Point> mPath;
+		public ChunkedArray<Point> mPath;
 		public boolean mPaused;
 		public double mPauseEndTime;
 
-		public Data(float[] mTmp, ArrayList<Point> mPath,
+		public Data(float[] mTmp, ChunkedArray<Point> mPath,
 				boolean mPaused, double mPauseEndTime) {
 			this.mTmp = mTmp;
 			this.mPath = mPath;
@@ -46,20 +47,22 @@ public class PathAggregator {
 			this.mPauseEndTime = mPauseEndTime;
 		}
 	}
-	private Data data = new Data(new float[1], new ArrayList<Point>(), false, -1.0);
+	private Data data = new Data(new float[1], new ChunkedArray<Point>(), false, -1.0);
 	
-	public static final double PAUSE_DETECTION_WINDOW_SECONDS = 10.0; 
 	public static final double PAUSE_MAX_DISTANCE = 4.0;
 	public static final double JUMP_DETECTION_MIN_PACE = 1.5 * 60 / 1000.0;
 
 	private final boolean mDetectPauses;
-	private final GpsKalmanFilter mKalman;
-	
+	private final GpsSmoother mFilter;
+	public final double mPauseDetectionWindowSeconds;
+
 	public PathAggregator(
 			boolean detectPauses,
-			boolean smoothGps) {
+			boolean smoothGps,
+			double pauseDetectionWindowSeconds) {
 		mDetectPauses = detectPauses;
-		mKalman = (smoothGps ? new GpsKalmanFilter(10000.0) : null);
+		mFilter = (smoothGps ? new GpsSmoother() : null);
+		mPauseDetectionWindowSeconds = pauseDetectionWindowSeconds;
 	}
 			
 	/**
@@ -73,7 +76,7 @@ public class PathAggregator {
 		if (data.mPath.size() == 0) {
 			data.mPauseEndTime = absTime;
 		} else {
-			Point lastLocation = data.mPath.get(data.mPath.size() - 1);
+			Point lastLocation = data.mPath.back();
 			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
 					latitude, longitude, data.mTmp);
 			double pace = (absTime - lastLocation.absTime) / data.mTmp[0];
@@ -86,15 +89,16 @@ public class PathAggregator {
 			}
 		}
 
-		if (mKalman != null) {
+		if (mFilter != null) {
+			GpsSmoother.Point smoothed = new GpsSmoother.Point();
 			if (data.mPath.size() == 0) {
-				mKalman.updateVelocity(latitude, longitude, 0);
+				mFilter.addPoint(latitude, longitude, 0.0, 0.0, smoothed);
 			} else {
-				final double lastAbsTime = data.mPath.get(data.mPath.size() - 1).absTime;
-				mKalman.updateVelocity(latitude, longitude, absTime - lastAbsTime);
-				latitude = mKalman.getLat();
-				longitude = mKalman.getLong();
+				final double lastAbsTime = data.mPath.back().absTime;
+				mFilter.addPoint(latitude, longitude, 0.0, absTime - lastAbsTime, smoothed);
 			}
+			latitude = smoothed.latitude;
+			longitude = smoothed.longitude;
 		}
 		
 		if (!data.mPaused) {
@@ -103,9 +107,9 @@ public class PathAggregator {
 			// (2) every GPS report in the last 10 seconds is within 5 meters of the current location.
 			//
 			// The condition (1) is needed to pausing too often when GPS is noisy.
-			if (mDetectPauses && absTime >= data.mPauseEndTime + PAUSE_DETECTION_WINDOW_SECONDS) {
-				for (int i = data.mPath.size() - 1; i >= 0; --i) {
-					final Point location = data.mPath.get(i);
+			if (mDetectPauses && absTime >= data.mPauseEndTime + mPauseDetectionWindowSeconds) {
+				for (Iterator<Point> iter = data.mPath.reverseIterator(); iter.hasNext(); ) {
+					final Point location = iter.next();
 					Location.distanceBetween(location.latitude, location.longitude,
 							latitude, longitude, data.mTmp);
 					final double distance = data.mTmp[0];
@@ -113,10 +117,10 @@ public class PathAggregator {
 						// The user moved. 
 						break;
 					}
-					if (absTime - location.absTime >= PAUSE_DETECTION_WINDOW_SECONDS) {
+					if (absTime - location.absTime >= mPauseDetectionWindowSeconds) {
 						data.mPaused = true;
 						// Remove all the elements after the @p location, since they are part of the pause
-						while (data.mPath.size() > i + 1) data.mPath.remove(data.mPath.size() - 1);
+						while (data.mPath.back() != location) data.mPath.removeLast();
 						data.mPath.add(new Point(PauseType.PAUSE_STARTED, location.absTime, location.latitude, location.longitude, location.altitude));
 						r.pauseType = Util.PauseType.PAUSE_STARTED;
 						r.absTime = location.absTime;
@@ -126,7 +130,7 @@ public class PathAggregator {
 			}
 		} else  {
 			// Currently paused. Detect resumption.
-			Point lastLocation = data.mPath.get(data.mPath.size() - 1);
+			Point lastLocation = data.mPath.back();
 			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
 					latitude, longitude, data.mTmp);
 			final double distance = data.mTmp[0];
@@ -141,7 +145,7 @@ public class PathAggregator {
 		}
 
 		if (data.mPath.size() > 0) {
-			Point lastLocation = data.mPath.get(data.mPath.size() - 1);
+			Point lastLocation = data.mPath.back();
 			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
 					latitude, longitude,
 					data.mTmp);
@@ -156,7 +160,7 @@ public class PathAggregator {
 	 * Return the list of locations visited during the activity, in time series order. 
 	 * Locations during pauses are removed.
 	 */
-	public ArrayList<Point> getPath() { 
+	public ChunkedArray<Point> getPath() { 
 		return data.mPath; 
 	}
 }

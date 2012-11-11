@@ -50,7 +50,7 @@ public class RecordingService extends Service {
     }
     public static class Status {
     	double startTime;
-    	ArrayList<Util.Point> path;
+    	ChunkedArray<Util.Point> path;
     	LapStats totalStats;
     	LapStats lapStats;
     	LapStats lastLapStats;
@@ -521,7 +521,7 @@ public class RecordingService extends Service {
 		} else {
 			JsonWorkout workout = (JsonWorkout)intent.getSerializableExtra("workout");
 			speak("started", null);
-			mPath = new PathAggregator(Settings.autoPauseDetection, Settings.smoothGps);
+			mPath = new PathAggregator(Settings.autoPauseDetection, Settings.smoothGps, 10.0);
 			mTotalStats = new LapStats();
 			mLapStats = new LapStats();
 			mLastLapStats = null;
@@ -579,7 +579,7 @@ public class RecordingService extends Service {
 			if (mPath.getPath().size() == 0) {
 				mPath.addLocation(now, 38.00, -120.0, 0);
 			} else {
-				Util.Point lastWgs = mPath.getPath().get(mPath.getPath().size() - 1);
+				Util.Point lastWgs = mPath.getPath().back();
 				double latitude, longitude;
 				if (mNumFakeInputs % 25 == 0) {
 					// Simulate a jump in GPS reading
