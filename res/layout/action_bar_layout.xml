@@ -14,4 +14,10 @@
         android:layout_height="24dip"
 	    android:layout_gravity="center_vertical"
         />
+    <com.ysaito.runningtrainer.TextThrobberView
+        android:id="@+id/action_bar_text_throbber" 
+        android:layout_width="80dip"
+        android:layout_height="24dip"
+	    android:layout_gravity="center_vertical"
+        />
 </LinearLayout>

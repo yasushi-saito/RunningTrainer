@@ -180,21 +180,21 @@ public class RecordListFragment extends ListFragment {
 	}
 
 	private int mNumBackgroundTasksRunning = 0;
-	private void startBusyThrob() {
+	private void startBusyThrob(String text) {
 		if (mNumBackgroundTasksRunning == 0) {
-			getActivity().setProgressBarIndeterminateVisibility(true);
+			mActivity.startActionBarStatusUpdate(text);
 		}
 		++mNumBackgroundTasksRunning;
 	}
 	private void stopBusyThrob() {
 		--mNumBackgroundTasksRunning;
 		if (mNumBackgroundTasksRunning == 0) {
-			getActivity().setProgressBarIndeterminateVisibility(false);
+			mActivity.stopActionBarStatusUpdate();
 		}
 	}
 	
 	private void startListing() {
-		startBusyThrob();
+		startBusyThrob("Loading");
 		FileManager.runAsync(new FileManager.AsyncRunner<ArrayList<ParsedFilename>>() {
 			public ArrayList<ParsedFilename> doInThread() throws Exception {
 				return FileManager.listFiles(mRecordDir);
@@ -213,7 +213,7 @@ public class RecordListFragment extends ListFragment {
 		final FileManager.ParsedFilename f = (FileManager.ParsedFilename)mAdapter.getItem(position);
 		if (f == null) return;
 
-		startBusyThrob();
+		startBusyThrob("Loading");
 		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
 			public JsonActivity doInThread() throws Exception {
 				return FileManager.readJson(mRecordDir, f.getBasename(), JsonActivity.class);
@@ -306,7 +306,7 @@ public class RecordListFragment extends ListFragment {
 			for (int i = 0; i < mAdapter.getCount(); ++i) {
 				filenames[i] = (FileManager.ParsedFilename)mAdapter.getItem(i);
 			}
-			startBusyThrob();
+			startBusyThrob("Deleting");
 			FileManager.runAsync(new FileManager.AsyncRunner<UndoEntry>() {
 				public UndoEntry doInThread() throws Exception {
 					UndoEntry newUndos = new UndoEntry();
@@ -334,7 +334,7 @@ public class RecordListFragment extends ListFragment {
 		case R.id.record_list_undo:
 			if (mUndos.empty()) break;
 			final UndoEntry undo = mUndos.pop();
-			startBusyThrob();
+			startBusyThrob("Undoing");
 			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
 				public Void doInThread() throws Exception {
 					for (int i = 0; i < undo.filenames.size(); ++i) {
@@ -372,7 +372,7 @@ public class RecordListFragment extends ListFragment {
 
 	private void sendRecordAtPosition(int position) {
 		final FileManager.ParsedFilename summary = (FileManager.ParsedFilename)mAdapter.getItem(position);
-		startBusyThrob();
+		startBusyThrob("Sending");
 		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
 			public JsonActivity doInThread() throws Exception {
 				return FileManager.readJson(mRecordDir, summary.getBasename(), JsonActivity.class);
@@ -407,7 +407,7 @@ public class RecordListFragment extends ListFragment {
 	private void deleteRecordAtPosition(int position) {
 		final FileManager.ParsedFilename summary = (FileManager.ParsedFilename)mAdapter.getItem(position);
 		// Read the file contents so that we can save it it in mUndos.
-		startBusyThrob();
+		startBusyThrob("Deleting");
 		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
 			public JsonActivity doInThread() throws Exception {
 				JsonActivity record = FileManager.readJson(mRecordDir, summary.getBasename(), JsonActivity.class);

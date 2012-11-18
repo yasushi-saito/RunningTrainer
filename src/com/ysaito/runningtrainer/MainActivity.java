@@ -10,7 +10,7 @@ package com.ysaito.runningtrainer;
  */
 
 /**
- *
+ * TODO: get the last GPS location in the recording view
  * TODO: undo of "add interval/repeat" start
  * TODO: the first workout isn't spoken.
  * TODO: enable/disable dependent settings
@@ -103,6 +103,7 @@ public class MainActivity extends Activity {
 	@Override public void onPause() { super.onPause(); Plog.d(TAG, "onPause"); }
 	
 	private GpsStatusView mGpsStatusView;
+	private TextThrobberView mTextThrobberView;
 	
 	/**
 	 * 
@@ -110,6 +111,17 @@ public class MainActivity extends Activity {
 	 */
 	public void setGpsStatus(double accuracy) {
 		mGpsStatusView.setAccuracy(accuracy);
+	}
+	
+	public void startActionBarStatusUpdate(String text) {
+		mTextThrobberView.setText(text);
+		mTextThrobberView.startAnimation();
+		mTextThrobberView.setVisibility(View.VISIBLE);
+	}
+
+	public void stopActionBarStatusUpdate() {
+		mTextThrobberView.stopAnimation();
+		mTextThrobberView.setVisibility(View.GONE);
 	}
 	
     @Override
@@ -136,6 +148,9 @@ public class MainActivity extends Activity {
         		R.layout.action_bar_layout, null);
         mGpsStatusView = (GpsStatusView)barView.findViewById(R.id.action_bar_gps_status);
         setGpsStatus(GpsStatusView.HIDE_GPS_VIEW);
+        
+        mTextThrobberView = (TextThrobberView)barView.findViewById(R.id.action_bar_text_throbber);
+        mTextThrobberView.setVisibility(View.GONE);
         
         bar.setCustomView(barView, 
         		new ActionBar.LayoutParams(

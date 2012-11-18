@@ -24,10 +24,12 @@
        android:key="auto_pause_detection"
        android:title="Automatic pause detection" />
    
-   <CheckBoxPreference
-       android:defaultValue="true"
-       android:key="smooth_gps"
-       android:title="Smooth GPS values" />
+   <ListPreference
+       android:defaultValue="5"
+       android:entries="@array/gps_report_interval_names"
+       android:entryValues="@array/gps_report_interval_values"
+       android:key="gps_min_report_interval"
+       android:title="GPS reporting interval" />
 
    <CheckBoxPreference
        android:defaultValue="false"

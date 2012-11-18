@@ -152,22 +152,22 @@ public class WorkoutListFragment extends ListFragment {
 	}
 	
 	private int mNumBackgroundTasksRunning = 0;
-	private void startBusyThrob() {
+	private void startBusyThrob(String text) {
 		if (mNumBackgroundTasksRunning == 0) {
-			getActivity().setProgressBarIndeterminateVisibility(true);
+			mActivity.startActionBarStatusUpdate(text);
 		}
 		++mNumBackgroundTasksRunning;
 	}
 	private void stopBusyThrob() {
 		--mNumBackgroundTasksRunning;
 		if (mNumBackgroundTasksRunning == 0) {
-			getActivity().setProgressBarIndeterminateVisibility(false);
+			mActivity.stopActionBarStatusUpdate();
 		}
 	}
 	
 	
 	private void startListing() {
-		startBusyThrob();
+		startBusyThrob("Loading");
 		FileManager.runAsync(new FileManager.AsyncRunner<ArrayList<FileManager.ParsedFilename>>() {
 			public ArrayList<FileManager.ParsedFilename> doInThread() throws Exception {
 				return FileManager.listFiles(mWorkoutDir);

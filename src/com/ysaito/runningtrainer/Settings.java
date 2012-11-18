@@ -52,8 +52,8 @@ public class Settings {
 	static public SpeechTypes speakTimeTypes = new SpeechTypes();	
 	static public SpeechTypes speakOnLapTypes = new SpeechTypes();		
 	static public boolean fakeGps;
+	static public double gpsMinReportInterval;
 	static public boolean autoPauseDetection;
-	static public boolean smoothGps;
 	static public boolean postToFacebook;
 	static public boolean postToTwitter;
 	private static SharedPreferences mPrefs;
@@ -87,7 +87,7 @@ public class Settings {
 			for (int i = 0; i < 6; ++i) onChange("display" + i);
 			onChange("autolap_distance_interval");
 			onChange("fake_gps");
-			onChange("smooth_gps");
+			onChange("gps_min_report_interval");
 			onChange("auto_pause_detection");
 			onChange("post_to_facebook");
 			onChange("post_to_twitter");
@@ -143,10 +143,10 @@ public class Settings {
 			}
 		} else if (key.equals("fake_gps")) {
 			fakeGps = mPrefs.getBoolean(key, false);
+		} else if (key.equals("gps_min_report_interval")) {
+			gpsMinReportInterval = Double.parseDouble(mPrefs.getString(key, "5.0"));
 		} else if (key.equals("auto_pause_detection")) {
 			autoPauseDetection = mPrefs.getBoolean(key, false);
-		} else if (key.equals("smooth_gps")) {
-			smoothGps = mPrefs.getBoolean(key, false);
 		} else if (key.equals("post_to_facebook")) {
 			postToFacebook = mPrefs.getBoolean(key, false);
 		} else if (key.equals("post_to_twitter")) {

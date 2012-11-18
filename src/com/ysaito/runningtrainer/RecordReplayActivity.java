@@ -1,7 +1,5 @@
 package com.ysaito.runningtrainer;
 
-import java.util.ArrayList;
-
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapController;
@@ -150,10 +148,10 @@ public class RecordReplayActivity extends MapActivity {
     			paceView.setText(Util.paceToString(pace));
 
     			double v = (lap.elevationGain - (lastLap != null ? lastLap.elevationGain : 0.0));
-    			elevGainView.setText(Util.distanceToString(v, Util.DistanceUnitType.M_OR_FEET));
+    			elevGainView.setText(Util.distanceToString(v, Util.DistanceUnitType.MILE_OR_FEET));
 
     			v = (lap.elevationLoss - (lastLap != null ? lastLap.elevationLoss : 0.0));
-    			elevLossView.setText(Util.distanceToString(v, Util.DistanceUnitType.M_OR_FEET));
+    			elevLossView.setText(Util.distanceToString(v, Util.DistanceUnitType.MILE_OR_FEET));
     		}
     		return layout;
     	}

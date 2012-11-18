@@ -58,10 +58,10 @@ public class PathAggregator {
 
 	public PathAggregator(
 			boolean detectPauses,
-			boolean smoothGps,
 			double pauseDetectionWindowSeconds) {
 		mDetectPauses = detectPauses;
-		mFilter = (smoothGps ? new GpsSmoother() : null);
+		mFilter = null;
+		// mFilter = new GpsSmoother();
 		mPauseDetectionWindowSeconds = pauseDetectionWindowSeconds;
 	}
 			

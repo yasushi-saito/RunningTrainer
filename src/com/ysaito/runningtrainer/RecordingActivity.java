@@ -61,15 +61,17 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     	}
 
         public final void updatePath(double startTime, ChunkedArray<Util.Point> path) {
-        	if (Util.ASSERT_ENABLED && path.size() != mPoints.size() + 1) {
-        		Util.crash(null, "More than one point added: " + path.size() + ": " + mPoints.size());
-        	}
         	if (startTime != mStartTime) {
         		mStartTime = startTime;
         		mPoints.clear();
         	}
-        	Util.Point point = path.back();
-        	mPoints.add(point.toGeoPoint());
+        	if (path.size() > 0) {
+        		if (Util.ASSERT_ENABLED && path.size() != mPoints.size() + 1) {
+        			Util.crash(null, "More than one point added: " + path.size() + ": " + mPoints.size());
+        		}
+        		Util.Point point = path.back();
+        		mPoints.add(point.toGeoPoint());
+        	}
         }
 
         public final void setCurrentLocation(double latitude, double longitude, double accuracy) {
@@ -361,7 +363,10 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         	Util.error(mThisActivity, "GPS not enabled");
         	showDialog("Please enable GPS in Settings / Location services.");
         } else {
-        	mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
+        	mLocationManager.requestLocationUpdates(
+        			LocationManager.GPS_PROVIDER, 
+        			(long)(Settings.gpsMinReportInterval * 1000), 
+        			0, mLocationListener);
         }
 
         mStatsViews = new StatsView[] { 

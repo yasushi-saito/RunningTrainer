@@ -521,7 +521,7 @@ public class RecordingService extends Service {
 		} else {
 			JsonWorkout workout = (JsonWorkout)intent.getSerializableExtra("workout");
 			speak("started", null);
-			mPath = new PathAggregator(Settings.autoPauseDetection, Settings.smoothGps, 10.0);
+			mPath = new PathAggregator(Settings.autoPauseDetection, 10.0);
 			mTotalStats = new LapStats();
 			mLapStats = new LapStats();
 			mLastLapStats = null;
@@ -535,12 +535,13 @@ public class RecordingService extends Service {
 				mWorkoutIterator = null;
 			}
 			if (!Settings.fakeGps) {
-				if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-						!mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+				if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
 					notifyError("Please enable GPS in Settings / Location services.");
 				} else {
-					mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, mLocationListener);
-					mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, mLocationListener);
+					mLocationManager.requestLocationUpdates(
+							LocationManager.GPS_PROVIDER, 
+							(long)(Settings.gpsMinReportInterval * 1000), 
+							0, mLocationListener);
 				}
 			}
 	        Notification notification = new Notification(R.drawable.running_logo, 

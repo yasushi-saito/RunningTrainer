@@ -92,12 +92,19 @@ class LapStats {
 		double minTimestamp = now + 100000;
 		double maxTimestamp = 0;
 		double totalDistance = 0.0;
+		boolean firstEvent = true;
 		while (iter.hasNext()) {
 			Event event = iter.next();
 			if (event.absTime >= now - 15) {
 				minTimestamp = Math.min(minTimestamp, event.absTime);
 				maxTimestamp = Math.max(maxTimestamp, event.absTime);
-				totalDistance += event.distance;
+				if (firstEvent) {
+					firstEvent = false;
+					// event.distance is the delta from the previous event, and the previous
+					// event is outside the 15sec window.
+				} else {
+					totalDistance += event.distance;
+				}
 			}
 		}
 		double pace;

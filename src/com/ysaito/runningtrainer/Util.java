@@ -282,7 +282,7 @@ public class Util {
 		}
 	}
 
-	enum DistanceUnitType { KM_OR_MILE, M_OR_FEET };
+	enum DistanceUnitType { KM_OR_MILE, MILE_OR_FEET };
 	
 	static final public String distanceToString(double meters, DistanceUnitType unitType) {
 		if (meters >= INFINITE_DISTANCE) return "∞";
