@@ -86,7 +86,7 @@ public class RecordingService extends Service {
     		if (mSingleton.mStarted) {
     			status = new Status();
     			status.startTime = mSingleton.mStartTime;
-    			status.currentInterval = mSingleton.getCurrentWorkoutInterval();
+    			status.currentInterval = mSingleton.getCurrentWorkout();
     			status.path = mSingleton.mPath.getPath();
     			status.lapStats = mSingleton.mLapStats;
     			status.lastLapStats = mSingleton.mLastLapStats;
@@ -110,7 +110,7 @@ public class RecordingService extends Service {
     private final void startNewLap() {
     	if (mWorkoutIterator != null && !mWorkoutIterator.done()) {
     		mWorkoutIterator.next();
-    		final JsonWorkout newWorkout = getCurrentWorkoutInterval();
+    		final JsonWorkout newWorkout = getCurrentWorkout();
     		if (newWorkout == null) {
     			speak("Workout ended", null);
     		} else {
@@ -135,7 +135,7 @@ public class RecordingService extends Service {
 
 		Status status = new Status();
     	status.startTime = mStartTime;
-    	status.currentInterval = getCurrentWorkoutInterval();
+    	status.currentInterval = getCurrentWorkout();
     	status.path = mPath.getPath();
     	status.lapStats = mLapStats;
     	status.lastLapStats = mLastLapStats;
@@ -222,10 +222,14 @@ public class RecordingService extends Service {
 		FORCE_NEW_LAP
     }
     
+    private static boolean hasTargetPaceRange(JsonWorkout workout) {
+    	return workout.slowTargetPace != Util.INFINITE_PACE || workout.fastTargetPace != 0;
+    }
+    
     private final void updateStats(LapType lapType) {
     	boolean newLap = (lapType == LapType.FORCE_NEW_LAP);
 
-    	final JsonWorkout currentWorkout = getCurrentWorkoutInterval();
+    	final JsonWorkout currentWorkout = getCurrentWorkout();
     	if (currentWorkout != null) {
     		// When a workout interval is active, ignore the autolap setting
     		// and continue the lap until the interval specifies.
@@ -236,7 +240,7 @@ public class RecordingService extends Service {
     			// Delay installing a new lap until speech is made (speech should use
     			// the last lap's stats, not the empty new stats).
     			newLap = true;
-    		} else {
+    		} else if (hasTargetPaceRange(currentWorkout)) {
     			final double pace = mLapStats.getPace();
     			String text = ON_TARGET;
     			if (pace > currentWorkout.slowTargetPace) {
@@ -311,7 +315,7 @@ public class RecordingService extends Service {
     	if (mStarted) {
     		status = new Status();
     		status.startTime = mStartTime;
-    		status.currentInterval = getCurrentWorkoutInterval();
+    		status.currentInterval = getCurrentWorkout();
     		status.path = mPath.getPath();
     		status.lapStats = mLapStats;
     		status.lastLapStats = mLastLapStats;
@@ -328,7 +332,7 @@ public class RecordingService extends Service {
     	}
     }
 
-    private final JsonWorkout getCurrentWorkoutInterval() {
+    private final JsonWorkout getCurrentWorkout() {
     	return (mWorkoutIterator != null && !mWorkoutIterator.done()) ? 
     			mWorkoutIterator.getWorkout() :	null;
     }
@@ -519,8 +523,7 @@ public class RecordingService extends Service {
 			// Happens when startService is called after the activity has
 			// resumed from previous sleep.
 		} else {
-			JsonWorkout workout = (JsonWorkout)intent.getSerializableExtra("workout");
-			speak("started", null);
+			JsonWorkout workoutSet = (JsonWorkout)intent.getSerializableExtra("workout");
 			mPath = new PathAggregator(Settings.autoPauseDetection, 10.0);
 			mTotalStats = new LapStats();
 			mLapStats = new LapStats();
@@ -529,8 +532,8 @@ public class RecordingService extends Service {
 			mStarted = true;
 			mUserPaused = false;
 			mAutoPaused = false;
-			if (workout != null) {
-				mWorkoutIterator = new WorkoutIterator(new JsonWorkout(workout));
+			if (workoutSet != null) {
+				mWorkoutIterator = new WorkoutIterator(new JsonWorkout(workoutSet));
 			} else {
 				mWorkoutIterator = null;
 			}
@@ -544,6 +547,12 @@ public class RecordingService extends Service {
 							0, mLocationListener);
 				}
 			}
+			speak("started", null);
+			JsonWorkout currentWorkout = getCurrentWorkout();
+			if (currentWorkout != null) {
+    			speak(JsonWorkout.workoutToSpeechText(currentWorkout), null);
+			}
+			
 	        Notification notification = new Notification(R.drawable.running_logo, 
 	        		"Started recording",
 	        		System.currentTimeMillis());

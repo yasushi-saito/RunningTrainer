@@ -12,7 +12,6 @@ package com.ysaito.runningtrainer;
 /**
  * TODO: get the last GPS location in the recording view
  * TODO: undo of "add interval/repeat" start
- * TODO: the first workout isn't spoken.
  * TODO: enable/disable dependent settings
  * TODO: periodic timer activity voice readouts (water!, gu!, etc)
  * TODO: workout item name & readout
