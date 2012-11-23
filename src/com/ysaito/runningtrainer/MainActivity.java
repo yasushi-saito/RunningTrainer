@@ -38,7 +38,6 @@ import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
 import android.app.FragmentTransaction;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.View;
@@ -175,15 +174,6 @@ public class MainActivity extends Activity {
         
         final HealthGraphClient hgClient = HealthGraphClient.getSingleton();
         hgClient.startAuthentication(this);
-        hgClient.getUser(new HealthGraphClient.GetResponseListener() {
-        	public void onFinish(Exception e, Object o) {
-        		if (e != null) {
-        			Log.e(TAG, "GET finished with exception: " + e.toString());
-        		} else if (o != null) {
-        			Log.d(TAG, "GET ok: " + ((JsonUser)o).toString());
-        		}
-        	}
-        });
     }
     
     @Override

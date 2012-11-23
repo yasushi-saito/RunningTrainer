@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Stack;
 
 import com.ysaito.runningtrainer.FileManager.ParsedFilename;
@@ -28,7 +29,7 @@ import android.widget.TextView;
 
 /**
  * A fragment that displays list of completed activities. Clicking on the activity name will display
- * a RecordReplayFragment, which contains MapView and the lap stats.
+ * a RecordReplayFragment, which contains a MapView and lap stats.
  */
 public class RecordListFragment extends ListFragment {
 	private static final String TAG = "RecordListFragment";
@@ -47,6 +48,7 @@ public class RecordListFragment extends ListFragment {
 	private class MyAdapter extends BaseAdapter {
     	private final LayoutInflater mInflater;
     	private final ArrayList<FileManager.ParsedFilename> mRecords = new ArrayList<FileManager.ParsedFilename>();
+    	private final HashSet<FileManager.ParsedFilename> mFilesSending = new HashSet<FileManager.ParsedFilename>();
     	
     	public MyAdapter(Context context) { 
     		mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE); 
@@ -70,7 +72,9 @@ public class RecordListFragment extends ListFragment {
     		} else {
     			layout = (View)convertView;
     		}
-			final TextView view = (TextView)layout.findViewById(R.id.record_list_row_text);
+			final TextView textView = (TextView)layout.findViewById(R.id.record_list_row_text);
+			final ImageView deleteView = (ImageView)layout.findViewById(R.id.record_list_row_delete);
+			final ImageView syncView = (ImageView)layout.findViewById(R.id.record_list_row_send);
 			final FileManager.ParsedFilename f = (FileManager.ParsedFilename)getItem(position);
 			
 			StringBuilder b = new StringBuilder();
@@ -82,24 +86,29 @@ public class RecordListFragment extends ListFragment {
 			b.append("</b> ");
 			b.append(Util.distanceUnitString());
 			
-			view.setText(Html.fromHtml(b.toString()));
-			if (f.getString(FileManager.KEY_RUNKEEPER_PATH, null) == null) {
-				view.setTextColor(0xffff0000);
+			textView.setText(Html.fromHtml(b.toString()));
+			final boolean synced = (f.getString(FileManager.KEY_RUNKEEPER_PATH, null) != null);
+			final boolean sending = mFilesSending.contains(f);
+
+			syncView.clearColorFilter();
+			if (sending) {
+				syncView.setColorFilter(0xffff8000);
+				textView.setTextColor(0xffff8000);
+			} else if (!synced) {
+				syncView.setColorFilter(0xff00ff00);
+				textView.setTextColor(0xff00ff00);
 			} else {
-				view.setTextColor(0xffffffff);
+				syncView.setColorFilter(0xffa0a0a0);
+				textView.setTextColor(0xffa0a0a0);
 			}
 			
-			final ImageView deleteView = (ImageView)layout.findViewById(R.id.record_list_row_delete);
 			deleteView.setOnClickListener(new View.OnClickListener() {
 				public void onClick(View v) {
-					// TODO Auto-generated method stub
 					deleteRecordAtPosition(position);
 				}
 			});
-			final ImageView syncView = (ImageView)layout.findViewById(R.id.record_list_row_send);
 			syncView.setOnClickListener(new View.OnClickListener() {
 				public void onClick(View v) {
-					// TODO Auto-generated method stub
 					sendRecordAtPosition(position);
 				}
 			});
@@ -111,11 +120,18 @@ public class RecordListFragment extends ListFragment {
 		}
 
 		public Object getItem(int position) {
-			// TODO Auto-generated method stub
 			if (position < 0 || position >= mRecords.size()) return null;
 			return mRecords.get(position);
 		}
 
+		public void markAsSending(ParsedFilename f) {
+			mFilesSending.add(f);
+		}
+		
+		public void unmarkAsSending(ParsedFilename f) {
+			mFilesSending.remove(f);
+		}
+		
 		public long getItemId(int position) {
 			return position;
 		}
@@ -260,6 +276,7 @@ public class RecordListFragment extends ListFragment {
 				if (error != null) {
 					Util.error(getActivity(), "Failed to rename: " + error);
 				}
+				startListing(); 
 			}
 		});
 	}
@@ -371,6 +388,10 @@ public class RecordListFragment extends ListFragment {
 
 	private void sendRecordAtPosition(int position) {
 		final FileManager.ParsedFilename summary = (FileManager.ParsedFilename)mAdapter.getItem(position);
+		if (summary == null) return;
+		mAdapter.markAsSending(summary);
+		mAdapter.notifyDataSetChanged();
+		
 		startBusyThrob("Sending");
 		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
 			public JsonActivity doInThread() throws Exception {
@@ -380,6 +401,8 @@ public class RecordListFragment extends ListFragment {
 				if (error != null) {
 					Util.error(getActivity(), "Failed to read " + summary.getBasename() + ": " + error);
 					stopBusyThrob();
+					mAdapter.unmarkAsSending(summary);
+					mAdapter.notifyDataSetChanged();
 					return;
 				} 
 				HealthGraphClient hgClient = HealthGraphClient.getSingleton();
@@ -388,6 +411,7 @@ public class RecordListFragment extends ListFragment {
 						new HealthGraphClient.PutNewFitnessActivityListener() {
 							public void onFinish(Exception e, String runkeeperPath) {
 								stopBusyThrob();
+								mAdapter.unmarkAsSending(summary);
 								if (e != null) {
 									Util.error(getActivity(), "Failed to send activity: " + e);
 								} else if (runkeeperPath == null) {
@@ -395,7 +419,6 @@ public class RecordListFragment extends ListFragment {
 								} else {
 									Util.info(getActivity(), "Sent activity to runkeeper: " + runkeeperPath);
 									markAsSaved(summary, runkeeperPath);
-									startListing(); 
 								}
 							}
 						});

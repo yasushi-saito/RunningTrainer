@@ -126,6 +126,7 @@ public class RecordReplayActivity extends MapActivity {
     		if (position == 0) {
     			// Print the header line
     			distanceView.setText(Util.distanceUnitString());
+    			distanceView.setText(Util.capitalizedDistanceUnitString());    			
     			paceView.setText("Pace");
     			elevGainView.setText("Elev gain");
     			elevLossView.setText("Elev loss");    			

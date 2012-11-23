@@ -14,6 +14,8 @@ import android.util.Log;
 
 public class Plog {
 	private static String TAG = "Plog";
+	private static boolean ENABLED = false;
+	
 	private static class LogEntry {
 		long timestamp;  // millisecs since 1970/1/1
 		String tag;
@@ -113,7 +115,7 @@ public class Plog {
 	private static Buffer mBuffer;
 	
 	public static void init(Context context) {
-		if (mBuffer == null) {
+		if (ENABLED && mBuffer == null) {
 			mBuffer = new Buffer(FileManager.getLogDir(context), 4.0);
 			// Read and dump the system log contents. This will catch the stack trace of
 			// any previous crash of this process, if any. This is needed, because starting
@@ -140,6 +142,8 @@ public class Plog {
 	public static File getLogFile() { return mBuffer.getLogFile(); }
 	
 	public static final void d(String tag, String message) {
-		mBuffer.add(tag, message);
+		if (ENABLED) {
+			mBuffer.add(tag, message);
+		}
 	}
 }

@@ -44,6 +44,7 @@ public class Settings {
 			if (other.now) now = true;
 		}
 	}
+	static public boolean enableVoice;
 	static public double autoLapDistanceInterval; // in meters. <= 0 if disabled
 	static public double speakDistanceInterval;  // in meters. <=0 if disabled
 	static public double speakTimeInterval;  // in seconds. <=0 if disabled
@@ -91,6 +92,7 @@ public class Settings {
 			onChange("auto_pause_detection");
 			onChange("post_to_facebook");
 			onChange("post_to_twitter");
+			onChange("enable_voice");
 			onChange("speak_distance_interval");
 			onChange("speak_distance_total_distance");
 			onChange("speak_distance_total_duration");
@@ -141,6 +143,8 @@ public class Settings {
 			} else {
 				viewTypes[index] = mPrefs.getString(key, "none");
 			}
+		} else if (key.equals("enable_voice")) {
+			enableVoice = mPrefs.getBoolean(key, false);
 		} else if (key.equals("fake_gps")) {
 			fakeGps = mPrefs.getBoolean(key, false);
 		} else if (key.equals("gps_min_report_interval")) {
@@ -203,6 +207,8 @@ public class Settings {
 			speakOnLapTypes.lapDuration = mPrefs.getBoolean(key, false);
 		} else if (key.equals("speak_onlap_lap_pace")) {
 			speakOnLapTypes.lapPace = mPrefs.getBoolean(key, false);
+		} else if (key.equals("speak_onlap_now")) {
+			speakOnLapTypes.now = mPrefs.getBoolean(key, false);
 		} else if (key.equals("speak_onlap_now")) {
 			speakOnLapTypes.now = mPrefs.getBoolean(key, false);
 		} else {

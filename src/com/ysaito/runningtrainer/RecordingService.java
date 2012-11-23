@@ -455,6 +455,11 @@ public class RecordingService extends Service {
 	 *  A pause of 100ms is inserted between "fox" and "jumped"
 	 */
 	private final void speak(String text, SpeakDoneListener listener) {
+		if (!Settings.enableVoice) {
+			if (listener != null) listener.onDone();
+			return;
+		}
+		
 		HashMap<String, String> params = null;
 		if (listener != null) {
 			params = new HashMap<String, String>();
@@ -596,14 +601,14 @@ public class RecordingService extends Service {
 					latitude = 39.0;
 					longitude = -121.0;
 				} else if (mNumFakeInputs % 20 > 10) {
-					latitude = lastWgs.latitude + 0.0001;
-					longitude = lastWgs.longitude;
+					latitude = lastWgs.getLatitude() + 0.0001;
+					longitude = lastWgs.getLongitude();
 				} else {
-					latitude = lastWgs.latitude;
-					longitude = lastWgs.longitude;
+					latitude = lastWgs.getLatitude();
+					longitude = lastWgs.getLongitude();
 				}
-				PathAggregator.Result result = mPath.addLocation(now, latitude, longitude, lastWgs.altitude);
-				Log.d(TAG, "ADD: " + latitude + " " + lastWgs.latitude + " r=" + result);
+				PathAggregator.Result result = mPath.addLocation(now, latitude, longitude, lastWgs.getAltitude());
+				Log.d(TAG, "ADD: " + latitude + " " + lastWgs.getLatitude() + " r=" + result);
 				handleResult(result);
 				++mNumFakeInputs;
 				updateStats(LapType.KEEP_CURRENT_LAP_IF_POSSIBLE);

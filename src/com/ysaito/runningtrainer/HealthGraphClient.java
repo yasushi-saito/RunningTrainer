@@ -166,17 +166,17 @@ public class HealthGraphClient {
 
     private void executeGet(String path, String acceptType, GetResponseListener listener, Object destObject) {
     	HttpGetTask task = new HttpGetTask(this, path, acceptType, destObject, listener);
-    	task.execute();
+    	task.executeOnExecutor(Util.DEFAULT_THREAD_POOL);
     }
     
     private void executePut(String path, String contentType, Object object, PutResponseListener listener) {
     	HttpPutTask task = new HttpPutTask(this, path, contentType, object, listener);
-    	task.execute();
+    	task.executeOnExecutor(Util.DEFAULT_THREAD_POOL);
     }
 
     private void executePost(String path, String contentType, Object object, PutResponseListener listener) {
     	HttpPostTask task = new HttpPostTask(this, path, contentType, object, listener);
-    	task.execute();
+    	task.executeOnExecutor(Util.DEFAULT_THREAD_POOL);
     }
     
     public abstract static interface GetResponseListener { 
@@ -274,9 +274,7 @@ public class HealthGraphClient {
     			}
     		}
     		Gson gson = new GsonBuilder().create();
-    		Log.d(TAG, "GOT JSON: " + result);
     		parseResult = gson.fromJson(result, mDestObject.getClass());
-    		Log.d(TAG, "RESP: " + parseResult.toString());
     		mListener.onFinish(mException, parseResult);
     	}
     }
@@ -329,7 +327,6 @@ public class HealthGraphClient {
     		}
     		if (response != null) {
     			StatusLine status = response.getStatusLine(); 
-    			Log.d(TAG, "PUT finished: " + status.getStatusCode() + ":" + status.getReasonPhrase());
     			if (status.getStatusCode() / 100 != 2) {
     				mListener.onFinish(new Exception(
     						"HTTP Get failed: " + status.getStatusCode() + ": " + status.getReasonPhrase()),
@@ -374,7 +371,6 @@ public class HealthGraphClient {
     			Gson gson = new GsonBuilder().create();
     			final String json = gson.toJson(mSourceObject);
     			post.setEntity(new StringEntity(json, "UTF-8"));
-    			Log.d(TAG, "POST: " + json);
     			response = httpClient.execute(post);
     		} catch (Exception e) {
     			mException = e;
@@ -390,7 +386,6 @@ public class HealthGraphClient {
     		}
     		if (response != null) {
     			StatusLine status = response.getStatusLine(); 
-    			Log.d(TAG, "PUT finished: " + status.getStatusCode() + ":" + status.getReasonPhrase());
     			if (status.getStatusCode() / 100 != 2) {
     				mListener.onFinish(new Exception(
     						"HTTP Get failed: " + status.getStatusCode() + ": " + status.getReasonPhrase()),
@@ -419,6 +414,7 @@ public class HealthGraphClient {
     		}
     		if (mAccessTokenState != TokenState.OK) {
     			mAccessTokenState = TokenState.AUTHENTICATING;
+    			Log.d(TAG, "Start Healthgraph authentication");
     			mAuthenticator = new AuthenticatorImpl(context);
     			mAuthenticator.start();
     		}

@@ -7,40 +7,6 @@
       android:entryValues="@array/unit_values"
       android:key="unit"
       android:title="@string/unit_of_measurement" />
-   <ListPreference
-       android:defaultValue="0"
-       android:entries="@array/distance_interval_names"
-       android:entryValues="@array/distance_interval_values"
-       android:key="autolap_distance_interval"
-       android:title="Autolap distance interval" />
-
-   <CheckBoxPreference
-       android:defaultValue="false"
-       android:key="fake_gps"
-       android:title="Fake GPS" />
-
-   <CheckBoxPreference
-       android:defaultValue="true"
-       android:key="auto_pause_detection"
-       android:title="Automatic pause detection" />
-   
-   <ListPreference
-       android:defaultValue="5"
-       android:entries="@array/gps_report_interval_names"
-       android:entryValues="@array/gps_report_interval_values"
-       android:key="gps_min_report_interval"
-       android:title="GPS reporting interval" />
-
-   <CheckBoxPreference
-       android:defaultValue="false"
-       android:key="post_to_facebook"
-       android:title="Post to Facebook" />
-
-   <CheckBoxPreference
-       android:defaultValue="false"
-       android:key="post_to_twitter"
-       android:title="Post to Twitter" />
-   
   <PreferenceScreen
     android:key="pref_key_display_settings"
     android:title="Display settings" >
@@ -87,9 +53,57 @@
         android:title="Display 6" />
     />
   </PreferenceScreen>
+   <ListPreference
+       android:defaultValue="1609"
+       android:entries="@array/distance_interval_names"
+       android:entryValues="@array/distance_interval_values"
+       android:key="autolap_distance_interval"
+       android:title="Autolap" />
+
+  <CheckBoxPreference
+      android:defaultValue="true"
+      android:key="enable_voice"
+      android:title="Enable voice readout" />
+
+   <PreferenceScreen
+       android:dependency="enable_voice"
+       android:key="pref_key_lap_triggered_readout"
+       android:title="Voice: at end of lap" >
+
+       <CheckBoxPreference
+           android:defaultValue="true"
+           android:key="speak_onlap_total_distance"
+           android:title="Total distance" />
+       <CheckBoxPreference
+           android:defaultValue="true"
+           android:key="speak_onlap_total_duration"
+           android:title="Total duration" />
+       <CheckBoxPreference
+           android:defaultValue="false"
+           android:key="speak_onlap_average_pace"
+           android:title="Average pace " />
+       <CheckBoxPreference
+           android:defaultValue="false"
+           android:key="speak_onlap_current_pace"
+           android:title="Current pace " />
+       <CheckBoxPreference
+           android:defaultValue="false"
+           android:key="speak_onlap_lap_pace"
+           android:title="Lap pace " />
+       <CheckBoxPreference
+           android:defaultValue="false"
+           android:key="speak_onlap_lap_duration"
+           android:title="Lap duration" />
+      <CheckBoxPreference
+          android:defaultValue="false"
+          android:key="speak_onlap_now"
+          android:title="Current time" />
+     
+  </PreferenceScreen>  
   <PreferenceScreen
+      android:dependency="enable_voice"
       android:key="pref_key_time_triggered_readout"
-      android:title="Voice readout: time-triggered" >
+      android:title="Voice: time-triggered" >
       <ListPreference
           android:entries="@array/time_interval_names"
           android:entryValues="@array/time_interval_values"
@@ -129,9 +143,11 @@
           android:title="Current time" />
 
   </PreferenceScreen>
+
   <PreferenceScreen
+      android:dependency="enable_voice"
       android:key="pref_key_distance_triggered_readout"
-      android:title="Voice readout: distance-triggered" >
+      android:title="Voice: distance-triggered" >
       <ListPreference
           android:entries="@array/distance_interval_names"
           android:entryValues="@array/distance_interval_values"
@@ -172,37 +188,36 @@
           android:title="Current time" />
      
    </PreferenceScreen>  
-   <PreferenceScreen
-       android:key="pref_key_lap_triggered_readout"
-       android:title="Voice readout: at end of each lap" >
-       <CheckBoxPreference
-           android:defaultValue="false"
-           android:key="speak_onlap_total_distance"
-           android:title="Total distance" />
-       <CheckBoxPreference
-           android:defaultValue="false"
-           android:key="speak_onlap_total_duration"
-           android:title="Total duration" />
-       <CheckBoxPreference
-           android:defaultValue="false"
-           android:key="speak_onlap_average_pace"
-           android:title="Average pace " />
-       <CheckBoxPreference
-           android:defaultValue="false"
-           android:key="speak_onlap_current_pace"
-           android:title="Current pace " />
-       <CheckBoxPreference
-           android:defaultValue="false"
-           android:key="speak_onlap_lap_pace"
-           android:title="Lap pace " />
-       <CheckBoxPreference
-           android:defaultValue="false"
-           android:key="speak_onlap_lap_duration"
-           android:title="Lap duration" />
-      <CheckBoxPreference
-          android:defaultValue="false"
-          android:key="speak_onlap_now"
-          android:title="Current time" />
-     
-  </PreferenceScreen>  
+  <PreferenceScreen
+      android:title="GPS settings">
+      
+   <CheckBoxPreference
+       android:defaultValue="false"
+       android:key="fake_gps"
+       android:title="Fake GPS" />
+   <CheckBoxPreference
+       android:defaultValue="true"
+       android:key="auto_pause_detection"
+       android:title="Automatic pause detection" />
+   
+   <ListPreference
+       android:defaultValue="5"
+       android:entries="@array/gps_report_interval_names"
+       android:entryValues="@array/gps_report_interval_values"
+       android:key="gps_min_report_interval"
+       android:title="GPS reporting interval" />
+
+  </PreferenceScreen>
+
+
+  <CheckBoxPreference
+       android:defaultValue="false"
+       android:key="post_to_facebook"
+       android:title="Post to Facebook" />
+
+   <CheckBoxPreference
+       android:defaultValue="false"
+       android:key="post_to_twitter"
+       android:title="Post to Twitter" />
+   
 </PreferenceScreen>

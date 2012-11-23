@@ -2,6 +2,8 @@ package com.ysaito.runningtrainer;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,6 +41,9 @@ public class Util {
 	public static interface SingletonInitializer<T> {
 		public T createSingleton();
 	}
+
+	
+	static final ExecutorService DEFAULT_THREAD_POOL = Executors.newCachedThreadPool();
 	
 	/**
 	 * Singleton support.
@@ -104,29 +109,33 @@ public class Util {
 		RUNNING, PAUSE_STARTED, PAUSE_CONTINUING, PAUSE_ENDED,
 	}
 		
-	public static class Point {
+	public static class Point extends GeoPoint {
 		public Point(PauseType t, double time, double lat, double lon, double alt) {
-			type = t;
-			absTime = time;
-			latitude = lat;
-			longitude = lon;
-			altitude = alt;
+			super((int)(lat * 1e6), (int)(lon * 1e6));
+			mType = t;
+			mAbsTime = time;
+			mAltitude = alt;
 		}
 
-		public final GeoPoint toGeoPoint() {
-			return new GeoPoint((int)(latitude * 1e6), (int)(longitude * 1e6));
+		public final double getLatitude() {
+			return getLatitudeE6() / 1000000.0;
 		}
 		
+		public final double getLongitude() {
+			return getLongitudeE6() / 1000000.0;
+		}
+		
+		public final PauseType getType() { return mType; }
+		public final double getAbsTime() { return mAbsTime; }
+		public final double getAltitude() { return mAltitude; }
+		
 		// Note: type is never PAUSE_CONTINUING -- during pause, no Point entry is emit.
-		final PauseType type;
+		private final PauseType mType;
 		
 		// The walltime the user is at this point 
-		final double absTime;
+		private final double mAbsTime;
 		
-		// 3D location
-		final double latitude;
-		final double longitude;
-		final double altitude;
+		private final double mAltitude;
 	}
 	
 
@@ -282,6 +291,14 @@ public class Util {
 		}
 	}
 
+	static final public String capitalizedDistanceUnitString() {
+		if (Settings.unit == Settings.Unit.US) {
+			return "Mile";
+		} else {
+			return "Km";
+		}
+	}
+	
 	enum DistanceUnitType { KM_OR_MILE, MILE_OR_FEET };
 	
 	static final public String distanceToString(double meters, DistanceUnitType unitType) {

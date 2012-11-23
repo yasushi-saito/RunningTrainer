@@ -77,9 +77,9 @@ public class PathAggregator {
 			data.mPauseEndTime = absTime;
 		} else {
 			Point lastLocation = data.mPath.back();
-			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+			Location.distanceBetween(lastLocation.getLatitude(), lastLocation.getLongitude(),
 					latitude, longitude, data.mTmp);
-			double pace = (absTime - lastLocation.absTime) / data.mTmp[0];
+			double pace = (absTime - lastLocation.getAbsTime()) / data.mTmp[0];
 			if (pace < JUMP_DETECTION_MIN_PACE) {
 				// Large jump detected. Ignore the GPS reading.
 				r.absTime = absTime;
@@ -94,7 +94,7 @@ public class PathAggregator {
 			if (data.mPath.size() == 0) {
 				mFilter.addPoint(latitude, longitude, 0.0, 0.0, smoothed);
 			} else {
-				final double lastAbsTime = data.mPath.back().absTime;
+				final double lastAbsTime = data.mPath.back().getAbsTime();
 				mFilter.addPoint(latitude, longitude, 0.0, absTime - lastAbsTime, smoothed);
 			}
 			latitude = smoothed.latitude;
@@ -110,20 +110,21 @@ public class PathAggregator {
 			if (mDetectPauses && absTime >= data.mPauseEndTime + mPauseDetectionWindowSeconds) {
 				for (Iterator<Point> iter = data.mPath.reverseIterator(); iter.hasNext(); ) {
 					final Point location = iter.next();
-					Location.distanceBetween(location.latitude, location.longitude,
+					Location.distanceBetween(location.getLatitude(), location.getLongitude(),
 							latitude, longitude, data.mTmp);
 					final double distance = data.mTmp[0];
 					if (distance >= PAUSE_MAX_DISTANCE) {
 						// The user moved. 
 						break;
 					}
-					if (absTime - location.absTime >= mPauseDetectionWindowSeconds) {
+					if (absTime - location.getAbsTime() >= mPauseDetectionWindowSeconds) {
 						data.mPaused = true;
 						// Remove all the elements after the @p location, since they are part of the pause
 						while (data.mPath.back() != location) data.mPath.removeLast();
-						data.mPath.add(new Point(PauseType.PAUSE_STARTED, location.absTime, location.latitude, location.longitude, location.altitude));
+						data.mPath.add(new Point(PauseType.PAUSE_STARTED, location.getAbsTime(), 
+								location.getLatitude(), location.getLongitude(), location.getAltitude()));
 						r.pauseType = Util.PauseType.PAUSE_STARTED;
-						r.absTime = location.absTime;
+						r.absTime = location.getAbsTime();
 						return r;
 					}
 				}
@@ -131,7 +132,7 @@ public class PathAggregator {
 		} else  {
 			// Currently paused. Detect resumption.
 			Point lastLocation = data.mPath.back();
-			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+			Location.distanceBetween(lastLocation.getLatitude(), lastLocation.getLongitude(),
 					latitude, longitude, data.mTmp);
 			final double distance = data.mTmp[0];
 			if (distance < PAUSE_MAX_DISTANCE) {
@@ -146,7 +147,7 @@ public class PathAggregator {
 
 		if (data.mPath.size() > 0) {
 			Point lastLocation = data.mPath.back();
-			Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
+			Location.distanceBetween(lastLocation.getLatitude(), lastLocation.getLongitude(),
 					latitude, longitude,
 					data.mTmp);
 			r.deltaDistance = data.mTmp[0];

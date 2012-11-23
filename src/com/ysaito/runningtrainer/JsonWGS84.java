@@ -22,17 +22,17 @@ public class JsonWGS84 {
 	enum PathMode { START, MIDDLE, END }; 
 	static public JsonWGS84 fromPoint(Util.Point point,  double startTime, PathMode mode) {
 		JsonWGS84 wgs = new JsonWGS84();
-		wgs.latitude = point.latitude;
-		wgs.longitude = point.longitude;
-    	wgs.altitude = point.altitude;
-    	wgs.timestamp = point.absTime - startTime;
+		wgs.latitude = point.getLatitude();
+		wgs.longitude = point.getLongitude();
+    	wgs.altitude = point.getAltitude();
+    	wgs.timestamp = point.getAbsTime() - startTime;
     	if (mode == PathMode.START) {
     		wgs.type = "start";
     	} else if (mode == PathMode.END) {
     		wgs.type = "end";
-    	} else if (point.type == Util.PauseType.PAUSE_STARTED) {
+    	} else if (point.getType() == Util.PauseType.PAUSE_STARTED) {
     		wgs.type = "pause";
-    	} else if (point.type == Util.PauseType.PAUSE_ENDED) {
+    	} else if (point.getType() == Util.PauseType.PAUSE_ENDED) {
     		wgs.type = "resume";
     	} else {
     		wgs.type = "gps";

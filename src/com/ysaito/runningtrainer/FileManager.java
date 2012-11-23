@@ -146,6 +146,32 @@ public class FileManager {
 		private final TreeMap<String, String> mKeys = new TreeMap<String, String>();
 		
 		public ParsedFilename() { }
+
+		@Override
+		public boolean equals(Object o) {
+			if (!(o instanceof ParsedFilename)) return false;
+			ParsedFilename other = (ParsedFilename)o;
+			return mKeys.equals(other.mKeys);
+		}
+
+		@Override
+		public int hashCode() {
+			return mKeys.hashCode();
+		}
+
+		@Override
+		public String toString() {
+			StringBuilder b = new StringBuilder();
+			int i = 0;
+			for (Map.Entry<String, String> entry : mKeys.entrySet()) {
+				if (i > 0) b.append(",");
+				b.append(entry.getKey());
+				b.append("=");
+				b.append(entry.getValue());
+				++i;
+			}
+			return b.toString();
+		}
 		
 		public final void putLong(String key, long value) {
 			mKeys.put(key, Long.toString(value));
@@ -174,12 +200,10 @@ public class FileManager {
 		public final String getBasename() {
 			StringBuilder b = new StringBuilder("log");
 			for (Map.Entry<String, String> entry : mKeys.entrySet()) {
-				String key = entry.getKey();
-				Object value = entry.getValue();
 				b.append(",");
-				b.append(key);
+				b.append(entry.getKey());
 				b.append("=");
-				b.append(value);
+				b.append(entry.getValue());
 			}
 			b.append(",.json");
 			return b.toString();
@@ -243,7 +267,7 @@ public class FileManager {
 				listener.onFinish(error, result.object);
 			}
 		};
-		task.execute((Void[])null);
+		task.executeOnExecutor(Util.DEFAULT_THREAD_POOL, (Void[])null);
 	}
 
 	private static final ReentrantReadWriteLock mLock = new ReentrantReadWriteLock();

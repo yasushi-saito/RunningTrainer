@@ -66,11 +66,14 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         		mPoints.clear();
         	}
         	if (path.size() > 0) {
-        		if (Util.ASSERT_ENABLED && path.size() != mPoints.size() + 1) {
-        			Util.crash(null, "More than one point added: " + path.size() + ": " + mPoints.size());
+        		if (mPoints.size() == path.size() - 1) {
+        			mPoints.add(path.back());
+        		} else {
+        			mPoints.clear();
+        			for (Util.Point p : path) {
+        				mPoints.add(p);
+        			}
         		}
-        		Util.Point point = path.back();
-        		mPoints.add(point.toGeoPoint());
         	}
         }
 
@@ -524,15 +527,15 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     				record.path[i] = JsonWGS84.fromPoint(point, status.startTime, mode);
     				++i;
     			}
-    			record.duration = (status.path.back().absTime - status.path.front().absTime);
+    			record.duration = (status.path.back().getAbsTime() - status.path.front().getAbsTime());
     			
     			Util.Point lastLocation = null;
     		
     			float[] distance = new float[1];
     			for (Util.Point location : status.path) {
     				if (lastLocation != null) {
-    					Location.distanceBetween(lastLocation.latitude, lastLocation.longitude,
-    							location.latitude, location.longitude,
+    					Location.distanceBetween(lastLocation.getLatitude(), lastLocation.getLongitude(),
+    							location.getLatitude(), location.getLongitude(),
     							distance);
     					record.total_distance += distance[0];
     				}
