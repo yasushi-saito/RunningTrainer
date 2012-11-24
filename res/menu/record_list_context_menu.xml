@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+  <item android:id="@+id/record_list_show_in_map" 
+	android:title="Show in map" />
+  <item android:id="@+id/record_list_show_summary" 
+	android:title="Show summary" />
   <item android:id="@+id/record_list_resend" 
 	android:title="@string/resend" />
   <item android:id="@+id/record_list_delete" 

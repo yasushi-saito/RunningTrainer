@@ -66,7 +66,6 @@ public class WorkoutListFragment extends ListFragment {
 			deleteView.setVisibility(View.VISIBLE);
 			deleteView.setOnClickListener(new View.OnClickListener() {
 				public void onClick(View v) {
-					// TODO Auto-generated method stub
 					deleteWorkoutAtPosition(position);
 				}
 			});
@@ -78,7 +77,6 @@ public class WorkoutListFragment extends ListFragment {
 		}
 
 		public Object getItem(int position) {
-			// TODO Auto-generated method stub
 			if (position < 0 || position >= mRecords.size()) return null;
 			return mRecords.get(position);
 		}
@@ -151,36 +149,21 @@ public class WorkoutListFragment extends ListFragment {
 		startListing();
 	}
 	
-	private int mNumBackgroundTasksRunning = 0;
-	private void startBusyThrob(String text) {
-		if (mNumBackgroundTasksRunning == 0) {
-			mActivity.startActionBarStatusUpdate(text);
-		}
-		++mNumBackgroundTasksRunning;
-	}
-	private void stopBusyThrob() {
-		--mNumBackgroundTasksRunning;
-		if (mNumBackgroundTasksRunning == 0) {
-			mActivity.stopActionBarStatusUpdate();
-		}
-	}
-	
-	
 	private void startListing() {
-		startBusyThrob("Loading");
+		mActivity.startActionBarThrobber("Loading");
 		FileManager.runAsync(new FileManager.AsyncRunner<ArrayList<FileManager.ParsedFilename>>() {
 			public ArrayList<FileManager.ParsedFilename> doInThread() throws Exception {
 				return FileManager.listFiles(mWorkoutDir);
 			}
 			public void onFinish(Exception error, ArrayList<ParsedFilename> files) {
-				stopBusyThrob();
+				mActivity.stopActionBarThrobber();
 				if (files == null) {
 					files = new ArrayList<FileManager.ParsedFilename>();
 				}
 				mAdapter.reset(files);
 				// TODO: handle errors
 			}
-		});
+		}, Util.DEFAULT_THREAD_POOL);
 	}
 
 	private void startWorkoutEditor(JsonWorkout workout) {
@@ -196,7 +179,7 @@ public class WorkoutListFragment extends ListFragment {
 		if (f == null) return;
 		FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
 			public JsonWorkout doInThread() throws Exception {
-				return FileManager.readJson(mWorkoutDir, f.getBasename(), JsonWorkout.class);
+				return FileManager.readJson(new File(mWorkoutDir, f.getBasename()), JsonWorkout.class);
 			}
 			public void onFinish(Exception error, JsonWorkout workout) {
 				if (error != null) {
@@ -205,7 +188,7 @@ public class WorkoutListFragment extends ListFragment {
 				}
 				startWorkoutEditor(workout);
 			}
-		});
+		}, Util.DEFAULT_THREAD_POOL);
 	}
 	
 	@Override
@@ -232,7 +215,7 @@ public class WorkoutListFragment extends ListFragment {
 			final UndoEntry undo = mUndos.pop();
 			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
 				public Void doInThread() throws Exception {
-					FileManager.writeJson(mWorkoutDir, undo.filename, undo.workout);
+					FileManager.writeJson(new File(mWorkoutDir, undo.filename), undo.workout);
 					return null;
 				}
 				public void onFinish(Exception error, Void value) {
@@ -242,7 +225,7 @@ public class WorkoutListFragment extends ListFragment {
 						startListing();
 					}
 				}
-			});
+			}, Util.DEFAULT_THREAD_POOL);
 			break;
 		}
 		return true;
@@ -276,8 +259,9 @@ public class WorkoutListFragment extends ListFragment {
 		// Read the workout file so that we can save it it in mUndos.
 		FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
 			public JsonWorkout doInThread() throws Exception {
-				JsonWorkout workout = FileManager.readJson(mWorkoutDir, summary.getBasename(), JsonWorkout.class);
-				FileManager.deleteFile(mWorkoutDir, summary.getBasename());
+				final File file = new File(mWorkoutDir, summary.getBasename());
+				final JsonWorkout workout = FileManager.readJson(file, JsonWorkout.class);
+				FileManager.deleteFile(file);
 				return workout;
 			}
 			public void onFinish(Exception e, JsonWorkout workout) {
@@ -292,6 +276,6 @@ public class WorkoutListFragment extends ListFragment {
 					startListing();
 				}
 			}
-		});
+		}, Util.DEFAULT_THREAD_POOL);
 	}
 }

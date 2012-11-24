@@ -176,7 +176,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     	}
     }
 
-    private RecordingActivity mThisActivity;
+    private RecordingActivity mActivity;
     private File mRecordDir;
     private MyOverlay mMapOverlay;
     private MapView mMapView;
@@ -250,7 +250,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
 
     @Override public void onPause() {
     	super.onPause();
-    	RecordingService.unregisterListener(mThisActivity);
+    	RecordingService.unregisterListener(mActivity);
         mLocationManager.removeUpdates(mLocationListener);
     }
 
@@ -262,7 +262,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		}
     		public void onFinish(Exception e, ArrayList<ParsedFilename> files) {
     			if (e != null) {
-    				Toast.makeText(mThisActivity, "Failed to list " + dir + ": " + e, Toast.LENGTH_LONG).show();
+    				Toast.makeText(mActivity, "Failed to list " + dir + ": " + e, Toast.LENGTH_LONG).show();
     			} else {
     				mWorkoutListAdapter.clear();
     				mWorkoutFiles.clear();
@@ -275,7 +275,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     				mWorkoutListAdapter.notifyDataSetChanged();
     			}
     		}
-    	});
+    	}, Util.DEFAULT_THREAD_POOL);
     }
 
     private final void showDialog(String message) {
@@ -363,7 +363,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         // Register the listener with the Location Manager to receive location updates
         if (!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
         		!mLocationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-        	Util.error(mThisActivity, "GPS not enabled");
+        	Util.error(mActivity, "GPS not enabled");
         	showDialog("Please enable GPS in Settings / Location services.");
         } else {
         	mLocationManager.requestLocationUpdates(
@@ -385,7 +385,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
         	mStatsViews[i].update(emptyLapStats, emptyLapStats, emptyLapStats, true);
         }
     	startListWorkouts();
-    	RecordingService.registerListener(mThisActivity);
+    	RecordingService.registerListener(mActivity);
     }
     
     @Override
@@ -394,7 +394,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     	
     	GraphicsUtil.maybeInitialize(this);
         setContentView(R.layout.recording);
-        mThisActivity = this;
+        mActivity = this;
         mRecordDir = FileManager.getRecordDir(this);
         mMapOverlay = new MyOverlay();
         mMapView = (MapView)findViewById(R.id.map_view);
@@ -472,13 +472,13 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		mTransitioning = true;
     		FileManager.runAsync(new FileManager.AsyncRunner<JsonWorkout>() {
     			public JsonWorkout doInThread() throws Exception {
-    				return FileManager.readJson(dir, workoutFilename, JsonWorkout.class);
+    				return FileManager.readJson(new File(dir, workoutFilename), JsonWorkout.class);
     			}
     			public void onFinish(Exception error, JsonWorkout workout) {
-    				if (!mTransitioning) Util.crash(mThisActivity, "blah");
+    				if (!mTransitioning) Util.crash(mActivity, "blah");
     				mTransitioning = false;
     				if (error != null) {
-    					Util.error(mThisActivity, "Failed to read workout: " + error);
+    					Util.error(mActivity, "Failed to read workout: " + error);
     					// Fallthrough
     				} else {
     					mLastSelectedWorkoutFilename = workoutFilename;
@@ -486,7 +486,7 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     				}
     				startOrStop(workout);
     			}
-			});
+			}, Util.DEFAULT_THREAD_POOL);
     	}
     }
 
@@ -549,13 +549,13 @@ public class RecordingActivity extends MapActivity implements RecordingService.S
     		
     			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
     				public Void doInThread() throws Exception {
-    					FileManager.writeJson(mRecordDir, summary.getBasename(), record);
+    					FileManager.writeJson(new File(mRecordDir, summary.getBasename()), record);
     					return null;
     				}
     				public void onFinish(Exception error, Void value) {
-    					if (error != null) Util.error(mThisActivity, "Failed to write: " + summary.getBasename() + ": " + error);
+    					if (error != null) Util.error(mActivity, "Failed to write: " + summary.getBasename() + ": " + error);
     				}
-    			});
+    			}, Util.DEFAULT_THREAD_POOL);
     		}
     	}
     }	

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
 
 import android.content.Context;
@@ -34,7 +34,7 @@ public class FileManager {
 	// Total duration. type: long, value: seconds
 	public static final String KEY_DURATION = "e";
 	
-	// Path under http://runkeeper.com this activity is saved. type: string
+	// URI, under http://runkeeper.com, in which this activity is saved. type: string
 	public static final String KEY_RUNKEEPER_PATH = "r";
 
 	//
@@ -140,7 +140,7 @@ public class FileManager {
 	 * 
 	 *   log:<key>=<value>:...:<key>=<value>:.json
 	 *
-	 * ParsedFilename is a helper class for generating such filenames and parsing themback.
+	 * ParsedFilename is a helper class for generating such filenames and parsing them back.
 	 */
 	public static class ParsedFilename {
 		private final TreeMap<String, String> mKeys = new TreeMap<String, String>();
@@ -251,7 +251,18 @@ public class FileManager {
 		public T object = null;
 	}
 	
-	public static <T> void runAsync(final AsyncRunner<T> listener) {
+	/**
+	 * A simple wrapper around AsyncTask to perform file operations in background. @p listener must implement two methods, doInThread and onFinish.
+	 * 
+	 * @p doInThread is called in the context of @p executor thread. @p doInThread should carry out blocking file I/O operation, and either return an object
+	 * of type T, or raise an exception.
+	 * 
+	 * @p onFinish is called after @p doInThread finishes, in the context of the main thread. 
+	 * It is passed an exception in case of error, and the object computed by doThread.
+	 * 
+	 * @pre The caller must be the main thread
+	 */
+	public static <T> void runAsync(final AsyncRunner<T> listener, Executor executor) {
 		final RunAsyncResult<T> result = new RunAsyncResult<T>();
 		
 		AsyncTask<Void, Void, Exception> task = new AsyncTask<Void, Void, Exception>() {
@@ -267,59 +278,49 @@ public class FileManager {
 				listener.onFinish(error, result.object);
 			}
 		};
-		task.executeOnExecutor(Util.DEFAULT_THREAD_POOL, (Void[])null);
+		task.executeOnExecutor(executor, (Void[])null);
 	}
 
-	private static final ReentrantReadWriteLock mLock = new ReentrantReadWriteLock();
+	/**
+	 * Write a json object in the given file. 
 
-	public static void writeJson(File dir, String basename, Object object) throws Exception {
-		mLock.writeLock().lock();
-		try {
-			Gson gson = new GsonBuilder().create();
-			File destFile = new File(dir, basename);
-			FileWriter out = new FileWriter(destFile);
-			gson.toJson(object, out);
-			out.close();
-		} finally {
-			mLock.writeLock().unlock();
-		}
+	 * @pre The caller must not be the main thread
+	 */
+	public static void writeJson(File file, Object object) throws Exception {
+		final Gson gson = new GsonBuilder().create();
+		final FileWriter out = new FileWriter(file);
+		gson.toJson(object, out);
+		out.close();
 	}
 	
-	public static <T> T readJson(File dir, String basename, Class<T> classObject) throws Exception {
-		mLock.readLock().lock();
-		try {
-			File sourceFile = new File(dir, basename);
-			Gson gson = new GsonBuilder().create();
-			return gson.fromJson(new BufferedReader(new FileReader(sourceFile)), classObject);
-		} finally {
-			mLock.readLock().unlock();
-		}
+	/**
+	 * Read a json object from a given file.
+	 *
+	 * @param classObject The class of the json object. A new instance of this class will be returned on success.
+	 * @pre The caller must not be the main thread
+	 */
+	public static <T> T readJson(File file, Class<T> classObject) throws Exception {
+		Gson gson = new GsonBuilder().create();
+		return gson.fromJson(new BufferedReader(new FileReader(file)), classObject);
 	}
 
-	public static void deleteFile(File dir, String basename) throws Exception {
-		mLock.writeLock().lock();
-		try {
-			if (!new File(dir, basename).delete()) {
-				throw new Exception("Failed to delete: " + basename);
-			}
-		} finally {
-			mLock.writeLock().unlock();
+	/**
+	 * Delete a given file. Ulinke File.delete(), this method raises an exception if the file does not exist.
+	 */
+	public static void deleteFile(File file) throws Exception {
+		if (!file.delete()) {
+			throw new Exception("Failed to delete: " + file.getAbsolutePath());
 		}
 	}
 	
 	public static ArrayList<ParsedFilename> listFiles(File dir) {
-		mLock.readLock().lock();
-		try {
-			ArrayList<ParsedFilename> list = new ArrayList<ParsedFilename>();
-			for (String basename : dir.list()) {
-				if (basename.startsWith("log,")) {
-					ParsedFilename summary = ParsedFilename.parse(basename);
-					if (summary != null) list.add(summary);
-				}
+		ArrayList<ParsedFilename> list = new ArrayList<ParsedFilename>();
+		for (String basename : dir.list()) {
+			if (basename.startsWith("log,")) {
+				ParsedFilename summary = ParsedFilename.parse(basename);
+				if (summary != null) list.add(summary);
 			}
-			return list;
-		} finally {
-			mLock.readLock().unlock();
 		}
+		return list;
 	}
 }

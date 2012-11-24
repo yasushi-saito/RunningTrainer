@@ -17,5 +17,6 @@
     <string name="unit_of_measurement">Unit of measurement</string>    
     <string name="delete">Delete</string>    
     <string name="lap">Lap</string>    
-    <string name="foobar">foobar</string>        
+    <string name="foobar">foobar</string>    
+    <string name="sign_in">Sign in</string>        
 </resources>

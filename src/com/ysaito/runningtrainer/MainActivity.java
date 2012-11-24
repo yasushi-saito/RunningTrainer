@@ -10,6 +10,8 @@ package com.ysaito.runningtrainer;
  */
 
 /**
+ * TODO: RecordList: add "view summary" and "view details"
+ * TODO: remember sort criteria
  * TODO: get the last GPS location in the recording view
  * TODO: undo of "add interval/repeat" start
  * TODO: enable/disable dependent settings
@@ -111,15 +113,23 @@ public class MainActivity extends Activity {
 		mGpsStatusView.setAccuracy(accuracy);
 	}
 	
-	public void startActionBarStatusUpdate(String text) {
-		mTextThrobberView.setText(text);
-		mTextThrobberView.startAnimation();
-		mTextThrobberView.setVisibility(View.VISIBLE);
+	private int mThrobberNesting = 0;
+	
+	public void startActionBarThrobber(String text) {
+		if (mThrobberNesting == 0) {
+			mTextThrobberView.setText(text);
+			mTextThrobberView.startAnimation();
+			mTextThrobberView.setVisibility(View.VISIBLE);
+		}
+		++mThrobberNesting;
 	}
 
-	public void stopActionBarStatusUpdate() {
-		mTextThrobberView.stopAnimation();
-		mTextThrobberView.setVisibility(View.GONE);
+	public void stopActionBarThrobber() {
+		--mThrobberNesting;
+		if (mThrobberNesting == 0) {
+			mTextThrobberView.stopAnimation();
+			mTextThrobberView.setVisibility(View.GONE);
+		}
 	}
 	
     @Override
@@ -171,9 +181,6 @@ public class MainActivity extends Activity {
         if (getExternalFilesDir(null) == null) {
         	Util.error(this, "SD card is not found on this device. No record will be kept");
         }
-        
-        final HealthGraphClient hgClient = HealthGraphClient.getSingleton();
-        hgClient.startAuthentication(this);
     }
     
     @Override

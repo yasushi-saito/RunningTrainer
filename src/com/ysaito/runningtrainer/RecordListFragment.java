@@ -1,16 +1,27 @@
 package com.ysaito.runningtrainer;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.util.Date;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Stack;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import com.ysaito.runningtrainer.FileManager.ParsedFilename;
 
+import android.app.ActionBar.LayoutParams;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.app.DialogFragment;
 import android.app.ListFragment;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.text.Html;
 import android.view.ContextMenu;
@@ -25,7 +36,10 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 /**
  * A fragment that displays list of completed activities. Clicking on the activity name will display
@@ -33,10 +47,74 @@ import android.widget.TextView;
  */
 public class RecordListFragment extends ListFragment {
 	private static final String TAG = "RecordListFragment";
-	
 	private File mRecordDir;
 	private MainActivity mActivity;
 	private MyAdapter mAdapter;
+
+	private class RecordSummaryDialog extends DialogFragment {
+		private final JsonActivity mRecord;
+		private final float SCREEN_DENSITY = mActivity.getResources().getDisplayMetrics().scaledDensity;
+		private final float TEXT_SIZE = 10 * SCREEN_DENSITY;
+	
+		
+		public RecordSummaryDialog(JsonActivity record) {
+			mRecord = record;
+		}
+		
+		private final TableRow addRow(String attr, String value) {
+			TableRow tr = new TableRow(mActivity);
+			tr.setLayoutParams(new LayoutParams(
+					LayoutParams.FILL_PARENT,
+					LayoutParams.WRAP_CONTENT));
+			
+			TextView attrView = new TextView(mActivity);
+			attrView.setText(Html.fromHtml("<b>" + attr + " </b>"));
+			attrView.setTextSize(TEXT_SIZE);
+			tr.addView(attrView);
+			
+			TextView valueView = new TextView(mActivity);
+			valueView.setText(value);
+			valueView.setTextSize(TEXT_SIZE);
+			tr.addView(valueView);
+			return tr;
+		}
+		@Override
+		public Dialog onCreateDialog(Bundle savedInstanceState) {
+			TableLayout view = new TableLayout(mActivity);
+			view.addView(addRow("foo", "bar"));
+			view.addView(addRow("foo2", "bar2"));
+			
+			// Build the dialog and set up the button click handlers
+			AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+			builder.setMessage("Activity Summary")
+			.setView(view)
+			.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					;
+				}
+			});
+			return builder.create();
+		}
+	}
+	
+	private class SigninDialog extends DialogFragment {
+		@Override
+		public Dialog onCreateDialog(Bundle savedInstanceState) {
+			// Build the dialog and set up the button click handlers
+			AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+			builder.setMessage("You are not signed into RunKeeper.")
+			.setPositiveButton(R.string.sign_in, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+					HealthGraphClient.getSingleton().startAuthentication(mActivity);
+				}
+			})
+			.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int id) {
+				}
+			});
+			return builder.create();
+		}
+	}
 	
 	private class UndoEntry {
 		public void add(String filename, JsonActivity r) { records.add(r); filenames.add(filename); }
@@ -49,20 +127,23 @@ public class RecordListFragment extends ListFragment {
     	private final LayoutInflater mInflater;
     	private final ArrayList<FileManager.ParsedFilename> mRecords = new ArrayList<FileManager.ParsedFilename>();
     	private final HashSet<FileManager.ParsedFilename> mFilesSending = new HashSet<FileManager.ParsedFilename>();
+    	private Comparator<FileManager.ParsedFilename> mComparator = COMPARE_BY_START_TIME;
     	
     	public MyAdapter(Context context) { 
     		mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE); 
     	}
 
-    	public void sort(Comparator<FileManager.ParsedFilename> comparator) {
-    		Collections.sort(mRecords, comparator);
-			notifyDataSetChanged();
-    	}
-    	
 		public void reset(ArrayList<FileManager.ParsedFilename> newRecords) {
 			mRecords.clear();
 			mRecords.addAll(newRecords);
-			sort(COMPARE_BY_START_TIME);
+    		Collections.sort(mRecords, mComparator);
+			notifyDataSetChanged();
+		}
+		
+		public void setComparator(Comparator<FileManager.ParsedFilename> comparator) { 
+			mComparator = comparator; 
+    		Collections.sort(mRecords, comparator);
+			notifyDataSetChanged();
 		}
 
 		public View getView(final int position, View convertView, ViewGroup parent) {
@@ -118,18 +199,24 @@ public class RecordListFragment extends ListFragment {
 		public int getCount() {
 			return mRecords.size();
 		}
-
+		
 		public Object getItem(int position) {
+			return getParsedFilename(position);
+		}
+
+		public final FileManager.ParsedFilename getParsedFilename(int position) {
 			if (position < 0 || position >= mRecords.size()) return null;
 			return mRecords.get(position);
 		}
-
-		public void markAsSending(ParsedFilename f) {
+		
+		public final void markAsSending(ParsedFilename f) {
 			mFilesSending.add(f);
+			mAdapter.notifyDataSetChanged();
 		}
 		
-		public void unmarkAsSending(ParsedFilename f) {
+		public final void unmarkAsSending(ParsedFilename f) {
 			mFilesSending.remove(f);
+			mAdapter.notifyDataSetChanged();
 		}
 		
 		public long getItemId(int position) {
@@ -168,6 +255,7 @@ public class RecordListFragment extends ListFragment {
 		setListAdapter(mAdapter);
 		startListing();
 		registerForContextMenu(getListView());
+		HealthGraphClient.getSingleton().init(mActivity);
 	}
 	
 	// This listener can't be an anonymous instance. SharedPreferences listener is 
@@ -194,57 +282,54 @@ public class RecordListFragment extends ListFragment {
 		startListing();
 	}
 
-	private int mNumBackgroundTasksRunning = 0;
-	private void startBusyThrob(String text) {
-		if (mNumBackgroundTasksRunning == 0) {
-			mActivity.startActionBarStatusUpdate(text);
-		}
-		++mNumBackgroundTasksRunning;
-	}
-	private void stopBusyThrob() {
-		--mNumBackgroundTasksRunning;
-		if (mNumBackgroundTasksRunning == 0) {
-			mActivity.stopActionBarStatusUpdate();
-		}
-	}
+	private int numQueuedListingRequests = 0;
+	private Executor LISTING_THREAD_POOL = Executors.newFixedThreadPool(1);
 	
 	private void startListing() {
-		startBusyThrob("Loading");
+		if (numQueuedListingRequests > 1) return;
+		mActivity.startActionBarThrobber("Loading");
+		++numQueuedListingRequests;
+		
 		FileManager.runAsync(new FileManager.AsyncRunner<ArrayList<ParsedFilename>>() {
 			public ArrayList<ParsedFilename> doInThread() throws Exception {
 				return FileManager.listFiles(mRecordDir);
 			}
 			public void onFinish(Exception error, ArrayList<ParsedFilename> files) {
-				stopBusyThrob();
+				mActivity.stopActionBarThrobber();
 				if (files != null) {
 					mAdapter.reset(files);
 				}
+				--numQueuedListingRequests;
 			}
-		});
+		}, LISTING_THREAD_POOL);
 	}
 
 	@Override
 	public void onListItemClick(ListView l, View v, int position, long id) {
+		startReplayActivity(position);
+	}
+	
+	private final void startReplayActivity(int position) {
 		final FileManager.ParsedFilename f = (FileManager.ParsedFilename)mAdapter.getItem(position);
 		if (f == null) return;
 
-		startBusyThrob("Loading");
+		mActivity.startActionBarThrobber("Loading");
 		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
 			public JsonActivity doInThread() throws Exception {
-				return FileManager.readJson(mRecordDir, f.getBasename(), JsonActivity.class);
+				return FileManager.readJson(new File(mRecordDir, f.getBasename()), JsonActivity.class);
 			}
 			public void onFinish(Exception error, JsonActivity record) {
 				if (error != null) {
 					Util.error(mActivity,  "Failed to read file : " + f.getBasename() + ": " + error);
 					return;
 				}
-				stopBusyThrob();
+				mActivity.stopActionBarThrobber();
 				RecordReplayFragment fragment = (RecordReplayFragment)mActivity.findOrCreateFragment(
 						"com.ysaito.runningtrainer.RecordReplayFragment");
 				fragment.setRecord(record);
 				mActivity.setFragmentForTab("Log", fragment);
 			}
-		});
+		}, Util.DEFAULT_THREAD_POOL);
 	}
 	
 	@Override
@@ -278,7 +363,7 @@ public class RecordListFragment extends ListFragment {
 				}
 				startListing(); 
 			}
-		});
+		}, Util.DEFAULT_THREAD_POOL);
 	}
 
 	private static final Comparator<FileManager.ParsedFilename> COMPARE_BY_START_TIME = new Comparator<FileManager.ParsedFilename>() {
@@ -300,6 +385,110 @@ public class RecordListFragment extends ListFragment {
 			return 1;
 		}
 	};
+
+	// See if we have already downloaded the same uri.
+	private boolean hasDownloadedActivity(String uri) {
+		final String sanitized = FileManager.sanitizeString(uri);
+		final int N = mAdapter.getCount();
+		for (int i = 0; i < N; ++i) {
+			if (sanitized.equals(mAdapter.getParsedFilename(i).getString(FileManager.KEY_RUNKEEPER_PATH, null))) return true;
+		}
+		return false;
+	}
+
+	private Executor downloadThreadPool = null;
+	private int mNumActivitiesDownloading = 0;
+	private long mLastListingUpdate = 0;
+
+	private void showSigninDialog() {
+		DialogFragment dialog = new SigninDialog();
+		dialog.show(mActivity.getFragmentManager(), "signin");
+	}
+	
+	private void startDownloadFromRunKeeper() {
+		final int MAX_ACTIVITIES = 500;
+		if (!HealthGraphClient.getSingleton().isSignedIn()) {
+			showSigninDialog();
+			return;
+		}
+		if (downloadThreadPool == null) downloadThreadPool = Executors.newFixedThreadPool(8);
+		HealthGraphClient.getSingleton().getFitnessActivities(new HealthGraphClient.GetResponseListener() {
+			public void onFinish(Exception e, Object o) {
+				if (e != null) {
+					Util.error(mActivity, "Failed to list activities: " + e);
+					return;
+				}
+				JsonFitnessActivities activities = (JsonFitnessActivities)o;
+				for (JsonActivity activity : activities.items) {
+					if (!hasDownloadedActivity(activity.uri)) {
+						startDownloadActivityFromRunKeeper(activity);
+						++mNumActivitiesDownloading;
+						if (mNumActivitiesDownloading >= MAX_ACTIVITIES) break;
+					}
+				}
+				String message;
+				if (mNumActivitiesDownloading > 0) {
+					message = "Start downloading " + mNumActivitiesDownloading + " activities";
+				} else {
+					message = "Found no activity to download";
+				}
+				Toast.makeText(mActivity, message, Toast.LENGTH_LONG).show();
+				
+			}
+		}, downloadThreadPool);
+	}
+	
+	// "Sat, 5 Mar 2011 11:00:00"
+	private static final SimpleDateFormat DATE_PARSER = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss");
+    			
+	private void startDownloadActivityFromRunKeeper(final JsonActivity activity) {
+		HealthGraphClient.getSingleton().getFitnessActivityAsString(activity.uri, new HealthGraphClient.GetResponseListener() {
+			public void onFinish(Exception e, Object o) {
+				if (e != null) {
+					Util.error(mActivity, "Failed to get activity: " + e);
+					return;
+				}
+				final String jsonString = (String)o;
+    			final FileManager.ParsedFilename summary = new FileManager.ParsedFilename();
+    			
+				try {
+					Date date = DATE_PARSER.parse(activity.start_time);
+					summary.putLong(FileManager.KEY_START_TIME, date.getTime() / 1000);
+				} catch (ParseException error) {
+					summary.putLong(FileManager.KEY_START_TIME, 0);
+				}
+    			summary.putLong(FileManager.KEY_DISTANCE, (long)activity.total_distance);
+    			summary.putLong(FileManager.KEY_DURATION, (long)activity.duration);
+    			summary.putString(FileManager.KEY_RUNKEEPER_PATH, FileManager.sanitizeString(activity.uri));
+    		
+    			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
+    				public Void doInThread() throws Exception {
+    					final FileWriter out = new FileWriter(new File(mRecordDir, summary.getBasename()));
+    					out.write(jsonString);
+    					out.close();
+    					return null;
+    				}
+    				public void onFinish(Exception error, Void value) {
+    					if (error != null) Util.error(mActivity, "Failed to write: " + summary.getBasename() + ": " + error);
+    					
+    					// Update the listing every 10 seconds, or when all the activities have been downloaded.
+    					--mNumActivitiesDownloading;
+    					if (mNumActivitiesDownloading == 0) {
+    						Toast.makeText(mActivity, "Finished downloading", Toast.LENGTH_LONG).show();
+    						startListing();
+    					} else {
+    						final long now = System.currentTimeMillis();
+    						if (now - mLastListingUpdate >= 3 * 1000) {
+    							mLastListingUpdate = now;
+    							startListing();
+    						}
+    					}
+    				}
+    			}, Util.DEFAULT_THREAD_POOL);
+			}
+		}, downloadThreadPool);
+		
+	}
 	
 	@Override
 	public void onPrepareOptionsMenu (Menu menu) {
@@ -311,10 +500,13 @@ public class RecordListFragment extends ListFragment {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.record_list_sort_by_date:
-			mAdapter.sort(COMPARE_BY_START_TIME);
+			mAdapter.setComparator(COMPARE_BY_START_TIME);
 			break;
 		case R.id.record_list_sort_by_distance:
-			mAdapter.sort(COMPARE_BY_DISTANCE);
+			mAdapter.setComparator(COMPARE_BY_DISTANCE);
+			break;
+		case R.id.record_list_download_from_runkeeper:
+			startDownloadFromRunKeeper();
 			break;
 		case R.id.record_list_delete_all: {
 			// Extract the filenames so that they can be read from a different thread
@@ -322,20 +514,24 @@ public class RecordListFragment extends ListFragment {
 			for (int i = 0; i < mAdapter.getCount(); ++i) {
 				filenames[i] = (FileManager.ParsedFilename)mAdapter.getItem(i);
 			}
-			startBusyThrob("Deleting");
+			mActivity.startActionBarThrobber("Deleting");
 			FileManager.runAsync(new FileManager.AsyncRunner<UndoEntry>() {
 				public UndoEntry doInThread() throws Exception {
 					UndoEntry newUndos = new UndoEntry();
 					for (FileManager.ParsedFilename f : filenames) {
 						String basename = f.getBasename();
-						JsonActivity record = FileManager.readJson(mRecordDir, f.getBasename(), JsonActivity.class);
-						FileManager.deleteFile(mRecordDir, basename);
-						newUndos.add(basename, record);
+						try {
+							JsonActivity record = FileManager.readJson(new File(mRecordDir, f.getBasename()), JsonActivity.class);
+							newUndos.add(basename, record);
+						} catch (Exception e) {
+							
+						}
+						FileManager.deleteFile(new File(mRecordDir, basename));
 					}
 					return newUndos;
 				}
 				public void onFinish(Exception error, UndoEntry newUndos) {
-					stopBusyThrob();
+					mActivity.stopActionBarThrobber();
 					if (error != null) {
 						Util.error(mActivity, "Failed to delete files: " + error);
 					} else {		
@@ -343,39 +539,45 @@ public class RecordListFragment extends ListFragment {
 						startListing();
 					}
 				}
-			});
+			}, Util.DEFAULT_THREAD_POOL);
 			break;
 		}
 			
 		case R.id.record_list_undo:
 			if (mUndos.empty()) break;
 			final UndoEntry undo = mUndos.pop();
-			startBusyThrob("Undoing");
+			mActivity.startActionBarThrobber("Undoing");
 			FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
 				public Void doInThread() throws Exception {
 					for (int i = 0; i < undo.filenames.size(); ++i) {
-						FileManager.writeJson(mRecordDir, undo.filenames.get(i), undo.records.get(i));
+						FileManager.writeJson(new File(mRecordDir, undo.filenames.get(i)), undo.records.get(i));
 					}
 					return null;
 				}
 				public void onFinish(Exception error, Void unused) {
-					stopBusyThrob();
+					mActivity.stopActionBarThrobber();
 					if (error != null) {
 						Util.error(mActivity, "Failed to restore file: " + error);
 					} else {		
 						startListing();
 					}
 				}
-			});
+			}, Util.DEFAULT_THREAD_POOL);
 			break;
 		}
 		return true;
 	}
-	
+
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
 		AdapterContextMenuInfo info = (AdapterContextMenuInfo) item.getMenuInfo();
 		switch (item.getItemId()) {
+		case R.id.record_list_show_summary: 
+			showRecordSummary(info.position);
+			return true;
+		case R.id.record_list_show_in_map: 
+			startReplayActivity(info.position);
+			return true;
 		case R.id.record_list_resend: 
 			sendRecordAtPosition(info.position);
 			return true;
@@ -386,23 +588,46 @@ public class RecordListFragment extends ListFragment {
 		return super.onContextItemSelected(item);
 	}
 
-	private void sendRecordAtPosition(int position) {
+	private final void showRecordSummary(int position) { 
 		final FileManager.ParsedFilename summary = (FileManager.ParsedFilename)mAdapter.getItem(position);
 		if (summary == null) return;
-		mAdapter.markAsSending(summary);
-		mAdapter.notifyDataSetChanged();
-		
-		startBusyThrob("Sending");
+
+		mActivity.startActionBarThrobber("Loading");
 		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
 			public JsonActivity doInThread() throws Exception {
-				return FileManager.readJson(mRecordDir, summary.getBasename(), JsonActivity.class);
+				return FileManager.readJson(new File(mRecordDir, summary.getBasename()), JsonActivity.class);
 			}
 			public void onFinish(Exception error, JsonActivity record) {
 				if (error != null) {
 					Util.error(getActivity(), "Failed to read " + summary.getBasename() + ": " + error);
-					stopBusyThrob();
+					mActivity.stopActionBarThrobber();
+					return;
+				} 
+				DialogFragment dialog = new RecordSummaryDialog(record);
+				dialog.show(mActivity.getFragmentManager(), "record_summary");
+			}
+		}, Util.DEFAULT_THREAD_POOL);
+	}
+	
+	private void sendRecordAtPosition(int position) {
+		if (!HealthGraphClient.getSingleton().isSignedIn()) {
+			showSigninDialog();
+			return;
+		}
+		final FileManager.ParsedFilename summary = (FileManager.ParsedFilename)mAdapter.getItem(position);
+		if (summary == null) return;
+		mAdapter.markAsSending(summary);
+		
+		mActivity.startActionBarThrobber("Sending");
+		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
+			public JsonActivity doInThread() throws Exception {
+				return FileManager.readJson(new File(mRecordDir, summary.getBasename()), JsonActivity.class);
+			}
+			public void onFinish(Exception error, JsonActivity record) {
+				if (error != null) {
+					Util.error(getActivity(), "Failed to read " + summary.getBasename() + ": " + error);
+					mActivity.stopActionBarThrobber();
 					mAdapter.unmarkAsSending(summary);
-					mAdapter.notifyDataSetChanged();
 					return;
 				} 
 				HealthGraphClient hgClient = HealthGraphClient.getSingleton();
@@ -410,7 +635,7 @@ public class RecordListFragment extends ListFragment {
 						record,
 						new HealthGraphClient.PutNewFitnessActivityListener() {
 							public void onFinish(Exception e, String runkeeperPath) {
-								stopBusyThrob();
+								mActivity.stopActionBarThrobber();
 								mAdapter.unmarkAsSending(summary);
 								if (e != null) {
 									Util.error(getActivity(), "Failed to send activity: " + e);
@@ -423,24 +648,29 @@ public class RecordListFragment extends ListFragment {
 							}
 						});
 			}
-		});
+		}, Util.DEFAULT_THREAD_POOL);
 	}
 	
 	private void deleteRecordAtPosition(int position) {
 		final FileManager.ParsedFilename summary = (FileManager.ParsedFilename)mAdapter.getItem(position);
 		// Read the file contents so that we can save it it in mUndos.
-		startBusyThrob("Deleting");
+		mActivity.startActionBarThrobber("Deleting");
 		FileManager.runAsync(new FileManager.AsyncRunner<JsonActivity>() {
 			public JsonActivity doInThread() throws Exception {
-				JsonActivity record = FileManager.readJson(mRecordDir, summary.getBasename(), JsonActivity.class);
-				FileManager.deleteFile(mRecordDir, summary.getBasename());
+				JsonActivity record = null;
+				final File file = new File(mRecordDir, summary.getBasename());
+				try {
+					record = FileManager.readJson(file, JsonActivity.class);
+				} finally {
+					FileManager.deleteFile(file);
+				}
 				return record;
 			}
 			
 			public void onFinish(Exception error, JsonActivity value) {
-				stopBusyThrob();
+				mActivity.stopActionBarThrobber();
 				if (error != null) {
-					Util.error(mActivity, "Failed to restore file: " + summary.getBasename() + ": " + error);
+					Util.error(mActivity, "Failed to delete file: " + summary.getBasename() + ": " + error);
 				} else {
 					if (value != null) {
 						// activity==null if the file was corrupt or something. It's ok not create an undo entry in such case
@@ -451,6 +681,6 @@ public class RecordListFragment extends ListFragment {
 					startListing();
 				}
 			}
-		});
+		}, Util.DEFAULT_THREAD_POOL);
 	}
 }

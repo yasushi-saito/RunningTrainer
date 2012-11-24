@@ -5,6 +5,7 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.Scanner;
+import java.util.concurrent.Executor;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -85,25 +86,21 @@ public class HealthGraphClient {
     	}
     }
 
-    enum TokenState {
-    	UNSET, AUTHENTICATING, ERROR, OK
-    }
-    private TokenState mAccessTokenState = TokenState.UNSET;
-    
     /**
      * Runkeeper oauth2 access token. null if not yet acquired. Once acquired, it is
      * cached as part of a hidden application preference.
      */
-    private String mToken;
+    private String mToken = null;
+    private static final String ERROR_TOKEN = "ERROR_TOKEN"; 
     
-    private AuthenticatorImpl mAuthenticator;
+    private AuthenticatorImpl mAuthenticator = null;
 
     /**
      * Get the user profile from runkeeper asynchronously. The result will be passed through the listener in the main thread.  
      * @param listener Its onFinish callback delivers a JsonUser object on success
      */
-    public void getUser(GetResponseListener listener) {
-    	executeGet("fitnessActivities", "application/vnd.com.runkeeper.User+json", listener, new JsonUser());
+    public void getUser(GetResponseListener listener, Executor executor) {
+    	executeGet("fitnessActivities", "application/vnd.com.runkeeper.User+json", listener, executor, new JsonUser());
     }
     
     /**
@@ -111,11 +108,23 @@ public class HealthGraphClient {
      * The result will be passed through the listener in the main thread.  
      * @param listener Its onFinish callback delivers a JsonFitnessActivities object on success
      */
-    public void getFitnessActivities(GetResponseListener listener) {
-    	executeGet("fitnessActivities", "application/vnd.com.runkeeper.FitnessActivityFeed+json",
-    			listener, new JsonFitnessActivities());
+    public void getFitnessActivities(GetResponseListener listener, Executor executor) {
+    	executeGet("fitnessActivities?pageSize=1000000", "application/vnd.com.runkeeper.FitnessActivityFeed+json",
+    			listener, executor, new JsonFitnessActivities());
     }
 
+    public void getFitnessActivity(String uri, GetResponseListener listener, Executor executor) {
+    	executeGet(uri,
+    			"application/vnd.com.runkeeper.FitnessActivity+json",
+    			listener, executor, new JsonActivity());
+    }
+
+    public void getFitnessActivityAsString(String uri, GetResponseListener listener, Executor executor) {
+    	executeGet(uri,
+    			"application/vnd.com.runkeeper.FitnessActivity+json",
+    			listener, executor, null);
+    }
+    
     public interface PutNewFitnessActivityListener {
     	public void onFinish(Exception e, String runkeeperPath);
     };
@@ -142,31 +151,9 @@ public class HealthGraphClient {
     	});
     }
     
-    private void cacheAccessToken(Context context, String token) {
-    	synchronized(this) {
-    		mToken = token;
-    		if (token == null) {
-    			mAccessTokenState = TokenState.ERROR;
-    			Util.error(context,  "Failed to sign into runkeeper");
-    		} else {
-    			mAccessTokenState = TokenState.OK;
-    			SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
-    			SharedPreferences.Editor editor = pref.edit();
-    			editor.putString("AccessToken", token);
-    			if (!editor.commit()) {
-    				Log.e(TAG, "Failed to write oauth token to preferences");
-    			} else {
-    				Log.d(TAG, "Save access token " + token);
-    			}
-    			Util.info(context,  "Created new signin token into runkeeper");
-    		}
-    		this.notifyAll();
-    	}
-    }
-
-    private void executeGet(String path, String acceptType, GetResponseListener listener, Object destObject) {
+    private void executeGet(String path, String acceptType, GetResponseListener listener, Executor executor, Object destObject) {
     	HttpGetTask task = new HttpGetTask(this, path, acceptType, destObject, listener);
-    	task.executeOnExecutor(Util.DEFAULT_THREAD_POOL);
+    	task.executeOnExecutor(executor);
     }
     
     private void executePut(String path, String contentType, Object object, PutResponseListener listener) {
@@ -189,19 +176,18 @@ public class HealthGraphClient {
 
     private String getAccessToken() throws Exception {
     	synchronized(this) {
-    		if (mAccessTokenState != TokenState.OK) {
-    			// TODO: provide more precise message
-    			throw new Exception("HealthGraph token retrieval failed");
+    		if (mToken == null || mToken.equals(ERROR_TOKEN)) {
+    			throw new Exception("No sign-in token found");
     		}
     		return mToken;
     	}
     }
     
-    private static class HttpGetTask extends AsyncTask<Void, Void, HttpResponse> {
+    private static class HttpGetTask extends AsyncTask<Void, Void, Object> {
     	private final HealthGraphClient mParent;
     	private final String mPath;
     	private final String mAcceptType;
-    	private final Object mDestObject;
+    	private final Object mDestObject;  // may be null, in which case the result is returned unparsed
     	private final GetResponseListener mListener;
     	private Exception mException = null;
     	
@@ -218,63 +204,53 @@ public class HealthGraphClient {
     		mListener = listener;
     	}
     	
-    	@Override protected HttpResponse doInBackground(Void...unused) {
+    	@Override protected Object doInBackground(Void...unused) {
     	    DefaultHttpClient httpClient = new DefaultHttpClient();
-    		HttpResponse response = null;
+    		Object parseResult = null;
     		try {
     			String token = mParent.getAccessToken();
     			HttpGet get = new HttpGet("https://api.runkeeper.com/" + mPath);
     			get.addHeader("Authorization", "Bearer " + token);
     			get.addHeader("Accept", mAcceptType);
-    			response = httpClient.execute(get);
+    			final HttpResponse response = httpClient.execute(get);
+    			if (response == null) {
+    				throw new Exception("HTTP Get produced no response");
+    			}
+    			
+    			final StatusLine status = response.getStatusLine(); 
+    			Log.d(TAG, "Get finished: " + status.getStatusCode() + ":" + status.getReasonPhrase());
+    			if (status.getStatusCode() / 100 != 2) {
+    				throw new Exception(
+    						"HTTP Get failed: " + status.getStatusCode() + ": " + status.getReasonPhrase());
+    			}
+    			final HttpEntity entity = response.getEntity();
+    			if (entity == null) {
+    				throw new Exception("HTTP Get returned an empty body");
+    			}
+    			// A Simple JSON Response Read
+    			InputStream instream = null;
+    			String result = "";
+
+    			try {
+    				instream = entity.getContent();
+    				result = new Scanner(instream).useDelimiter("\\A").next();
+    			} finally {
+    				if (instream != null) instream.close();
+    			}
+    			if (mDestObject != null) {
+    				Gson gson = new GsonBuilder().create();
+    				parseResult = gson.fromJson(result, mDestObject.getClass());
+    			} else {
+    				parseResult = result;
+    			}
     		} catch (Exception e) {
     			mException = e;
     			Log.d(TAG, "Http GET exception: " + e.toString());
     		}
-    		return response;
+    		return parseResult;
     	}
     	
-    	@Override protected void onPostExecute(HttpResponse response) {
-    		if (mException != null) {
-    			mListener.onFinish(mException, null);
-    			return;
-    		}
-    		if (response != null) {
-    			StatusLine status = response.getStatusLine(); 
-    			Log.d(TAG, "Get finished: " + status.getStatusCode() + ":" + status.getReasonPhrase());
-    			if (status.getStatusCode() / 100 != 2) {
-    				mListener.onFinish(new Exception(
-    						"HTTP Get failed: " + status.getStatusCode() + ": " + status.getReasonPhrase()),
-    						null);
-    				return;
-    			}
-    		}
-    		HttpEntity entity = (response != null ? response.getEntity() : null);
-    		if (entity == null) {
-    			mListener.onFinish(new Exception(
-    					"HTTP Get returned an empty body"),
-    					null);
-    			return;
-    		}
-    		Object parseResult = null;
-    		// A Simple JSON Response Read
-    		InputStream instream = null;
-    		String result = "";
-    		try {
-    			instream = entity.getContent();
-    			result = new Scanner(instream).useDelimiter("\\A").next();
-    		} catch (Exception e2) {
-    			Log.d(TAG, "E: " + e2.toString());
-    			mException = e2;
-    		} finally {
-    			try {
-    				if (instream != null) instream.close();
-    			} catch (Exception e3) {
-    				mException = e3;
-    			}
-    		}
-    		Gson gson = new GsonBuilder().create();
-    		parseResult = gson.fromJson(result, mDestObject.getClass());
+    	@Override protected void onPostExecute(Object parseResult) {
     		mListener.onFinish(mException, parseResult);
     	}
     }
@@ -397,6 +373,20 @@ public class HealthGraphClient {
     	}
     }
 
+    public void init(Context context) {
+    	synchronized(this) {
+    		if (mToken == null) {
+    			SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
+    			mToken = pref.getString("AccessToken", null);
+    		}
+    	}
+    }
+    
+    public boolean isSignedIn() {
+    	synchronized(this) {
+    		return mToken != null && !mToken.equals(ERROR_TOKEN);
+    	}
+    }
     /**
      * Start the runkeeper authentication protocol. If a token had already been acquired, this function is a noop.
      * 
@@ -405,15 +395,12 @@ public class HealthGraphClient {
     public void startAuthentication(Context context) {
     	synchronized(this) {
     		SharedPreferences pref = context.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
-    		mAccessTokenState = TokenState.UNSET;
     		mToken = pref.getString("AccessToken", null);
-    		if (mToken != null) {
-    			Log.d(TAG, "Found cached token: " + mToken);
-    			mAccessTokenState = TokenState.OK;
-    			Util.info(context,  "Signed into runkeeper");
+    		if (mToken != null && !mToken.equals(ERROR_TOKEN)) {
+    			Util.info(context,  "Reusing a saved sign-in token for RunKeeper");
+    			return;
     		}
-    		if (mAccessTokenState != TokenState.OK) {
-    			mAccessTokenState = TokenState.AUTHENTICATING;
+    		if (mAuthenticator == null) {
     			Log.d(TAG, "Start Healthgraph authentication");
     			mAuthenticator = new AuthenticatorImpl(context);
     			mAuthenticator.start();
@@ -485,9 +472,25 @@ public class HealthGraphClient {
     		}
     		
     		@Override protected void onPostExecute(String token) {
-    			if (token != null) {
-    				Log.d(TAG, "Acquired HealthGraph token: " + token);
-    				cacheAccessToken(mContext, token);
+    			synchronized(this) {
+    				if (token == null) {
+    					mToken = ERROR_TOKEN;
+    					Util.error(mContext,  "Failed to sign into runkeeper");
+    				} else {
+    					Log.d(TAG, "Acquired HealthGraph token: " + token);
+    					mToken = token;
+    					SharedPreferences pref = mContext.getSharedPreferences("HealthGraphAuthCache", Context.MODE_PRIVATE);
+    					SharedPreferences.Editor editor = pref.edit();
+    					editor.putString("AccessToken", token);
+    					if (!editor.commit()) {
+    						Log.e(TAG, "Failed to write oauth token to preferences");
+    					} else {
+    						Log.d(TAG, "Save access token " + token);
+    					}
+    					Util.info(mContext,  "Signed into RunKeeper");
+    				}
+    				mAuthenticator = null;
+    				this.notifyAll();
     			}
     		}
     	}

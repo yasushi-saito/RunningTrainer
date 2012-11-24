@@ -11,6 +11,9 @@
       android:id="@+id/record_list_delete_all"
       android:title="Delete all"/>
   <item
+      android:id="@+id/record_list_download_from_runkeeper"
+      android:title="Download from RunKeeper"/>
+  <item
       android:id="@+id/record_list_undo"
       android:icon="@android:drawable/ic_menu_revert"
       android:showAsAction="ifRoom|withText"

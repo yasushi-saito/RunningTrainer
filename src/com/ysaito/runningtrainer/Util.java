@@ -43,7 +43,7 @@ public class Util {
 	}
 
 	
-	static final ExecutorService DEFAULT_THREAD_POOL = Executors.newCachedThreadPool();
+	static final ExecutorService DEFAULT_THREAD_POOL = Executors.newFixedThreadPool(4);
 	
 	/**
 	 * Singleton support.
@@ -153,7 +153,9 @@ public class Util {
 	}
 
 	static void info(Context context, String message) {
-		
+		if (context != null) {
+			Toast.makeText(context, message, Toast.LENGTH_LONG).show();
+		}
 	}
 	
 	static void error(Context context, String message) {

@@ -82,14 +82,14 @@ public class WorkoutEditorFragment extends Fragment {
 		
 		FileManager.runAsync(new FileManager.AsyncRunner<Void>() {
 			public Void doInThread() throws Exception {
-				FileManager.writeJson(mWorkoutDir, newBasename, newWorkout);
+				FileManager.writeJson(new File(mWorkoutDir, newBasename), newWorkout);
 				
 				// Delete the old file(s) for the same workout
 				ArrayList<ParsedFilename> files = FileManager.listFiles(mWorkoutDir);
 				for (FileManager.ParsedFilename other : files) {
 					if (other.getLong(FileManager.KEY_WORKOUT_ID, -1) == workoutId &&
 							!other.getBasename().equals(newBasename)) {
-						FileManager.deleteFile(mWorkoutDir, other.getBasename());
+						FileManager.deleteFile(new File(mWorkoutDir, other.getBasename()));
 					}
 				}
 				return null;
@@ -98,7 +98,7 @@ public class WorkoutEditorFragment extends Fragment {
 				if (error != null) Util.error(getActivity(), "Failed to delete old files: " + error);
 				showWorkoutListFragment();
 			}
-		});
+		}, Util.DEFAULT_THREAD_POOL);
 	}
 	
 	@Override 

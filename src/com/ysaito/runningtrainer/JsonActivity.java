@@ -15,6 +15,7 @@ public class JsonActivity {
     public double total_distance;  // total distance, in meters
     public double duration;        // duration, in seconds
     public String notes;
+    public String uri;
     public JsonWGS84[] path;
     public Boolean post_to_facebook;
     public Boolean post_to_twitter;

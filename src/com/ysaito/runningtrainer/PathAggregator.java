@@ -13,14 +13,17 @@ public class PathAggregator {
 	public static class Result {
 		public PauseType pauseType;
 		
-		// The number of meters moved since the last call to addLocation. >0 only when pauseType == {RUNNING,PAUSE_ENDED}
+		/**
+		 *  The number of meters moved since the last call to addLocation. >0 only when pauseType == {RUNNING,PAUSE_ENDED}
+		 */
 		public double deltaDistance;
 		
-		// If pauseType=={RUNNING, PAUSE_ENDED}, the current duration, as the # of wall seconds since 1970/1/1
-		// If pauseType==PAUSE_CONTINUING, the value is 0.
-		//
-		// If pauseType==PAUSE_STARTED, this is the time pause started, as the # of wall seconds since 1970/1/1
-		// The pause-start time may be in the past.
+		/**
+		 * If pauseType=={RUNNING, PAUSE_ENDED}, the current duration, as the # of wall seconds since 1970/1/1
+		 * If pauseType==PAUSE_CONTINUING, the value is 0.
+		 * If pauseType==PAUSE_STARTED, this is the time pause started, as the # of wall seconds since 1970/1/1
+		 * The pause-start time may be in the past.
+		 */
 		public double absTime;
 		
 		@Override public String toString() {
